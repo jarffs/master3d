@@ -6,12 +6,19 @@ import ImageTracer from 'imagetracerjs';
 let scene, camera, renderer, controls;
 let engine;
 let currentSvgText = null;
+let buildPlateGroup = null;
 
 // UI Elements
 const uploadInput = document.getElementById('svg-upload');
 const fileNameDisplay = document.getElementById('file-name');
 const downloadBtn = document.getElementById('download-btn');
 const viewerOverlay = document.getElementById('viewer-overlay');
+
+// Build Plate UI
+const bpWidthInput = document.getElementById('bp-width');
+const bpDepthInput = document.getElementById('bp-depth');
+const bpRotateBtn = document.getElementById('bp-rotate-btn');
+const bpWarning = document.getElementById('bp-warning');
 
 // Sliders
 const heightSlider = document.getElementById('height-slider');
@@ -28,10 +35,9 @@ function initThree() {
   
   scene = new THREE.Scene();
   
-  // Add some grid/helpers
-  const gridHelper = new THREE.GridHelper(100, 10, 0x444444, 0x222222);
-  gridHelper.rotation.x = Math.PI / 2; // align grid with XY plane
-  scene.add(gridHelper);
+  // Build Plate
+  buildPlateGroup = new THREE.Group();
+  scene.add(buildPlateGroup);
 
   camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1000);
   camera.position.set(0, -60, 60); // looking at XY plane from bottom-front-up
@@ -62,6 +68,8 @@ function initThree() {
 
   window.addEventListener('resize', onWindowResize);
   
+  updateBuildPlate();
+  
   animate();
 }
 
@@ -76,6 +84,238 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
+}
+
+function updateBuildPlate() {
+  if (!buildPlateGroup) return;
+  
+  while(buildPlateGroup.children.length > 0) {
+    const child = buildPlateGroup.children[0];
+    if (child.geometry) child.geometry.dispose();
+    if (child.material) {
+      if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+      else child.material.dispose();
+    }
+    buildPlateGroup.remove(child);
+  }
+  
+  const width = parseFloat(bpWidthInput.value) || 220;
+  const depth = parseFloat(bpDepthInput.value) || 220;
+  
+  const radius = 8;
+  const frontTabBaseWidth = 100;
+  const frontTabTipWidth = 70;
+  const frontTabDepth = 20;
+  
+  const backTabWidth = 25;
+  const backTabDepth = 12;
+  const backTabOffset = 15;
+  
+  const shape = new THREE.Shape();
+  const w2 = width / 2;
+  const d2 = depth / 2;
+  
+  shape.moveTo(-w2 + radius, -d2);
+  
+  // Front Tab
+  shape.lineTo(-frontTabBaseWidth/2, -d2);
+  shape.lineTo(-frontTabTipWidth/2, -d2 - frontTabDepth);
+  shape.lineTo(frontTabTipWidth/2, -d2 - frontTabDepth);
+  shape.lineTo(frontTabBaseWidth/2, -d2);
+  
+  // Bottom Right Corner
+  shape.lineTo(w2 - radius, -d2);
+  shape.quadraticCurveTo(w2, -d2, w2, -d2 + radius);
+  
+  // Right Edge & Top Right Corner
+  shape.lineTo(w2, d2 - radius);
+  shape.quadraticCurveTo(w2, d2, w2 - radius, d2);
+  
+  // Back Right Tab
+  shape.lineTo(w2 - backTabOffset, d2);
+  shape.lineTo(w2 - backTabOffset, d2 + backTabDepth);
+  shape.lineTo(w2 - backTabOffset - backTabWidth, d2 + backTabDepth);
+  shape.lineTo(w2 - backTabOffset - backTabWidth - 4, d2);
+  
+  // Top Edge (between back tabs)
+  shape.lineTo(-w2 + backTabOffset + backTabWidth + 4, d2);
+  
+  // Back Left Tab
+  shape.lineTo(-w2 + backTabOffset + backTabWidth, d2 + backTabDepth);
+  shape.lineTo(-w2 + backTabOffset, d2 + backTabDepth);
+  shape.lineTo(-w2 + backTabOffset, d2);
+  
+  // Top Left Corner
+  shape.lineTo(-w2 + radius, d2);
+  shape.quadraticCurveTo(-w2, d2, -w2, d2 - radius);
+  
+  // Left Edge & Bottom Left Corner
+  shape.lineTo(-w2, -d2 + radius);
+  shape.quadraticCurveTo(-w2, -d2, -w2 + radius, -d2);
+  
+  const extrudeSettings = {
+    depth: 2,
+    bevelEnabled: true,
+    bevelSegments: 2,
+    steps: 1,
+    bevelSize: 0.5,
+    bevelThickness: 0.5
+  };
+  
+  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  geometry.translate(0, 0, -2);
+  
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x1f2224,
+    roughness: 0.9,
+    metalness: 0.2
+  });
+  
+  const plateMesh = new THREE.Mesh(geometry, material);
+  buildPlateGroup.add(plateMesh);
+  
+  const gridGeom = new THREE.BufferGeometry();
+  const vertices = [];
+  const spacing = 10;
+  
+  const gridMaterial = new THREE.LineBasicMaterial({ 
+    color: 0x666666, transparent: true, opacity: 0.6
+  });
+  const majorGridMaterial = new THREE.LineBasicMaterial({ 
+    color: 0x999999, transparent: true, opacity: 0.8
+  });
+  
+  const majorVertices = [];
+  
+  for (let x = 0; x < w2; x += spacing) {
+    if (x === 0) {
+      majorVertices.push(0, -d2, 0, 0, d2, 0);
+    } else {
+      const isMajor = (x % 50 === 0);
+      if (isMajor) {
+        majorVertices.push(x, -d2, 0, x, d2, 0);
+        majorVertices.push(-x, -d2, 0, -x, d2, 0);
+      } else {
+        vertices.push(x, -d2, 0, x, d2, 0);
+        vertices.push(-x, -d2, 0, -x, d2, 0);
+      }
+    }
+  }
+  for (let y = 0; y < d2; y += spacing) {
+    if (y === 0) {
+      majorVertices.push(-w2, 0, 0, w2, 0, 0);
+    } else {
+      const isMajor = (y % 50 === 0);
+      if (isMajor) {
+        majorVertices.push(-w2, y, 0, w2, y, 0);
+        majorVertices.push(-w2, -y, 0, w2, -y, 0);
+      } else {
+        vertices.push(-w2, y, 0, w2, y, 0);
+        vertices.push(-w2, -y, 0, w2, -y, 0);
+      }
+    }
+  }
+  
+  gridGeom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  const gridLines = new THREE.LineSegments(gridGeom, gridMaterial);
+  gridLines.position.z = 0.51;
+  buildPlateGroup.add(gridLines);
+  
+  if (majorVertices.length > 0) {
+    const majorGridGeom = new THREE.BufferGeometry();
+    majorGridGeom.setAttribute('position', new THREE.Float32BufferAttribute(majorVertices, 3));
+    const majorGridLines = new THREE.LineSegments(majorGridGeom, majorGridMaterial);
+    majorGridLines.position.z = 0.52;
+    buildPlateGroup.add(majorGridLines);
+  }
+  
+  // Outer shape outline (only print area, ignoring tabs)
+  const printAreaShape = new THREE.Shape();
+  printAreaShape.moveTo(-w2 + radius, -d2);
+  printAreaShape.lineTo(w2 - radius, -d2);
+  printAreaShape.quadraticCurveTo(w2, -d2, w2, -d2 + radius);
+  printAreaShape.lineTo(w2, d2 - radius);
+  printAreaShape.quadraticCurveTo(w2, d2, w2 - radius, d2);
+  printAreaShape.lineTo(-w2 + radius, d2);
+  printAreaShape.quadraticCurveTo(-w2, d2, -w2, d2 - radius);
+  printAreaShape.lineTo(-w2, -d2 + radius);
+  printAreaShape.quadraticCurveTo(-w2, -d2, -w2 + radius, -d2);
+  
+  const shapePoints = printAreaShape.getPoints();
+  const shapeGeom = new THREE.BufferGeometry().setFromPoints(shapePoints);
+  const shapeOutline = new THREE.Line(shapeGeom, majorGridMaterial);
+  shapeOutline.position.z = 0.52;
+  buildPlateGroup.add(shapeOutline);
+  
+  // Add dimension text (e.g., "220 x 220") to top-left corner
+  const textCanvas = document.createElement('canvas');
+  textCanvas.width = 256;
+  textCanvas.height = 64;
+  const ctx = textCanvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0)';
+  ctx.fillRect(0, 0, 256, 64);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${width} x ${depth}`, 10, 32);
+  
+  const textTexture = new THREE.CanvasTexture(textCanvas);
+  textTexture.needsUpdate = true;
+  // Optional: textTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  
+  const textMat = new THREE.MeshBasicMaterial({ 
+    map: textTexture, 
+    transparent: true
+  });
+  const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(40, 10), textMat);
+  
+  // Position at top-left, slightly offset from the edge
+  textPlane.position.set(-w2 + 30, d2 - 20, 0.53);
+  buildPlateGroup.add(textPlane);
+  
+  checkBuildPlateLimits();
+  frameCamera();
+}
+
+function checkBuildPlateLimits() {
+  if (!engine || !engine.cookieGroup || engine.cookieGroup.children.length === 0) {
+    bpWarning.classList.add('hidden');
+    if (buildPlateGroup && buildPlateGroup.children[0]) {
+      buildPlateGroup.children[0].material.color.setHex(0x1f2224);
+    }
+    return;
+  }
+  
+  const box = new THREE.Box3().setFromObject(engine.cookieGroup);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  
+  const width = parseFloat(bpWidthInput.value) || 220;
+  const depth = parseFloat(bpDepthInput.value) || 220;
+  
+  if (size.x > width || size.y > depth) {
+    bpWarning.classList.remove('hidden');
+    if (buildPlateGroup && buildPlateGroup.children[0]) {
+      buildPlateGroup.children[0].material.color.setHex(0x7f1d1d);
+    }
+  } else {
+    bpWarning.classList.add('hidden');
+    if (buildPlateGroup && buildPlateGroup.children[0]) {
+      buildPlateGroup.children[0].material.color.setHex(0x1f2224);
+    }
+  }
+}
+
+function frameCamera() {
+  const width = parseFloat(bpWidthInput.value) || 220;
+  const depth = parseFloat(bpDepthInput.value) || 220;
+  const maxDim = Math.max(width, depth);
+  const dist = maxDim * 1.3;
+  
+  camera.position.set(0, -dist * 0.7, dist * 0.8);
+  controls.target.set(0, 0, 0);
+  controls.update();
 }
 
 function updateModel() {
@@ -93,10 +333,19 @@ function updateModel() {
   if (success) {
     downloadBtn.disabled = false;
     viewerOverlay.classList.add('hidden');
+    checkBuildPlateLimits();
   }
 }
 
 // Event Listeners
+bpWidthInput.addEventListener('input', updateBuildPlate);
+bpDepthInput.addEventListener('input', updateBuildPlate);
+bpRotateBtn.addEventListener('click', () => {
+  const temp = bpWidthInput.value;
+  bpWidthInput.value = bpDepthInput.value;
+  bpDepthInput.value = temp;
+  updateBuildPlate();
+});
 uploadInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;

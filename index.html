@@ -66,6 +66,30 @@
           </div>
         </div>
 
+        <div class="settings">
+          <h2>Mesa de Impressão (Build Plate)</h2>
+          
+          <div class="build-plate-controls">
+            <div class="input-group">
+              <label for="bp-width">X (mm)</label>
+              <input type="number" id="bp-width" value="220" min="50" max="500" />
+            </div>
+            <div class="rotate-btn-container">
+              <button id="bp-rotate-btn" class="icon-btn" title="Rotacionar (Inverter X e Y)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-3.32 3.32"/></svg>
+              </button>
+            </div>
+            <div class="input-group">
+              <label for="bp-depth">Y (mm)</label>
+              <input type="number" id="bp-depth" value="220" min="50" max="500" />
+            </div>
+          </div>
+          
+          <div id="bp-warning" class="bp-warning hidden">
+            ⚠️ O modelo excede o tamanho da mesa!
+          </div>
+        </div>
+
         <button id="download-btn" class="primary-btn" disabled>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           Exportar STL
