@@ -7,18 +7,19 @@ let scene, camera, renderer, controls;
 let engine;
 let currentSvgText = null;
 let buildPlateGroup = null;
+let printersData = [];
 
 // UI Elements
 const uploadInput = document.getElementById('svg-upload');
 const fileNameDisplay = document.getElementById('file-name');
 const downloadBtn = document.getElementById('download-btn');
-const viewerOverlay = document.getElementById('viewer-overlay');
 
 // Build Plate UI
 const bpWidthInput = document.getElementById('bp-width');
 const bpDepthInput = document.getElementById('bp-depth');
 const bpRotateBtn = document.getElementById('bp-rotate-btn');
 const bpWarning = document.getElementById('bp-warning');
+const printerProfileSelect = document.getElementById('printer-profile');
 
 // Sliders
 const heightSlider = document.getElementById('height-slider');
@@ -49,6 +50,39 @@ function initThree() {
   container.appendChild(renderer.domElement);
 
   controls = new OrbitControls(camera, renderer.domElement);
+  
+  loadPrinters();
+  initUI();
+  updateBuildPlate();
+  
+  animate();
+}
+
+async function loadPrinters() {
+  try {
+    const response = await fetch('./printers.json');
+    printersData = await response.json();
+    
+    printerProfileSelect.innerHTML = '';
+    printersData.forEach(printer => {
+      const option = document.createElement('option');
+      option.value = printer.id;
+      option.textContent = printer.name + (printer.id !== 'custom' ? ` (${printer.width}x${printer.depth})` : '');
+      if (printer.default) {
+        option.selected = true;
+        // Se for o default, já setar os valores
+        bpWidthInput.value = printer.width;
+        bpDepthInput.value = printer.depth;
+        updateBuildPlate();
+      }
+      printerProfileSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Erro ao carregar printers.json', error);
+  }
+}
+
+function initUI() {
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
 
@@ -338,9 +372,28 @@ function updateModel() {
 }
 
 // Event Listeners
-bpWidthInput.addEventListener('input', updateBuildPlate);
-bpDepthInput.addEventListener('input', updateBuildPlate);
+printerProfileSelect.addEventListener('change', (e) => {
+  const val = e.target.value;
+  if (val !== 'custom') {
+    const printer = printersData.find(p => p.id === val);
+    if (printer) {
+      bpWidthInput.value = printer.width;
+      bpDepthInput.value = printer.depth;
+      updateBuildPlate();
+    }
+  }
+});
+
+bpWidthInput.addEventListener('input', () => {
+  printerProfileSelect.value = 'custom';
+  updateBuildPlate();
+});
+bpDepthInput.addEventListener('input', () => {
+  printerProfileSelect.value = 'custom';
+  updateBuildPlate();
+});
 bpRotateBtn.addEventListener('click', () => {
+  printerProfileSelect.value = 'custom';
   const temp = bpWidthInput.value;
   bpWidthInput.value = bpDepthInput.value;
   bpDepthInput.value = temp;
