@@ -32,9 +32,16 @@ export class CookieCutterEngine {
     
     // Parse paths into Three.js shapes
     for (const path of svgData.paths) {
-      // Force fill to ensure stroked paths without fill are still processed as solid shapes
-      if (path.userData && path.userData.style) {
-        path.userData.style.fill = '#000';
+      const style = path.userData ? path.userData.style : null;
+      
+      if (style) {
+        const fill = (style.fill || '').toLowerCase().replace(/\s/g, '');
+        // Ignore white paths (typically background from image tracing or explicit SVG backgrounds)
+        if (fill === 'rgb(255,255,255)' || fill === '#ffffff' || fill === '#fff' || fill === 'white') {
+          continue;
+        }
+        // Force fill to ensure stroked paths without fill are still processed as solid shapes
+        style.fill = '#000';
       }
       
       const shapes = path.toShapes(true); // true = generates holes automatically
