@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './CookieCutterEngine.js';
+import ImageTracer from 'imagetracerjs';
 
 let scene, camera, renderer, controls;
 let engine;
@@ -101,14 +102,86 @@ uploadInput.addEventListener('change', (e) => {
   if (!file) return;
   
   fileNameDisplay.textContent = file.name;
+  viewerOverlay.innerHTML = '<p>Processando...</p>';
+  viewerOverlay.classList.remove('hidden');
   
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    currentSvgText = event.target.result;
-    engine.loadSVG(currentSvgText);
-    updateModel();
-  };
-  reader.readAsText(file);
+  if (file.name.toLowerCase().endsWith('.svg')) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      currentSvgText = event.target.result;
+      engine.loadSVG(currentSvgText);
+      updateModel();
+    };
+    reader.readAsText(file);
+  } else {
+    // Process raster image
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas to flatten transparent background to white
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        
+        // Fill white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Draw image over it
+        ctx.drawImage(img, 0, 0);
+        
+        // Strict thresholding to guarantee pure black and white
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          // Luminance formula
+          const brightness = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+          // If transparent or bright, make it white. Otherwise make it black.
+          const color = (data[i+3] < 128 || brightness > 128) ? 255 : 0;
+          data[i] = color;
+          data[i+1] = color;
+          data[i+2] = color;
+          data[i+3] = 255; // fully opaque
+        }
+        ctx.putImageData(imageData, 0, 0);
+        
+        const flattenedDataUrl = canvas.toDataURL('image/png');
+        
+        // options for exact black and white silhouette tracing
+        const options = {
+          ltres: 1,
+          qtres: 1,
+          pathomit: 8,
+          colorsampling: 0, 
+          numberofcolors: 2,
+          pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
+        };
+        
+        ImageTracer.imageToSVG(flattenedDataUrl, (svgString) => {
+          // Parse SVG safely and remove white paths
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(svgString, "image/svg+xml");
+          
+          const paths = doc.querySelectorAll('path');
+          paths.forEach(p => {
+             const fill = p.getAttribute('fill');
+             if (fill && (fill.replace(/\s/g, '') === 'rgb(255,255,255)' || fill === '#ffffff')) {
+                 p.remove();
+             }
+          });
+          
+          currentSvgText = new XMLSerializer().serializeToString(doc);
+          engine.loadSVG(currentSvgText);
+          updateModel();
+        }, options);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }
 });
 
 // Update value displays and model on slider change

@@ -94,6 +94,21 @@ header p {
   text-overflow: ellipsis;
 }
 
+.image-warning {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  line-height: 1.4;
+}
+
+.image-warning strong {
+  color: #fcd34d;
+}
+
 .settings {
   display: flex;
   flex-direction: column;

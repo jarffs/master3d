@@ -20,10 +20,14 @@
         <div class="control-group">
           <label for="svg-upload" class="upload-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            Carregar Arquivo SVG
+            Carregar Imagem ou SVG
           </label>
-          <input type="file" id="svg-upload" accept=".svg" hidden />
+          <input type="file" id="svg-upload" accept=".svg, .png, .jpg, .jpeg" hidden />
           <div id="file-name" class="file-name">Nenhum arquivo selecionado</div>
+          
+          <div class="image-warning">
+            <strong>Dica para Imagens:</strong> Envie imagens em preto e branco. A parte <strong>preta</strong> será a parte recortada (extrudida).
+          </div>
         </div>
 
         <div class="settings">
