@@ -12,6 +12,7 @@
     "vite": "^8.2.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
     "clipper-lib": "^6.4.2",
     "imagetracerjs": "^1.2.6",
     "three": "^0.185.1"
