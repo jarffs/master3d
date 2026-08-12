@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './CookieCutterEngine.js';
 import ImageTracer from 'imagetracerjs';
+import { supabase } from './supabaseClient.js';
+import { currentUser, userProfile, onAuthChange } from './auth.js';
 
 let scene, camera, renderer, controls;
 let engine;
@@ -55,30 +57,56 @@ function initThree() {
   initUI();
   updateBuildPlate();
   
+  onAuthChange((user, profile) => {
+    loadPrinters(); // Recarrega a lista de impressoras com base no auth
+    if (engine && currentSvgText) {
+      if (user) {
+        downloadBtn.disabled = false;
+        downloadBtn.title = '';
+      } else {
+        downloadBtn.disabled = true;
+        downloadBtn.title = 'Faça login para exportar o STL';
+      }
+    }
+  });
+  
   animate();
 }
 
 async function loadPrinters() {
   try {
-    const response = await fetch('./printers.json');
-    printersData = await response.json();
+    const { data: defaultPlates, error } = await supabase.from('default_build_plates').select('*');
+    if (error) throw error;
+    
+    let availableDefaults = defaultPlates;
+    
+    // Se o usuário estiver logado e tiver selecionado impressoras específicas no perfil
+    if (currentUser && userProfile?.selected_printers?.length > 0) {
+       availableDefaults = defaultPlates.filter(p => userProfile.selected_printers.includes(p.id));
+    }
+    
+    let customPlates = [];
+    if (currentUser) {
+      const { data: userPlates } = await supabase.from('custom_build_plates').select('*');
+      if (userPlates) customPlates = userPlates;
+    }
+    
+    printersData = [{ id: 'custom', name: 'Personalizada (Custom)', width: 220, depth: 220 }, ...availableDefaults, ...customPlates];
     
     printerProfileSelect.innerHTML = '';
     printersData.forEach(printer => {
       const option = document.createElement('option');
       option.value = printer.id;
       option.textContent = printer.name + (printer.id !== 'custom' ? ` (${printer.width}x${printer.depth})` : '');
-      if (printer.default) {
-        option.selected = true;
-        // Se for o default, já setar os valores
-        bpWidthInput.value = printer.width;
-        bpDepthInput.value = printer.depth;
-        updateBuildPlate();
-      }
       printerProfileSelect.appendChild(option);
     });
+    
+    printerProfileSelect.value = 'custom';
+    bpWidthInput.value = 220;
+    bpDepthInput.value = 220;
+    updateBuildPlate();
   } catch (error) {
-    console.error('Erro ao carregar printers.json', error);
+    console.error('Erro ao carregar impressoras do Supabase:', error);
   }
 }
 
@@ -365,8 +393,13 @@ function updateModel() {
   const success = engine.generate3DModel(params);
   
   if (success) {
-    downloadBtn.disabled = false;
-    viewerOverlay.classList.add('hidden');
+    if (currentUser) {
+      downloadBtn.disabled = false;
+      downloadBtn.title = '';
+    } else {
+      downloadBtn.disabled = true;
+      downloadBtn.title = 'Faça login para exportar o STL';
+    }
     checkBuildPlateLimits();
   }
 }
@@ -404,8 +437,6 @@ uploadInput.addEventListener('change', (e) => {
   if (!file) return;
   
   fileNameDisplay.textContent = file.name;
-  viewerOverlay.innerHTML = '<p>Processando...</p>';
-  viewerOverlay.classList.remove('hidden');
   
   if (file.name.toLowerCase().endsWith('.svg')) {
     const reader = new FileReader();

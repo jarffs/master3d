@@ -1,6 +1,6 @@
-# CookieMaker 3D
+# CutterMaker3D
 
-O **CookieMaker 3D** é uma aplicação web interativa e paramétrica que permite transformar arquivos SVG 2D (vetores) em modelos 3D de cortadores de biscoito (ou massa de modelar/playdoh), prontos para impressão 3D (formato STL).
+O **CutterMaker3D** é uma aplicação web interativa e paramétrica que permite transformar arquivos SVG 2D (vetores) em modelos 3D de cortadores de biscoito (ou massa de modelar/playdoh), prontos para impressão 3D (formato STL).
 
 ## 🚀 Funcionalidades
 
