@@ -94,19 +94,27 @@ async function loadPrinters() {
       if (userPlates) customPlates = userPlates;
     }
     
-    printersData = [{ id: 'custom', name: 'Personalizada (Custom)', width: 220, depth: 220 }, ...availableDefaults, ...customPlates];
+    if (availableDefaults.length === 0 && customPlates.length === 0) {
+      printersData = [{ id: 'default', name: 'Impressora Padrão', width: 220, depth: 220 }];
+    } else {
+      printersData = [...availableDefaults, ...customPlates];
+    }
     
     printerProfileSelect.innerHTML = '';
     printersData.forEach(printer => {
       const option = document.createElement('option');
       option.value = printer.id;
-      option.textContent = printer.name + (printer.id !== 'custom' ? ` (${printer.width}x${printer.depth})` : '');
+      option.textContent = printer.name + ` (${printer.width}x${printer.depth})`;
       printerProfileSelect.appendChild(option);
     });
     
-    printerProfileSelect.value = 'custom';
-    bpWidthInput.value = 220;
-    bpDepthInput.value = 220;
+    // Configura os inputs escondidos para a impressora selecionada (a primeira)
+    if (printersData.length > 0) {
+      printerProfileSelect.value = printersData[0].id;
+      bpWidthInput.value = printersData[0].width;
+      bpDepthInput.value = printersData[0].depth;
+    }
+    
     updateBuildPlate();
   } catch (error) {
     console.error('Erro ao carregar impressoras do Supabase:', error);
@@ -410,13 +418,11 @@ function updateModel() {
 // Event Listeners
 printerProfileSelect.addEventListener('change', (e) => {
   const val = e.target.value;
-  if (val !== 'custom') {
-    const printer = printersData.find(p => p.id === val);
-    if (printer) {
-      bpWidthInput.value = printer.width;
-      bpDepthInput.value = printer.depth;
-      updateBuildPlate();
-    }
+  const printer = printersData.find(p => p.id === val);
+  if (printer) {
+    bpWidthInput.value = printer.width;
+    bpDepthInput.value = printer.depth;
+    updateBuildPlate();
   }
 });
 
