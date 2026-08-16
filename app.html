@@ -169,11 +169,36 @@
         </div>
 
         <div id="printers-tab" class="tab-content">
-          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Selecione as impressoras que deseja que apareçam na lista principal do gerador.</p>
-          <div id="printers-list" class="printers-list">
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Selecione as impressoras que deseja que apareçam na lista principal do gerador.</p>
+          
+          <input type="text" id="printer-search" placeholder="Buscar impressora..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 12px; font-family: inherit; font-size: 14px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box;">
+          
+          <div id="printers-list" class="printers-list" style="margin-bottom: 16px;">
             <!-- Renderizado via JS -->
           </div>
-          <button id="save-printers-btn" class="primary-btn" style="margin-top: 16px;">Salvar Alterações</button>
+          
+          <button id="save-printers-btn" class="primary-btn" style="width: 100%; margin-bottom: 24px;">Salvar Alterações</button>
+
+          <hr style="border: 0; height: 1px; background: var(--border-color); margin-bottom: 16px;">
+          
+          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;">Adicionar Impressora Customizada</h3>
+          <form id="add-custom-printer-form" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="input-group">
+              <label for="custom-printer-name">Nome</label>
+              <input type="text" id="custom-printer-name" required placeholder="Ex: Minha Voron 2.4" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <div class="input-group" style="flex: 1;">
+                <label for="custom-printer-x">X (mm)</label>
+                <input type="number" id="custom-printer-x" required min="50" max="1000" placeholder="300" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+              </div>
+              <div class="input-group" style="flex: 1;">
+                <label for="custom-printer-y">Y (mm)</label>
+                <input type="number" id="custom-printer-y" required min="50" max="1000" placeholder="300" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+              </div>
+            </div>
+            <button type="submit" id="custom-printer-submit" class="secondary-btn">Adicionar Impressora</button>
+          </form>
         </div>
       </div>
     </div>
