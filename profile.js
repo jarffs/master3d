@@ -21,6 +21,9 @@ let cropper = null;
 // Printers
 const printersList = document.getElementById('printers-list');
 const savePrintersBtn = document.getElementById('save-printers-btn');
+const printerSearch = document.getElementById('printer-search');
+const addCustomPrinterForm = document.getElementById('add-custom-printer-form');
+const customPrinterSubmit = document.getElementById('custom-printer-submit');
 
 // --- TABS LOGIC ---
 tabBtns.forEach(btn => {
@@ -155,15 +158,37 @@ cropperSaveBtn.addEventListener('click', async () => {
 async function renderPrintersList() {
   printersList.innerHTML = '<p>Carregando...</p>';
   try {
-    const { data, error } = await supabase.from('default_build_plates').select('*').order('brand', { ascending: true });
-    if (error) throw error;
+    const { data: defaultPlates, error: err1 } = await supabase.from('default_build_plates').select('*').order('brand', { ascending: true });
+    if (err1) throw err1;
+    
+    let customPlates = [];
+    if (currentUser) {
+      const { data: userPlates, error: err2 } = await supabase.from('custom_build_plates').select('*').eq('user_id', currentUser.id);
+      if (err2) throw err2;
+      if (userPlates) customPlates = userPlates;
+    }
     
     printersList.innerHTML = '';
     const selected = userProfile?.selected_printers || [];
     
-    data.forEach(printer => {
+    const allPrinters = [...customPlates, ...defaultPlates];
+    
+    allPrinters.forEach(printer => {
+      const isCustom = !!printer.user_id; // Se tem user_id, é customizada
+      
       const label = document.createElement('label');
       label.className = 'printer-item';
+      label.style.display = 'flex';
+      label.style.alignItems = 'center';
+      label.style.justifyContent = 'space-between';
+      label.style.width = '100%';
+      
+      // Armazena o nome minúsculo no dataset para pesquisa rápida
+      label.dataset.name = printer.name.toLowerCase();
+      
+      const leftDiv = document.createElement('div');
+      leftDiv.style.display = 'flex';
+      leftDiv.style.alignItems = 'center';
       
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -173,18 +198,77 @@ async function renderPrintersList() {
       }
       
       const text = document.createElement('span');
-      text.textContent = printer.name;
+      text.textContent = printer.name + (isCustom ? ' (Sua)' : '');
       
-      label.appendChild(checkbox);
-      label.appendChild(text);
+      leftDiv.appendChild(checkbox);
+      leftDiv.appendChild(text);
+      label.appendChild(leftDiv);
+      
+      // Se for customizada, adiciona o botão de apagar
+      if (isCustom) {
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.innerHTML = '&times;'; // Ícone simples de X
+        delBtn.style.background = 'none';
+        delBtn.style.border = 'none';
+        delBtn.style.color = '#ef4444'; // vermelho
+        delBtn.style.fontSize = '18px';
+        delBtn.style.cursor = 'pointer';
+        delBtn.title = 'Apagar impressora';
+        
+        delBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation(); // Evita que clique no label marque o checkbox
+          
+          if (confirm(`Tem a certeza que deseja apagar a impressora "${printer.name}"?`)) {
+            try {
+              const { error } = await supabase.from('custom_build_plates').delete().eq('id', printer.id);
+              if (error) throw error;
+              
+              // Se estava selecionada, remover da seleção
+              if (checkbox.checked) {
+                userProfile.selected_printers = userProfile.selected_printers.filter(id => id !== printer.id);
+                await supabase.from('profiles').update({ selected_printers: userProfile.selected_printers }).eq('id', currentUser.id);
+              }
+              
+              renderPrintersList();
+              window.dispatchEvent(new Event('auth-state-changed'));
+            } catch (error) {
+              alert('Erro ao apagar impressora.');
+            }
+          }
+        });
+        
+        label.appendChild(delBtn);
+      }
+      
       printersList.appendChild(label);
     });
+    
+    // Dispara a pesquisa logo ao carregar para manter o filtro atual
+    if (printerSearch.value) {
+      printerSearch.dispatchEvent(new Event('keyup'));
+    }
+    
   } catch (err) {
     printersList.innerHTML = '<p style="color:red">Erro ao carregar impressoras.</p>';
   }
 }
 
-savePrintersBtn.addEventListener('click', async () => {
+printerSearch?.addEventListener('keyup', (e) => {
+  const term = e.target.value.toLowerCase();
+  const items = printersList.querySelectorAll('.printer-item');
+  
+  items.forEach(item => {
+    if (item.dataset.name.includes(term)) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+});
+
+savePrintersBtn?.addEventListener('click', async () => {
   if (!currentUser) return;
   
   savePrintersBtn.disabled = true;
@@ -218,5 +302,50 @@ savePrintersBtn.addEventListener('click', async () => {
   } finally {
     savePrintersBtn.disabled = false;
     savePrintersBtn.textContent = 'Salvar Alterações';
+  }
+});
+
+addCustomPrinterForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentUser) return;
+  
+  customPrinterSubmit.disabled = true;
+  customPrinterSubmit.textContent = 'A adicionar...';
+  
+  const name = document.getElementById('custom-printer-name').value;
+  const width = parseFloat(document.getElementById('custom-printer-x').value);
+  const depth = parseFloat(document.getElementById('custom-printer-y').value);
+  
+  try {
+    const { data, error } = await supabase.from('custom_build_plates').insert([{
+      user_id: currentUser.id,
+      name: name,
+      width: width,
+      depth: depth
+    }]).select().single();
+    
+    if (error) throw error;
+    
+    // Adicionar automaticamente aos selecionados
+    if (userProfile) {
+      if (!userProfile.selected_printers) userProfile.selected_printers = [];
+      userProfile.selected_printers.push(data.id);
+      
+      await supabase.from('profiles').update({ selected_printers: userProfile.selected_printers }).eq('id', currentUser.id);
+    }
+    
+    // Limpar form
+    addCustomPrinterForm.reset();
+    
+    // Recarregar UI
+    renderPrintersList();
+    window.dispatchEvent(new Event('auth-state-changed'));
+    
+  } catch (error) {
+    console.error(error);
+    alert('Erro ao adicionar impressora.');
+  } finally {
+    customPrinterSubmit.disabled = false;
+    customPrinterSubmit.textContent = 'Adicionar Impressora';
   }
 });
