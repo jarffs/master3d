@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CutterMaker3D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Top Navigation Bar -->
+      <nav class="topbar">
+        <div class="topbar-left">
+          <a href="./index.html" style="color: inherit; text-decoration: none; display: flex; align-items: center; cursor: pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <h1>CutterMaker3D</h1>
+          </a>
+        </div>
+        <div class="topbar-right">
+          <div id="auth-section" class="auth-section">
+            <button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">Entrar</button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main Content Area -->
+      <div class="content-wrapper">
+        <aside class="sidebar">
+          <div class="control-group">
+            <label for="svg-upload" class="upload-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Carregar Imagem ou SVG
+          </label>
+          <input type="file" id="svg-upload" accept=".svg, .png, .jpg, .jpeg" hidden />
+          <div id="file-name" class="file-name">Nenhum arquivo selecionado</div>
+          
+          <div class="image-warning">
+            <strong>Dica para Imagens:</strong> Envie imagens em preto e branco. A parte <strong>preta</strong> será a parte recortada (extrudida).
+          </div>
+        </div>
+
+        <div class="settings">
+          <h2>Configurações do Cortador</h2>
+          
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="height-slider">Altura do Cortador (Z)</label>
+              <span id="height-val">15 mm</span>
+            </div>
+            <input type="range" id="height-slider" min="5" max="30" value="15" step="1" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="wall-slider">Espessura da Parede de Corte</label>
+              <span id="wall-val">1.2 mm</span>
+            </div>
+            <input type="range" id="wall-slider" min="0.4" max="3" value="1.2" step="0.1" />
+          </div>
+          
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="base-width-slider">Largura da Borda (Estabilidade)</label>
+              <span id="base-width-val">4 mm</span>
+            </div>
+            <input type="range" id="base-width-slider" min="0" max="10" value="4" step="0.5" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="base-height-slider">Altura da Borda</label>
+              <span id="base-height-val">1.5 mm</span>
+            </div>
+            <input type="range" id="base-height-slider" min="0" max="5" value="1.5" step="0.1" />
+          </div>
+        </div>
+
+        <div class="settings">
+          <h2>Mesa de Impressão (Build Plate)</h2>
+          
+          <div class="input-group" style="margin-bottom: 12px;">
+            <label for="printer-profile">Impressora / Tamanho</label>
+            <select id="printer-profile" class="styled-select">
+            </select>
+          </div>
+          
+          <div class="build-plate-controls">
+            <div class="input-group">
+              <label for="bp-width">X (mm)</label>
+              <input type="number" id="bp-width" value="220" min="50" max="500" />
+            </div>
+            <div class="rotate-btn-container">
+              <button id="bp-rotate-btn" class="icon-btn" title="Rotacionar (Inverter X e Y)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-3.32 3.32"/></svg>
+              </button>
+            </div>
+            <div class="input-group">
+              <label for="bp-depth">Y (mm)</label>
+              <input type="number" id="bp-depth" value="220" min="50" max="500" />
+            </div>
+          </div>
+          
+          <div id="bp-warning" class="bp-warning hidden">
+            ⚠️ O modelo excede o tamanho da mesa!
+          </div>
+        </div>
+
+        <button id="download-btn" class="primary-btn" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Exportar STL
+        </button>
+      </aside>
+
+      <main class="viewer-container">
+        <div id="canvas-container"></div>
+      </main>
+      </div>
+    </div>
+    
+    <div id="auth-modal" class="modal hidden">
+      <div class="modal-content">
+        <button id="close-modal-btn" class="close-btn">&times;</button>
+        <h2 id="auth-title" style="margin-top: 0;">Entrar</h2>
+        <form id="auth-form">
+          <div class="input-group">
+            <label for="auth-email">E-mail</label>
+            <input type="email" id="auth-email" required />
+          </div>
+          <div class="input-group">
+            <label for="auth-password" style="display:flex; justify-content:space-between;">
+              Senha
+              <button type="button" id="forgot-password-btn" class="text-btn" style="background:none; border:none; color:var(--accent-color); font-size:12px; cursor:pointer; padding:0;">Esqueci a senha</button>
+            </label>
+            <input type="password" id="auth-password" required />
+          </div>
+          <p id="auth-error" class="error-msg hidden" style="color: #e11d48; font-size: 13px; margin: 0 0 10px 0;"></p>
+          <p id="auth-success" class="success-msg hidden" style="color: #10b981; font-size: 13px; margin: 0 0 10px 0;"></p>
+          <button type="submit" id="auth-submit-btn" class="primary-btn">Entrar</button>
+        </form>
+        <p class="auth-switch" style="font-size: 13px; text-align: center; margin-top: 16px;">
+          <span id="auth-switch-text">Não tem uma conta?</span>
+          <button id="auth-switch-action" type="button" class="text-btn" style="background:none; border:none; color:var(--accent-color); font-weight:600; cursor:pointer;">Cadastre-se</button>
+        </p>
+      </div>
+    </div>
+    
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="modal hidden">
+      <div class="modal-content" style="max-width: 500px;">
+        <button id="close-profile-btn" class="close-btn">&times;</button>
+        <h2 style="margin-top: 0; margin-bottom: 24px;">Meu Perfil</h2>
+        
+        <div class="profile-tabs">
+          <button class="tab-btn active" data-tab="avatar-tab">Avatar</button>
+          <button class="tab-btn" data-tab="printers-tab">Minhas Impressoras</button>
+        </div>
+
+        <div id="avatar-tab" class="tab-content active">
+          <div class="avatar-upload-container">
+            <div id="profile-avatar-preview" class="avatar-large">
+              <!-- Renderizado via JS -->
+            </div>
+            <label for="avatar-upload" class="secondary-btn" style="cursor: pointer; margin-top: 16px;">Alterar Foto</label>
+            <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/webp" hidden />
+          </div>
+        </div>
+
+        <div id="printers-tab" class="tab-content">
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Selecione as impressoras que deseja que apareçam na lista principal do gerador.</p>
+          <div id="printers-list" class="printers-list">
+            <!-- Renderizado via JS -->
+          </div>
+          <button id="save-printers-btn" class="primary-btn" style="margin-top: 16px;">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cropper Modal -->
+    <div id="cropper-modal" class="modal hidden" style="z-index: 1050;">
+      <div class="modal-content" style="max-width: 600px; display: flex; flex-direction: column; height: 80vh;">
+        <h2 style="margin-top: 0; margin-bottom: 16px;">Recortar Imagem</h2>
+        <div style="flex: 1; min-height: 0; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
+          <img id="cropper-image" src="" alt="Para recortar" style="max-width: 100%; display: block;">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: auto;">
+          <button id="cropper-cancel-btn" class="secondary-btn">Cancelar</button>
+          <button id="cropper-save-btn" class="primary-btn">Salvar Foto</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./auth.js"></script>
+    <script type="module" src="./profile.js"></script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
