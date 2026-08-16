@@ -63,7 +63,9 @@ export function openProfileModal() {
   profileEmail.value = currentUser.email;
   profileName.value = userProfile?.username || '';
   passwordMessage.style.display = 'none';
+  document.getElementById('profile-current-password').value = '';
   document.getElementById('profile-new-password').value = '';
+  document.getElementById('profile-confirm-password').value = '';
   
   // Render Printers List
   renderPrintersList();
@@ -201,7 +203,17 @@ changePasswordForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser) return;
   
+  const currentPassword = document.getElementById('profile-current-password').value;
   const newPassword = document.getElementById('profile-new-password').value;
+  const confirmPassword = document.getElementById('profile-confirm-password').value;
+  
+  if (newPassword !== confirmPassword) {
+    passwordMessage.textContent = 'A nova senha e a confirmação não coincidem.';
+    passwordMessage.style.color = '#ef4444';
+    passwordMessage.style.display = 'block';
+    return;
+  }
+  
   if (!newPassword || newPassword.length < 6) {
     passwordMessage.textContent = 'A senha deve ter pelo menos 6 caracteres.';
     passwordMessage.style.color = '#ef4444';
@@ -214,13 +226,26 @@ changePasswordForm?.addEventListener('submit', async (e) => {
   passwordMessage.style.display = 'none';
   
   try {
+    // 1. Verify current password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: currentUser.email,
+      password: currentPassword,
+    });
+    
+    if (signInError) {
+      throw new Error('A senha atual está incorreta.');
+    }
+  
+    // 2. Update to new password
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
     
     passwordMessage.textContent = 'Senha atualizada com sucesso!';
     passwordMessage.style.color = '#10b981'; // green
     passwordMessage.style.display = 'block';
+    document.getElementById('profile-current-password').value = '';
     document.getElementById('profile-new-password').value = '';
+    document.getElementById('profile-confirm-password').value = '';
   } catch (error) {
     console.error(error);
     passwordMessage.textContent = error.message || 'Erro ao atualizar senha.';
