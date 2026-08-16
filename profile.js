@@ -198,7 +198,7 @@ async function renderPrintersList() {
       }
       
       const text = document.createElement('span');
-      text.textContent = printer.name + (isCustom ? ' (Sua)' : '');
+      text.textContent = printer.name + (isCustom ? ` (${printer.width}x${printer.depth})` : '');
       
       leftDiv.appendChild(checkbox);
       leftDiv.appendChild(text);
