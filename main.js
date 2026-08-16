@@ -70,6 +70,9 @@ function initThree() {
     }
   });
   
+  // Ouve atualizações de perfil vindas do profile.js
+  window.addEventListener('auth-state-changed', loadPrinters);
+  
   animate();
 }
 
@@ -530,7 +533,53 @@ setupSlider(wallSlider, wallVal);
 setupSlider(baseWidthSlider, baseWidthVal);
 setupSlider(baseHeightSlider, baseHeightVal);
 
-downloadBtn.addEventListener('click', () => {
+downloadBtn.addEventListener('click', async () => {
+  if (!currentUser || !userProfile) {
+    alert("Por favor, faça login para exportar.");
+    return;
+  }
+  
+  // Verifica limites do plano Free
+  const planType = userProfile.plan_type || 'free';
+  if (planType === 'free') {
+     downloadBtn.disabled = true;
+     const originalText = downloadBtn.textContent;
+     downloadBtn.textContent = 'A verificar limites...';
+     
+     try {
+       const sevenDaysAgo = new Date();
+       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+       
+       const { data, error } = await supabase
+          .from('export_logs')
+          .select('id')
+          .gte('exported_at', sevenDaysAgo.toISOString())
+          .eq('user_id', currentUser.id);
+          
+       if (error) throw error;
+       
+       if (data && data.length >= 1) {
+         alert("Atenção: Atingiu o limite do plano Free (1 exportação por semana). Faça upgrade para o Pro para obter exportações ilimitadas e guardar os seus designs na nuvem!");
+         downloadBtn.disabled = false;
+         downloadBtn.textContent = originalText;
+         return;
+       }
+       
+       // Regista a exportação
+       await supabase.from('export_logs').insert([{ user_id: currentUser.id }]);
+       
+     } catch (err) {
+       console.error("Erro na verificação de limites:", err);
+       alert("Ocorreu um erro ao verificar o seu plano. Tente novamente.");
+       downloadBtn.disabled = false;
+       downloadBtn.textContent = originalText;
+       return;
+     }
+     
+     downloadBtn.disabled = false;
+     downloadBtn.textContent = originalText;
+  }
+  
   engine.exportSTL();
 });
 
