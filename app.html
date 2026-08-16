@@ -154,18 +154,52 @@
         <h2 style="margin-top: 0; margin-bottom: 24px;">Meu Perfil</h2>
         
         <div class="profile-tabs">
-          <button class="tab-btn active" data-tab="avatar-tab">Avatar</button>
+          <button class="tab-btn active" data-tab="avatar-tab">A minha Conta</button>
           <button class="tab-btn" data-tab="printers-tab">Minhas Impressoras</button>
         </div>
 
         <div id="avatar-tab" class="tab-content active">
-          <div class="avatar-upload-container">
+          <div class="avatar-upload-container" style="margin-bottom: 24px;">
             <div id="profile-avatar-preview" class="avatar-large">
               <!-- Renderizado via JS -->
             </div>
             <label for="avatar-upload" class="secondary-btn" style="cursor: pointer; margin-top: 16px;">Alterar Foto</label>
             <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/webp" hidden />
           </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+            <div class="input-group">
+              <label for="profile-email">E-mail</label>
+              <input type="email" id="profile-email" readonly style="background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px; border-radius: 6px; cursor: not-allowed;" />
+            </div>
+            <div class="input-group">
+              <label for="profile-name">Nome de Exibição</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="profile-name" placeholder="Como quer ser chamado?" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+                <button id="save-name-btn" class="secondary-btn">Salvar</button>
+              </div>
+            </div>
+          </div>
+
+          <hr style="border: 0; height: 1px; background: var(--border-color); margin-bottom: 16px;">
+
+          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;">Alterar Senha</h3>
+          <form id="change-password-form" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="input-group">
+              <label for="profile-current-password">Senha Atual</label>
+              <input type="password" id="profile-current-password" required placeholder="Digite a senha atual" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+            </div>
+            <div class="input-group">
+              <label for="profile-new-password">Nova Senha</label>
+              <input type="password" id="profile-new-password" required placeholder="Digite a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+            </div>
+            <div class="input-group">
+              <label for="profile-confirm-password">Confirmar Nova Senha</label>
+              <input type="password" id="profile-confirm-password" required placeholder="Repita a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+            </div>
+            <p id="password-message" style="font-size: 13px; margin: 0; display: none;"></p>
+            <button type="submit" id="change-password-btn" class="primary-btn" style="align-self: flex-start;">Atualizar Senha</button>
+          </form>
         </div>
 
         <div id="printers-tab" class="tab-content">

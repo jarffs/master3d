@@ -18,6 +18,14 @@ const cropperCancelBtn = document.getElementById('cropper-cancel-btn');
 const cropperSaveBtn = document.getElementById('cropper-save-btn');
 let cropper = null;
 
+// Account Info
+const profileEmail = document.getElementById('profile-email');
+const profileName = document.getElementById('profile-name');
+const saveNameBtn = document.getElementById('save-name-btn');
+const changePasswordForm = document.getElementById('change-password-form');
+const changePasswordBtn = document.getElementById('change-password-btn');
+const passwordMessage = document.getElementById('password-message');
+
 // Printers
 const printersList = document.getElementById('printers-list');
 const savePrintersBtn = document.getElementById('save-printers-btn');
@@ -50,6 +58,14 @@ export function openProfileModal() {
   } else {
     profileAvatarPreview.innerHTML = currentUser.email.charAt(0).toUpperCase();
   }
+  
+  // Render Account Info
+  profileEmail.value = currentUser.email;
+  profileName.value = userProfile?.username || '';
+  passwordMessage.style.display = 'none';
+  document.getElementById('profile-current-password').value = '';
+  document.getElementById('profile-new-password').value = '';
+  document.getElementById('profile-confirm-password').value = '';
   
   // Render Printers List
   renderPrintersList();
@@ -151,6 +167,93 @@ cropperSaveBtn.addEventListener('click', async () => {
   } finally {
     cropperSaveBtn.disabled = false;
     cropperSaveBtn.textContent = 'Salvar Foto';
+  }
+});
+
+// --- ACCOUNT INFO LOGIC ---
+saveNameBtn?.addEventListener('click', async () => {
+  if (!currentUser) return;
+  const newName = profileName.value.trim();
+  
+  saveNameBtn.disabled = true;
+  saveNameBtn.textContent = '...';
+  
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ username: newName })
+      .eq('id', currentUser.id);
+      
+    if (error) throw error;
+    
+    if (userProfile) {
+      userProfile.username = newName;
+    }
+    alert('Nome atualizado com sucesso!');
+  } catch (error) {
+    console.error(error);
+    alert('Erro ao atualizar nome.');
+  } finally {
+    saveNameBtn.disabled = false;
+    saveNameBtn.textContent = 'Salvar';
+  }
+});
+
+changePasswordForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentUser) return;
+  
+  const currentPassword = document.getElementById('profile-current-password').value;
+  const newPassword = document.getElementById('profile-new-password').value;
+  const confirmPassword = document.getElementById('profile-confirm-password').value;
+  
+  if (newPassword !== confirmPassword) {
+    passwordMessage.textContent = 'A nova senha e a confirmação não coincidem.';
+    passwordMessage.style.color = '#ef4444';
+    passwordMessage.style.display = 'block';
+    return;
+  }
+  
+  if (!newPassword || newPassword.length < 6) {
+    passwordMessage.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+    passwordMessage.style.color = '#ef4444';
+    passwordMessage.style.display = 'block';
+    return;
+  }
+  
+  changePasswordBtn.disabled = true;
+  changePasswordBtn.textContent = 'A atualizar...';
+  passwordMessage.style.display = 'none';
+  
+  try {
+    // 1. Verify current password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: currentUser.email,
+      password: currentPassword,
+    });
+    
+    if (signInError) {
+      throw new Error('A senha atual está incorreta.');
+    }
+  
+    // 2. Update to new password
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    
+    passwordMessage.textContent = 'Senha atualizada com sucesso!';
+    passwordMessage.style.color = '#10b981'; // green
+    passwordMessage.style.display = 'block';
+    document.getElementById('profile-current-password').value = '';
+    document.getElementById('profile-new-password').value = '';
+    document.getElementById('profile-confirm-password').value = '';
+  } catch (error) {
+    console.error(error);
+    passwordMessage.textContent = error.message || 'Erro ao atualizar senha.';
+    passwordMessage.style.color = '#ef4444';
+    passwordMessage.style.display = 'block';
+  } finally {
+    changePasswordBtn.disabled = false;
+    changePasswordBtn.textContent = 'Atualizar Senha';
   }
 });
 
