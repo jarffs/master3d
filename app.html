@@ -19,9 +19,13 @@
             <h1>CutterMaker3D</h1>
           </a>
         </div>
-        <div class="topbar-right">
+        <div class="topbar-right" style="display: flex; gap: 16px; align-items: center;">
+          <select class="language-selector" style="background: var(--bg-color); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 5px;">
+            <option value="en">EN</option>
+            <option value="pt">PT</option>
+          </select>
           <div id="auth-section" class="auth-section">
-            <button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">Entrar</button>
+            <button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;" data-i18n="nav.login">Entrar</button>
           </div>
         </div>
       </nav>
@@ -32,22 +36,19 @@
           <div class="control-group">
             <label for="svg-upload" class="upload-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            Carregar Imagem ou SVG
+            <span data-i18n="app.upload_image">Carregar Imagem ou SVG</span>
           </label>
           <input type="file" id="svg-upload" accept=".svg, .png, .jpg, .jpeg" hidden />
           <div id="file-name" class="file-name">Nenhum arquivo selecionado</div>
-          
-          <div class="image-warning">
-            <strong>Dica para Imagens:</strong> Envie imagens em preto e branco. A parte <strong>preta</strong> será a parte recortada (extrudida).
-          </div>
         </div>
 
         <div class="settings">
-          <h2>Configurações do Cortador</h2>
+          <h2 data-i18n="app.settings">Configurações do Cortador</h2>
           
           <div class="slider-group">
             <div class="slider-header">
-              <label for="height-slider">Altura do Cortador (Z)</label>
+            <div class="slider-header">
+              <label for="height-slider" data-i18n="app.height">Altura do Cortador (Z)</label>
               <span id="height-val">15 mm</span>
             </div>
             <input type="range" id="height-slider" min="5" max="30" value="15" step="1" />
@@ -55,7 +56,7 @@
 
           <div class="slider-group">
             <div class="slider-header">
-              <label for="wall-slider">Espessura da Parede de Corte</label>
+              <label for="wall-slider" data-i18n="app.thickness">Espessura da Parede de Corte</label>
               <span id="wall-val">1.2 mm</span>
             </div>
             <input type="range" id="wall-slider" min="0.4" max="3" value="1.2" step="0.1" />
@@ -63,7 +64,7 @@
           
           <div class="slider-group">
             <div class="slider-header">
-              <label for="base-width-slider">Largura da Borda (Estabilidade)</label>
+              <label for="base-width-slider" data-i18n="app.base">Largura da Borda (Estabilidade)</label>
               <span id="base-width-val">4 mm</span>
             </div>
             <input type="range" id="base-width-slider" min="0" max="10" value="4" step="0.5" />
@@ -79,10 +80,10 @@
         </div>
 
         <div class="settings">
-          <h2>Mesa de Impressão (Build Plate)</h2>
+          <h2 data-i18n="app.build_plate">Mesa de Impressão (Build Plate)</h2>
           
           <div class="input-group" style="margin-bottom: 12px;">
-            <label for="printer-profile">Impressora / Tamanho</label>
+            <label for="printer-profile" data-i18n="app.printer_size">Impressora / Tamanho</label>
             <select id="printer-profile" class="styled-select">
             </select>
           </div>
@@ -103,14 +104,14 @@
             </div>
           </div>
           
-          <div id="bp-warning" class="bp-warning hidden">
+          <div id="bp-warning" class="bp-warning hidden" data-i18n="app.warning_size">
             ⚠️ O modelo excede o tamanho da mesa!
           </div>
         </div>
 
         <button id="download-btn" class="primary-btn" disabled>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Exportar STL
+          <span data-i18n="app.export">Exportar STL</span>
         </button>
       </aside>
 
@@ -118,44 +119,42 @@
         <div id="canvas-container"></div>
       </main>
       </div>
-    </div>
-    
-    <div id="auth-modal" class="modal hidden">
+    </div>    <div id="auth-modal" class="modal hidden">
       <div class="modal-content">
         <button id="close-modal-btn" class="close-btn">&times;</button>
-        <h2 id="auth-title" style="margin-top: 0;">Entrar</h2>
+        <h2 id="auth-title" style="margin-top: 0;" data-i18n="auth.login_title">Entrar</h2>
         <form id="auth-form">
           <div class="input-group">
-            <label for="auth-email">E-mail</label>
+            <label for="auth-email" data-i18n="auth.email">E-mail</label>
             <input type="email" id="auth-email" required />
           </div>
           <div class="input-group">
             <label for="auth-password" style="display:flex; justify-content:space-between;">
-              Senha
-              <button type="button" id="forgot-password-btn" class="text-btn" style="background:none; border:none; color:var(--accent-color); font-size:12px; cursor:pointer; padding:0;">Esqueci a senha</button>
+              <span data-i18n="auth.password">Senha</span>
+              <button type="button" id="forgot-password-btn" class="text-btn" style="background:none; border:none; color:var(--accent-color); font-size:12px; cursor:pointer; padding:0;" data-i18n="auth.forgot_password">Esqueci a senha</button>
             </label>
             <input type="password" id="auth-password" required />
           </div>
           <p id="auth-error" class="error-msg hidden" style="color: #e11d48; font-size: 13px; margin: 0 0 10px 0;"></p>
           <p id="auth-success" class="success-msg hidden" style="color: #10b981; font-size: 13px; margin: 0 0 10px 0;"></p>
-          <button type="submit" id="auth-submit-btn" class="primary-btn">Entrar</button>
+          <button type="submit" id="auth-submit-btn" class="primary-btn" data-i18n="auth.login_btn">Entrar</button>
         </form>
         <p class="auth-switch" style="font-size: 13px; text-align: center; margin-top: 16px;">
-          <span id="auth-switch-text">Não tem uma conta?</span>
-          <button id="auth-switch-action" type="button" class="text-btn" style="background:none; border:none; color:var(--accent-color); font-weight:600; cursor:pointer;">Cadastre-se</button>
+          <span id="auth-switch-text" data-i18n="auth.no_account">Não tem uma conta?</span>
+          <button id="auth-switch-action" type="button" class="text-btn" style="background:none; border:none; color:var(--accent-color); font-weight:600; cursor:pointer;" data-i18n="auth.register">Cadastre-se</button>
         </p>
       </div>
-    </div>
+    </div>  </div>
     
     <!-- Profile Modal -->
     <div id="profile-modal" class="modal hidden">
       <div class="modal-content" style="max-width: 500px;">
         <button id="close-profile-btn" class="close-btn">&times;</button>
-        <h2 style="margin-top: 0; margin-bottom: 24px;">Meu Perfil</h2>
+        <h2 style="margin-top: 0; margin-bottom: 24px;" data-i18n="profile.title">Meu Perfil</h2>
         
         <div class="profile-tabs">
-          <button class="tab-btn active" data-tab="avatar-tab">A minha Conta</button>
-          <button class="tab-btn" data-tab="printers-tab">Minhas Impressoras</button>
+          <button class="tab-btn active" data-tab="avatar-tab" data-i18n="profile.tab_account">A minha Conta</button>
+          <button class="tab-btn" data-tab="printers-tab" data-i18n="profile.tab_printers">Minhas Impressoras</button>
         </div>
 
         <div id="avatar-tab" class="tab-content active">
@@ -163,75 +162,75 @@
             <div id="profile-avatar-preview" class="avatar-large">
               <!-- Renderizado via JS -->
             </div>
-            <label for="avatar-upload" class="secondary-btn" style="cursor: pointer; margin-top: 16px;">Alterar Foto</label>
+            <label for="avatar-upload" class="secondary-btn" style="cursor: pointer; margin-top: 16px;" data-i18n="profile.change_photo">Alterar Foto</label>
             <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/webp" hidden />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
             <div class="input-group">
-              <label for="profile-email">E-mail</label>
+              <label for="profile-email" data-i18n="profile.email">E-mail</label>
               <input type="email" id="profile-email" readonly style="background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px; border-radius: 6px; cursor: not-allowed;" />
             </div>
             <div class="input-group">
-              <label for="profile-name">Nome de Exibição</label>
+              <label for="profile-name" data-i18n="profile.display_name">Nome de Exibição</label>
               <div style="display: flex; gap: 8px;">
-                <input type="text" id="profile-name" placeholder="Como quer ser chamado?" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
-                <button id="save-name-btn" class="secondary-btn">Salvar</button>
+                <input type="text" id="profile-name" data-i18n="profile.display_name_placeholder" placeholder="Como quer ser chamado?" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+                <button id="save-name-btn" class="secondary-btn" data-i18n="profile.save">Salvar</button>
               </div>
             </div>
           </div>
 
           <hr style="border: 0; height: 1px; background: var(--border-color); margin-bottom: 16px;">
 
-          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;">Alterar Senha</h3>
+          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;" data-i18n="profile.change_password">Alterar Senha</h3>
           <form id="change-password-form" style="display: flex; flex-direction: column; gap: 12px;">
             <div class="input-group">
-              <label for="profile-current-password">Senha Atual</label>
-              <input type="password" id="profile-current-password" required placeholder="Digite a senha atual" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+              <label for="profile-current-password" data-i18n="profile.current_password">Senha Atual</label>
+              <input type="password" id="profile-current-password" required data-i18n="profile.current_password" placeholder="Digite a senha atual" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
             </div>
             <div class="input-group">
-              <label for="profile-new-password">Nova Senha</label>
-              <input type="password" id="profile-new-password" required placeholder="Digite a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+              <label for="profile-new-password" data-i18n="profile.new_password">Nova Senha</label>
+              <input type="password" id="profile-new-password" required data-i18n="profile.new_password" placeholder="Digite a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
             </div>
             <div class="input-group">
-              <label for="profile-confirm-password">Confirmar Nova Senha</label>
-              <input type="password" id="profile-confirm-password" required placeholder="Repita a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+              <label for="profile-confirm-password" data-i18n="profile.confirm_password">Confirmar Nova Senha</label>
+              <input type="password" id="profile-confirm-password" required data-i18n="profile.confirm_password" placeholder="Repita a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
             </div>
             <p id="password-message" style="font-size: 13px; margin: 0; display: none;"></p>
-            <button type="submit" id="change-password-btn" class="primary-btn" style="align-self: flex-start;">Atualizar Senha</button>
+            <button type="submit" id="change-password-btn" class="primary-btn" style="align-self: flex-start;" data-i18n="profile.update_password">Atualizar Senha</button>
           </form>
         </div>
 
         <div id="printers-tab" class="tab-content">
-          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Selecione as impressoras que deseja que apareçam na lista principal do gerador.</p>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;" data-i18n="profile.printers_desc">Selecione as impressoras que deseja que apareçam na lista principal do gerador.</p>
           
-          <input type="text" id="printer-search" placeholder="Buscar impressora..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 12px; font-family: inherit; font-size: 14px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box;">
+          <input type="text" id="printer-search" data-i18n="profile.search_printer" placeholder="Buscar impressora..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 12px; font-family: inherit; font-size: 14px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box;">
           
           <div id="printers-list" class="printers-list" style="margin-bottom: 16px;">
             <!-- Renderizado via JS -->
           </div>
           
-          <button id="save-printers-btn" class="primary-btn" style="width: 100%; margin-bottom: 24px;">Salvar Alterações</button>
+          <button id="save-printers-btn" class="primary-btn" style="width: 100%; margin-bottom: 24px;" data-i18n="profile.save_changes">Salvar Alterações</button>
 
           <hr style="border: 0; height: 1px; background: var(--border-color); margin-bottom: 16px;">
           
-          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;">Adicionar Impressora Customizada</h3>
+          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;" data-i18n="profile.add_custom">Adicionar Impressora Customizada</h3>
           <form id="add-custom-printer-form" style="display: flex; flex-direction: column; gap: 12px;">
             <div class="input-group">
-              <label for="custom-printer-name">Nome</label>
+              <label for="custom-printer-name" data-i18n="profile.printer_name">Nome</label>
               <input type="text" id="custom-printer-name" required placeholder="Ex: Minha Voron 2.4" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
             </div>
             <div style="display: flex; gap: 12px;">
               <div class="input-group" style="flex: 1;">
-                <label for="custom-printer-x">X (mm)</label>
+                <label for="custom-printer-x" data-i18n="profile.printer_x">X (mm)</label>
                 <input type="number" id="custom-printer-x" required min="50" max="1000" placeholder="300" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
               </div>
               <div class="input-group" style="flex: 1;">
-                <label for="custom-printer-y">Y (mm)</label>
+                <label for="custom-printer-y" data-i18n="profile.printer_y">Y (mm)</label>
                 <input type="number" id="custom-printer-y" required min="50" max="1000" placeholder="300" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
               </div>
             </div>
-            <button type="submit" id="custom-printer-submit" class="secondary-btn">Adicionar Impressora</button>
+            <button type="submit" id="custom-printer-submit" class="secondary-btn" data-i18n="profile.add_printer">Adicionar Impressora</button>
           </form>
         </div>
       </div>
@@ -251,6 +250,7 @@
       </div>
     </div>
 
+    <script type="module" src="./i18n.js"></script>
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./profile.js"></script>
     <script type="module" src="./main.js"></script>

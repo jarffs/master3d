@@ -4,6 +4,7 @@ import { CookieCutterEngine } from './CookieCutterEngine.js';
 import ImageTracer from 'imagetracerjs';
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange } from './auth.js';
+import { t } from './i18n.js';
 
 let scene, camera, renderer, controls;
 let engine;
@@ -65,7 +66,7 @@ function initThree() {
         downloadBtn.title = '';
       } else {
         downloadBtn.disabled = true;
-        downloadBtn.title = 'Faça login para exportar o STL';
+        downloadBtn.title = t('js.login_to_export');
       }
     }
   });
@@ -409,7 +410,7 @@ function updateModel() {
       downloadBtn.title = '';
     } else {
       downloadBtn.disabled = true;
-      downloadBtn.title = 'Faça login para exportar o STL';
+      downloadBtn.title = t('js.login_to_export');
     }
     checkBuildPlateLimits();
   }
@@ -541,7 +542,7 @@ setupSlider(baseHeightSlider, baseHeightVal);
 
 downloadBtn.addEventListener('click', async () => {
   if (!currentUser || !userProfile) {
-    alert("Por favor, faça login para exportar.");
+    alert(t('js.login_to_export'));
     return;
   }
   
@@ -549,8 +550,8 @@ downloadBtn.addEventListener('click', async () => {
   const planType = userProfile.plan_type || 'free';
   if (planType === 'free') {
      downloadBtn.disabled = true;
-     const originalText = downloadBtn.textContent;
-     downloadBtn.textContent = 'A verificar limites...';
+     const originalText = downloadBtn.innerHTML;
+     downloadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span>...</span>`;
      
      try {
        const sevenDaysAgo = new Date();
@@ -565,9 +566,9 @@ downloadBtn.addEventListener('click', async () => {
        if (error) throw error;
        
        if (data && data.length >= 1) {
-         alert("Atenção: Atingiu o limite do plano Free (1 exportação por semana). Faça upgrade para o Pro para obter exportações ilimitadas e guardar os seus designs na nuvem!");
+         alert(t('js.free_limit_reached'));
          downloadBtn.disabled = false;
-         downloadBtn.textContent = originalText;
+         downloadBtn.innerHTML = originalText;
          return;
        }
        
@@ -578,12 +579,12 @@ downloadBtn.addEventListener('click', async () => {
        console.error("Erro na verificação de limites:", err);
        alert("Ocorreu um erro ao verificar o seu plano. Tente novamente.");
        downloadBtn.disabled = false;
-       downloadBtn.textContent = originalText;
+       downloadBtn.innerHTML = originalText;
        return;
      }
      
      downloadBtn.disabled = false;
-     downloadBtn.textContent = originalText;
+     downloadBtn.innerHTML = originalText;
   }
   
   engine.exportSTL();

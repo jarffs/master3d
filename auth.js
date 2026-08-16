@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { t } from './i18n.js';
 
 const loginBtn = document.getElementById('login-btn');
 const authSection = document.getElementById('auth-section');
@@ -40,8 +41,8 @@ async function initAuth() {
     if (event === 'PASSWORD_RECOVERY') {
       isRecoveryMode = true;
       authModal.classList.remove('hidden');
-      authTitle.textContent = 'Redefinir Senha';
-      authSubmitBtn.textContent = 'Salvar Nova Senha';
+      authTitle.textContent = t('auth.reset_title');
+      authSubmitBtn.textContent = t('auth.reset_btn');
       document.getElementById('auth-email').parentElement.classList.add('hidden');
       forgotPasswordBtn.classList.add('hidden');
       authSwitchText.parentElement.classList.add('hidden');
@@ -80,8 +81,8 @@ function updateAuthUI() {
 
     authSection.innerHTML = `
       <div style="display: flex; align-items: center; gap: 12px;">
-        <button id="logout-btn" class="text-btn" style="font-size: 13px; color: var(--text-secondary); background: none; border: none; cursor: pointer;">Sair</button>
-        <div id="topbar-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--text-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; cursor: pointer;" title="Meu Perfil">
+        <button id="logout-btn" class="text-btn" style="font-size: 13px; color: var(--text-secondary); background: none; border: none; cursor: pointer;">${t('nav.logout')}</button>
+        <div id="topbar-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--text-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; cursor: pointer;" title="${t('profile.title')}">
           ${avatarContent}
         </div>
       </div>
@@ -96,7 +97,7 @@ function updateAuthUI() {
       openProfileModal();
     });
   } else {
-    authSection.innerHTML = `<button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">Entrar</button>`;
+    authSection.innerHTML = `<button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">${t('nav.login')}</button>`;
     document.getElementById('login-btn')?.addEventListener('click', () => {
       authModal.classList.remove('hidden');
     });
@@ -116,15 +117,15 @@ authSwitchAction?.addEventListener('click', () => {
   isLoginMode = !isLoginMode;
   authError.classList.add('hidden');
   if (isLoginMode) {
-    authTitle.textContent = 'Entrar';
-    authSubmitBtn.textContent = 'Entrar';
-    authSwitchText.textContent = 'Não tem uma conta?';
-    authSwitchAction.textContent = 'Cadastre-se';
+    authTitle.textContent = t('auth.login_title');
+    authSubmitBtn.textContent = t('auth.login_btn');
+    authSwitchText.textContent = t('auth.no_account');
+    authSwitchAction.textContent = t('auth.register');
   } else {
-    authTitle.textContent = 'Criar Conta';
-    authSubmitBtn.textContent = 'Cadastrar';
-    authSwitchText.textContent = 'Já tem uma conta?';
-    authSwitchAction.textContent = 'Entre aqui';
+    authTitle.textContent = t('auth.register_title');
+    authSubmitBtn.textContent = t('auth.register_btn');
+    authSwitchText.textContent = t('auth.has_account');
+    authSwitchAction.textContent = t('auth.login');
   }
 });
 
@@ -134,13 +135,13 @@ forgotPasswordBtn?.addEventListener('click', async () => {
   authSuccess.classList.add('hidden');
   
   if (!email) {
-    authError.textContent = 'Por favor, insira o seu e-mail acima para recuperar a senha.';
+    authError.textContent = t('auth.reset_desc');
     authError.classList.remove('hidden');
     return;
   }
   
   authSubmitBtn.disabled = true;
-  forgotPasswordBtn.textContent = 'Enviando...';
+  forgotPasswordBtn.textContent = '...';
   
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -148,14 +149,14 @@ forgotPasswordBtn?.addEventListener('click', async () => {
     });
     if (error) throw error;
     
-    authSuccess.textContent = 'E-mail de recuperação enviado! Verifique a sua caixa de entrada.';
+    authSuccess.textContent = t('js.reset_email_sent');
     authSuccess.classList.remove('hidden');
   } catch (err) {
-    authError.textContent = err.message || 'Erro ao enviar e-mail de recuperação.';
+    authError.textContent = err.message || t('js.error_reset');
     authError.classList.remove('hidden');
   } finally {
     authSubmitBtn.disabled = false;
-    forgotPasswordBtn.textContent = 'Esqueci a senha';
+    forgotPasswordBtn.textContent = t('auth.forgot_password');
   }
 });
 
@@ -168,21 +169,20 @@ authForm?.addEventListener('submit', async (e) => {
   const password = document.getElementById('auth-password').value;
   
   authSubmitBtn.disabled = true;
-  authSubmitBtn.textContent = 'Aguarde...';
+  authSubmitBtn.textContent = '...';
   
   try {
     if (isRecoveryMode) {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      alert('Senha atualizada com sucesso!');
+      alert(t('js.password_updated'));
       authModal.classList.add('hidden');
       isRecoveryMode = false;
-      // Restaurar UI padrão do modal
       document.getElementById('auth-email').parentElement.classList.remove('hidden');
       forgotPasswordBtn.classList.remove('hidden');
       authSwitchText.parentElement.classList.remove('hidden');
-      authTitle.textContent = 'Entrar';
-      authSubmitBtn.textContent = 'Entrar';
+      authTitle.textContent = t('auth.login_title');
+      authSubmitBtn.textContent = t('auth.login_btn');
     } else if (isLoginMode) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -190,19 +190,19 @@ authForm?.addEventListener('submit', async (e) => {
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
-      alert('Cadastro realizado! Se o e-mail de confirmação estiver ativado no Supabase, verifique sua caixa de entrada.');
+      alert(t('js.check_email'));
       authModal.classList.add('hidden');
     }
   } catch (err) {
-    authError.textContent = err.message || 'Ocorreu um erro.';
+    authError.textContent = err.message || t('js.error_login');
     authError.classList.remove('hidden');
   } finally {
     if (!isRecoveryMode) {
       authSubmitBtn.disabled = false;
-      authSubmitBtn.textContent = isLoginMode ? 'Entrar' : 'Cadastrar';
+      authSubmitBtn.textContent = isLoginMode ? t('auth.login_btn') : t('auth.register_btn');
     } else {
       authSubmitBtn.disabled = false;
-      authSubmitBtn.textContent = 'Salvar Nova Senha';
+      authSubmitBtn.textContent = t('auth.reset_btn');
     }
   }
 });
