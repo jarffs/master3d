@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile } from './auth.js';
+import { t } from './i18n.js';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
 
@@ -115,7 +116,7 @@ cropperSaveBtn.addEventListener('click', async () => {
   if (!cropper) return;
   
   cropperSaveBtn.disabled = true;
-  cropperSaveBtn.textContent = 'Salvando...';
+  cropperSaveBtn.textContent = t('js.saving');
   
   try {
     const canvas = cropper.getCroppedCanvas({
@@ -163,10 +164,10 @@ cropperSaveBtn.addEventListener('click', async () => {
     
   } catch (err) {
     console.error(err);
-    alert('Erro ao salvar avatar.');
+    alert(t('js.error_avatar'));
   } finally {
     cropperSaveBtn.disabled = false;
-    cropperSaveBtn.textContent = 'Salvar Foto';
+    cropperSaveBtn.textContent = t('profile.save_photo');
   }
 });
 
@@ -189,13 +190,13 @@ saveNameBtn?.addEventListener('click', async () => {
     if (userProfile) {
       userProfile.username = newName;
     }
-    alert('Nome atualizado com sucesso!');
+    alert(t('js.name_updated'));
   } catch (error) {
     console.error(error);
-    alert('Erro ao atualizar nome.');
+    alert(t('js.error_name'));
   } finally {
     saveNameBtn.disabled = false;
-    saveNameBtn.textContent = 'Salvar';
+    saveNameBtn.textContent = t('profile.save');
   }
 });
 
@@ -208,21 +209,21 @@ changePasswordForm?.addEventListener('submit', async (e) => {
   const confirmPassword = document.getElementById('profile-confirm-password').value;
   
   if (newPassword !== confirmPassword) {
-    passwordMessage.textContent = 'A nova senha e a confirmação não coincidem.';
+    passwordMessage.textContent = t('js.password_mismatch');
     passwordMessage.style.color = '#ef4444';
     passwordMessage.style.display = 'block';
     return;
   }
   
   if (!newPassword || newPassword.length < 6) {
-    passwordMessage.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+    passwordMessage.textContent = t('js.password_short');
     passwordMessage.style.color = '#ef4444';
     passwordMessage.style.display = 'block';
     return;
   }
   
   changePasswordBtn.disabled = true;
-  changePasswordBtn.textContent = 'A atualizar...';
+  changePasswordBtn.textContent = '...';
   passwordMessage.style.display = 'none';
   
   try {
@@ -233,14 +234,14 @@ changePasswordForm?.addEventListener('submit', async (e) => {
     });
     
     if (signInError) {
-      throw new Error('A senha atual está incorreta.');
+      throw new Error(t('js.wrong_password'));
     }
   
     // 2. Update to new password
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
     
-    passwordMessage.textContent = 'Senha atualizada com sucesso!';
+    passwordMessage.textContent = t('js.password_updated');
     passwordMessage.style.color = '#10b981'; // green
     passwordMessage.style.display = 'block';
     document.getElementById('profile-current-password').value = '';
@@ -248,18 +249,18 @@ changePasswordForm?.addEventListener('submit', async (e) => {
     document.getElementById('profile-confirm-password').value = '';
   } catch (error) {
     console.error(error);
-    passwordMessage.textContent = error.message || 'Erro ao atualizar senha.';
+    passwordMessage.textContent = error.message || t('js.error_password');
     passwordMessage.style.color = '#ef4444';
     passwordMessage.style.display = 'block';
   } finally {
     changePasswordBtn.disabled = false;
-    changePasswordBtn.textContent = 'Atualizar Senha';
+    changePasswordBtn.textContent = t('profile.update_password');
   }
 });
 
 // --- PRINTERS LOGIC ---
 async function renderPrintersList() {
-  printersList.innerHTML = '<p>Carregando...</p>';
+  printersList.innerHTML = `<p>${t('js.loading')}</p>`;
   try {
     const { data: defaultPlates, error: err1 } = await supabase.from('default_build_plates').select('*').order('brand', { ascending: true });
     if (err1) throw err1;
@@ -317,13 +318,13 @@ async function renderPrintersList() {
         delBtn.style.color = '#ef4444'; // vermelho
         delBtn.style.fontSize = '18px';
         delBtn.style.cursor = 'pointer';
-        delBtn.title = 'Apagar impressora';
+        delBtn.title = t('profile.delete_printer');
         
         delBtn.addEventListener('click', async (e) => {
           e.preventDefault();
           e.stopPropagation(); // Evita que clique no label marque o checkbox
           
-          if (confirm(`Tem a certeza que deseja apagar a impressora "${printer.name}"?`)) {
+          if (confirm(t('js.delete_printer_confirm', { name: printer.name }))) {
             try {
               const { error } = await supabase.from('custom_build_plates').delete().eq('id', printer.id);
               if (error) throw error;
@@ -337,7 +338,7 @@ async function renderPrintersList() {
               renderPrintersList();
               window.dispatchEvent(new Event('auth-state-changed'));
             } catch (error) {
-              alert('Erro ao apagar impressora.');
+              alert(t('js.error_delete_printer'));
             }
           }
         });
@@ -354,7 +355,7 @@ async function renderPrintersList() {
     }
     
   } catch (err) {
-    printersList.innerHTML = '<p style="color:red">Erro ao carregar impressoras.</p>';
+    printersList.innerHTML = `<p style="color:red">${t('js.error_load_printers')}</p>`;
   }
 }
 
@@ -375,7 +376,7 @@ savePrintersBtn?.addEventListener('click', async () => {
   if (!currentUser) return;
   
   savePrintersBtn.disabled = true;
-  savePrintersBtn.textContent = 'Salvando...';
+  savePrintersBtn.textContent = t('js.saving');
   
   try {
     const checkboxes = printersList.querySelectorAll('input[type="checkbox"]');
@@ -395,16 +396,16 @@ savePrintersBtn?.addEventListener('click', async () => {
       userProfile.selected_printers = selectedIds;
     }
     
-    alert('Preferências salvas com sucesso!');
+    alert(t('js.preferences_saved'));
     // Trigger main.js to reload printers
     window.dispatchEvent(new Event('auth-state-changed')); // We need a way to reload printers in main.js
     
   } catch (err) {
     console.error(err);
-    alert('Erro ao salvar impressoras.');
+    alert(t('js.error_save_printers'));
   } finally {
     savePrintersBtn.disabled = false;
-    savePrintersBtn.textContent = 'Salvar Alterações';
+    savePrintersBtn.textContent = t('profile.save_changes');
   }
 });
 
@@ -413,7 +414,7 @@ addCustomPrinterForm?.addEventListener('submit', async (e) => {
   if (!currentUser) return;
   
   customPrinterSubmit.disabled = true;
-  customPrinterSubmit.textContent = 'A adicionar...';
+  customPrinterSubmit.textContent = t('js.adding');
   
   const name = document.getElementById('custom-printer-name').value;
   const width = parseFloat(document.getElementById('custom-printer-x').value);
@@ -446,9 +447,9 @@ addCustomPrinterForm?.addEventListener('submit', async (e) => {
     
   } catch (error) {
     console.error(error);
-    alert('Erro ao adicionar impressora.');
+    alert(t('js.error_add_printer'));
   } finally {
     customPrinterSubmit.disabled = false;
-    customPrinterSubmit.textContent = 'Adicionar Impressora';
+    customPrinterSubmit.textContent = t('profile.add_printer');
   }
 });

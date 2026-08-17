@@ -187,89 +187,92 @@
 <body>
 
   <header>
-    <div class="logo">Master3D</div>
-    <div>
-      <a href="./app.html" class="cta-btn" style="padding: 10px 20px; font-size: 14px;">Entrar no App</a>
+    <div class="logo">CutterMaker3D</div>
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <select class="language-selector" style="background: var(--panel-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 5px;">
+        <option value="en">EN</option>
+        <option value="pt">PT</option>
+      </select>
+      <a href="./app.html" class="cta-btn" style="padding: 10px 20px; font-size: 14px;" data-i18n="nav.go_to_app">Entrar no App</a>
     </div>
   </header>
 
   <section class="hero">
-    <h1>Transforme Imagens em Cortadores de Biscoito 3D</h1>
-    <p>Faça upload de qualquer imagem e gere automaticamente um modelo 3D (STL) pronto para imprimir na sua impressora 3D em segundos. Sem necessidade de software CAD complexo.</p>
-    <a href="./app.html" class="cta-btn">Começar a Criar Grátis</a>
+    <h1 data-i18n="hero.title">Transforme Imagens em Cortadores de Biscoito 3D</h1>
+    <p data-i18n="hero.subtitle">Faça upload de qualquer imagem e gere automaticamente um modelo 3D...</p>
+    <a href="./app.html" class="cta-btn" data-i18n="hero.cta">Começar a Criar Grátis</a>
   </section>
 
   <section class="features">
     <div class="feature-card">
-      <h3>1. Upload Fácil</h3>
-      <p>Envie imagens PNG, JPG ou ficheiros SVG diretamente para o navegador. O nosso algoritmo faz o resto.</p>
+      <h3 data-i18n="features.f1_title">1. Upload Fácil</h3>
+      <p data-i18n="features.f1_desc">Envie imagens PNG, JPG ou ficheiros SVG diretamente...</p>
     </div>
     <div class="feature-card">
-      <h3>2. Geração Instantânea</h3>
-      <p>Visualize o seu cortador de biscoito em 3D no próprio navegador com controles paramétricos de espessura e altura.</p>
+      <h3 data-i18n="features.f2_title">2. Geração Instantânea</h3>
+      <p data-i18n="features.f2_desc">Visualize o seu cortador de biscoito em 3D...</p>
     </div>
     <div class="feature-card">
-      <h3>3. Exportação para STL</h3>
-      <p>Faça o download do modelo otimizado para fatiadores como Cura ou PrusaSlicer e imprima imediatamente.</p>
+      <h3 data-i18n="features.f3_title">3. Exportação para STL</h3>
+      <p data-i18n="features.f3_desc">Faça o download do modelo otimizado...</p>
     </div>
   </section>
 
   <section class="pricing">
-    <h2>Planos e Preços</h2>
-    <p style="color: var(--text-secondary); margin-bottom: 40px;">Escolha o plano ideal para a sua produção.</p>
+    <h2 data-i18n="pricing.title">Planos e Preços</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 40px;" data-i18n="hero.subtitle">Escolha o plano ideal para a sua produção.</p>
     
     <div class="pricing-cards">
       <div class="price-card">
-        <h3>Free</h3>
-        <div class="price">€0<span>/mês</span></div>
+        <h3 data-i18n="pricing.free_title">Free</h3>
+        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.free_price">€0</span><span data-i18n="pricing.free_price_desc">/mês</span></div>
         <ul>
-          <li>Gerador 3D Ilimitado</li>
-          <li>Suporte a SVG e Imagens</li>
-          <li>1 Exportação STL por semana</li>
-          <li>Mesas de impressão padrão</li>
+          <li data-i18n="pricing.free_f1">Gerador 3D Ilimitado</li>
+          <li data-i18n="pricing.free_f2">1 Exportação STL por semana</li>
+          <li data-i18n="pricing.free_f3">Mesas de impressão padrão</li>
         </ul>
-        <a href="./app.html" class="price-btn">Começar Grátis</a>
+        <a href="./app.html" class="price-btn" data-i18n="pricing.free_btn">Começar Grátis</a>
       </div>
       
       <div class="price-card pro">
-        <h3>Mensal</h3>
-        <div class="price">€9<span>/mês</span></div>
+        <h3 data-i18n="pricing.monthly_title">Mensal</h3>
+        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.monthly_price">€9</span><span data-i18n="pricing.monthly_price_desc">/mês</span></div>
         <ul>
-          <li>Gerador 3D Ilimitado</li>
-          <li>Exportações STL Ilimitadas</li>
-          <li>Mesas de impressão customizadas</li>
-          <li>Uso pessoal</li>
+          <li data-i18n="pricing.monthly_f1">Exportações STL Ilimitadas</li>
+          <li data-i18n="pricing.monthly_f2">Mesas de impressão customizadas</li>
+          <li data-i18n="pricing.monthly_f3">Uso pessoal</li>
         </ul>
-        <a href="./app.html" class="price-btn">Assinar Mensal</a>
+        <a href="./app.html" class="price-btn" data-i18n="pricing.monthly_btn">Assinar Mensal</a>
       </div>
 
       <div class="price-card pro">
-        <h3>Premium</h3>
-        <div class="price">€19<span>/mês</span></div>
+        <h3 data-i18n="pricing.premium_title">Premium</h3>
+        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.premium_price">€19</span><span data-i18n="pricing.premium_price_desc">/mês</span></div>
         <ul>
-          <li>Tudo no Mensal</li>
-          <li>Salvar Designs na Nuvem</li>
-          <li>Suporte Prioritário</li>
+          <li data-i18n="pricing.premium_f1">Tudo no Mensal</li>
+          <li data-i18n="pricing.premium_f2">Salvar Designs na Nuvem</li>
+          <li data-i18n="pricing.premium_f3">Suporte Prioritário</li>
         </ul>
-        <a href="./app.html" class="price-btn">Assinar Premium</a>
+        <a href="./app.html" class="price-btn" data-i18n="pricing.premium_btn">Assinar Premium</a>
       </div>
 
       <div class="price-card pro" style="border-color: #f59e0b;">
-        <h3>Commercial</h3>
-        <div class="price">€49<span>/mês</span></div>
+        <h3 data-i18n="pricing.commercial_title">Commercial</h3>
+        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.commercial_price">€49</span><span data-i18n="pricing.commercial_price_desc">/mês</span></div>
         <ul>
-          <li>Tudo no Premium</li>
-          <li>Licença Comercial de Venda</li>
-          <li>API de Integração (Breve)</li>
+          <li data-i18n="pricing.commercial_f1">Tudo no Premium</li>
+          <li data-i18n="pricing.commercial_f2">Licença Comercial de Venda</li>
+          <li data-i18n="pricing.commercial_f3">API de Integração (Breve)</li>
         </ul>
-        <a href="./app.html" class="price-btn" style="background: #f59e0b;">Assinar Commercial</a>
+        <a href="./app.html" class="price-btn" style="background: #f59e0b;" data-i18n="pricing.commercial_btn">Assinar Commercial</a>
       </div>
     </div>
   </section>
 
   <footer>
-    <p>&copy; 2026 Master3D. Todos os direitos reservados. | <a href="#" style="color: var(--accent-color);">Termos de Serviço</a> | <a href="#" style="color: var(--accent-color);">Privacidade</a></p>
+    <p data-i18n="footer.rights">&copy; 2026 CutterMaker3D. Todos os direitos reservados.</p>
   </footer>
 
+  <script type="module" src="./i18n.js"></script>
 </body>
 </html>
