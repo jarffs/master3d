@@ -71,7 +71,11 @@
     "export": "Export STL",
     "upload_image": "Upload an image (PNG, JPG, SVG)",
     "drop_image": "Or drag and drop here",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "no_file": "No file selected",
+    "model_dimensions": "Model Dimensions",
+    "width_mm": "Width (mm)",
+    "depth_mm": "Depth (mm)"
   },
   "profile": {
     "title": "My Profile",

@@ -61,7 +61,7 @@ export class CookieCutterEngine {
       this.cookieGroup.remove(child);
     }
     
-    const { height, wallThickness, baseWidth, baseHeight } = params;
+    const { height, wallThickness, baseWidth, baseHeight, targetWidth, targetDepth } = params;
     const scale = 1000; // ClipperLib uses integers, scale up by 1000 for precision
 
     // First extract all points and compute bounding box
@@ -83,19 +83,27 @@ export class CookieCutterEngine {
 
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
-    const width = maxX - minX;
-    const h = maxY - minY;
+    const svgWidth = maxX - minX;
+    const svgHeight = maxY - minY;
     
-    // Cookie cutters are usually around 80mm max dimension.
-    const maxDim = Math.max(width, h);
-    const targetSize = 80;
-    const svgScaleFactor = maxDim > 0 ? targetSize / maxDim : 1;
+    // Store SVG aspect ratio for external use
+    this.svgAspectRatio = svgWidth > 0 && svgHeight > 0 ? svgWidth / svgHeight : 1;
+    this.svgNaturalWidth = svgWidth;
+    this.svgNaturalHeight = svgHeight;
+    
+    // Use provided target dimensions, or fallback to 80mm max
+    const tw = targetWidth || 80;
+    const td = targetDepth || 80;
+    
+    // Separate scale factors for X and Y
+    const scaleX = svgWidth > 0 ? tw / svgWidth : 1;
+    const scaleY = svgHeight > 0 ? td / svgHeight : 1;
 
     extractedShapes.forEach(points => {
-      // We need to translate, scale, and invert Y because SVG origin is top-left, 3D is bottom-left
+      // We need to translate, scale (non-uniform), and invert Y because SVG origin is top-left, 3D is bottom-left
       const toClipperPath = (pts) => pts.map(p => ({ 
-        X: Math.round((p.x - centerX) * svgScaleFactor * scale), 
-        Y: Math.round(-(p.y - centerY) * svgScaleFactor * scale) 
+        X: Math.round((p.x - centerX) * scaleX * scale), 
+        Y: Math.round(-(p.y - centerY) * scaleY * scale) 
       }));
       const toThreeVec2 = (pts) => pts.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
       

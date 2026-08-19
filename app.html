@@ -36,11 +36,31 @@
           <div class="control-group">
             <label for="svg-upload" class="upload-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            <span data-i18n="app.upload_image">Carregar Imagem ou SVG</span>
+            <span data-i18n="app.upload_image">Upload Image or SVG</span>
           </label>
           <input type="file" id="svg-upload" accept=".svg, .png, .jpg, .jpeg" hidden />
-          <div id="file-name" class="file-name">Nenhum arquivo selecionado</div>
+          <div id="file-name" class="file-name" data-i18n="app.no_file">No file selected</div>
         </div>
+
+        <div class="settings" id="model-dimensions-section" style="display: none;">
+          <h2 data-i18n="app.model_dimensions">Model Dimensions</h2>
+          <div class="dimensions-controls">
+            <div class="input-group">
+              <label for="model-width" data-i18n="app.width_mm">Width (mm)</label>
+              <input type="number" id="model-width" value="80" min="10" max="500" step="1" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+            </div>
+            <div class="lock-btn-container" style="display: flex; align-items: flex-end; padding-bottom: 4px;">
+              <button id="lock-ratio-btn" class="icon-btn active" title="Lock proportions" style="background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; cursor: pointer; color: var(--accent-color);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </button>
+            </div>
+            <div class="input-group">
+              <label for="model-depth" data-i18n="app.depth_mm">Depth (mm)</label>
+              <input type="number" id="model-depth" value="80" min="10" max="500" step="1" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+            </div>
+          </div>
+        </div>
+
 
         <div class="settings">
           <h2 data-i18n="app.settings">Configurações do Cortador</h2>
