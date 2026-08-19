@@ -26,13 +26,13 @@ const printerProfileSelect = document.getElementById('printer-profile');
 
 // Sliders
 const heightSlider = document.getElementById('height-slider');
-const heightVal = document.getElementById('height-val');
+const heightVal = document.getElementById('height-val-input');
 const wallSlider = document.getElementById('wall-slider');
-const wallVal = document.getElementById('wall-val');
+const wallVal = document.getElementById('wall-val-input');
 const baseWidthSlider = document.getElementById('base-width-slider');
-const baseWidthVal = document.getElementById('base-width-val');
+const baseWidthVal = document.getElementById('base-width-val-input');
 const baseHeightSlider = document.getElementById('base-height-slider');
-const baseHeightVal = document.getElementById('base-height-val');
+const baseHeightVal = document.getElementById('base-height-val-input');
 
 function initThree() {
   const container = document.getElementById('canvas-container');
@@ -528,9 +528,26 @@ uploadInput.addEventListener('change', (e) => {
 });
 
 // Update value displays and model on slider change
-function setupSlider(slider, display, suffix = ' mm') {
+function setupSlider(slider, displayInput) {
+  // Update input when slider moves
   slider.addEventListener('input', (e) => {
-    display.textContent = `${e.target.value}${suffix}`;
+    displayInput.value = e.target.value;
+    updateModel();
+  });
+  
+  // Update slider when input changes
+  displayInput.addEventListener('change', (e) => {
+    // Basic validation
+    let val = parseFloat(e.target.value);
+    const min = parseFloat(slider.min);
+    const max = parseFloat(slider.max);
+    
+    if (isNaN(val)) val = parseFloat(slider.value);
+    if (val < min) val = min;
+    if (val > max) val = max;
+    
+    e.target.value = val;
+    slider.value = val;
     updateModel();
   });
 }
