@@ -65,13 +65,20 @@
     "height": "Height (mm)",
     "thickness": "Wall Thickness",
     "base": "Base Width",
+    "base_height": "Base Height",
     "build_plate": "Build Plate",
     "printer_size": "Printer / Size",
-    "warning_size": "⚠️ The model exceeds the build plate size!",
+    "warning_size": "\u26a0\ufe0f The model exceeds the build plate size!",
     "export": "Export STL",
     "upload_image": "Upload an image (PNG, JPG, SVG)",
     "drop_image": "Or drag and drop here",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "no_file": "No file selected"
+  },
+  "cropper": {
+    "title": "Crop Image",
+    "cancel": "Cancel",
+    "save": "Save Photo"
   },
   "profile": {
     "title": "My Profile",
@@ -102,7 +109,7 @@
     "login_title": "Login to your account",
     "email": "Email",
     "password": "Password",
-    "login_btn": "Enter",
+    "login_btn": "Login",
     "no_account": "Don't have an account?",
     "register": "Register",
     "forgot_password": "Forgot your password?",
