@@ -527,3 +527,25 @@ input[type=range]::-webkit-slider-runnable-track {
 .printer-item input {
   cursor: pointer;
 }
+
+/* Model Dimensions Controls */
+.dimensions-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+.dimensions-controls .input-group input {
+  width: 100%;
+}
+
+#lock-ratio-btn.active {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+#lock-ratio-btn:not(.active) {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}

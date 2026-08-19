@@ -83,7 +83,10 @@
     "thickness_desc": "Width of the main cutting line",
     "base_desc": "Finger support base and extra stability",
     "base_height_desc": "Thickness (Z) of the support base",
-    "printer_size_desc": "Choose your printer to check if the model fits"
+    "printer_size_desc": "Choose your printer to check if the model fits",
+    "model_dimensions": "Model Dimensions",
+    "width_mm": "Width (mm)",
+    "depth_mm": "Depth (mm)"
   },
   "cropper": {
     "title": "Crop Image",

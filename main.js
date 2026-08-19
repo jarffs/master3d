@@ -34,6 +34,14 @@ const baseWidthVal = document.getElementById('base-width-val-input');
 const baseHeightSlider = document.getElementById('base-height-slider');
 const baseHeightVal = document.getElementById('base-height-val-input');
 
+// Model Dimensions
+const modelWidthInput = document.getElementById('model-width');
+const modelDepthInput = document.getElementById('model-depth');
+const lockRatioBtn = document.getElementById('lock-ratio-btn');
+const dimensionsSection = document.getElementById('model-dimensions-section');
+let lockRatio = true;
+let svgAspectRatio = 1;
+
 function initThree() {
   const container = document.getElementById('canvas-container');
   
@@ -399,12 +407,19 @@ function updateModel() {
     height: parseFloat(heightSlider.value),
     wallThickness: parseFloat(wallSlider.value),
     baseWidth: parseFloat(baseWidthSlider.value),
-    baseHeight: parseFloat(baseHeightSlider.value)
+    baseHeight: parseFloat(baseHeightSlider.value),
+    targetWidth: parseFloat(modelWidthInput.value) || 80,
+    targetDepth: parseFloat(modelDepthInput.value) || 80
   };
   
   const success = engine.generate3DModel(params);
   
   if (success) {
+    // After first generation, update dimension inputs with correct aspect ratio
+    if (engine.svgAspectRatio && engine.svgAspectRatio !== svgAspectRatio) {
+      svgAspectRatio = engine.svgAspectRatio;
+    }
+    
     if (currentUser) {
       downloadBtn.disabled = false;
       downloadBtn.title = '';
@@ -413,6 +428,36 @@ function updateModel() {
       downloadBtn.title = t('js.login_to_export');
     }
     checkBuildPlateLimits();
+  }
+}
+
+function initDimensionsFromSVG() {
+  // Show the dimensions section
+  dimensionsSection.style.display = '';
+  
+  // Run a preliminary generation to get aspect ratio
+  const tempParams = {
+    height: parseFloat(heightSlider.value),
+    wallThickness: parseFloat(wallSlider.value),
+    baseWidth: parseFloat(baseWidthSlider.value),
+    baseHeight: parseFloat(baseHeightSlider.value),
+    targetWidth: 80,
+    targetDepth: 80
+  };
+  engine.generate3DModel(tempParams);
+  
+  if (engine.svgAspectRatio) {
+    svgAspectRatio = engine.svgAspectRatio;
+    // Set initial dimensions based on 80mm max and aspect ratio
+    if (svgAspectRatio >= 1) {
+      // Wider than tall
+      modelWidthInput.value = 80;
+      modelDepthInput.value = Math.round(80 / svgAspectRatio);
+    } else {
+      // Taller than wide
+      modelDepthInput.value = 80;
+      modelWidthInput.value = Math.round(80 * svgAspectRatio);
+    }
   }
 }
 
@@ -442,6 +487,35 @@ bpRotateBtn.addEventListener('click', () => {
   bpDepthInput.value = temp;
   updateBuildPlate();
 });
+
+// Model Dimensions Event Listeners
+lockRatioBtn.addEventListener('click', () => {
+  lockRatio = !lockRatio;
+  lockRatioBtn.classList.toggle('active', lockRatio);
+  // Swap icon between locked and unlocked
+  if (lockRatio) {
+    lockRatioBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+  } else {
+    lockRatioBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 5-5 5 5 0 0 1 5 5"></path></svg>';
+  }
+});
+
+modelWidthInput.addEventListener('input', () => {
+  if (lockRatio && svgAspectRatio > 0) {
+    const newWidth = parseFloat(modelWidthInput.value) || 80;
+    modelDepthInput.value = Math.round(newWidth / svgAspectRatio);
+  }
+  updateModel();
+});
+
+modelDepthInput.addEventListener('input', () => {
+  if (lockRatio && svgAspectRatio > 0) {
+    const newDepth = parseFloat(modelDepthInput.value) || 80;
+    modelWidthInput.value = Math.round(newDepth * svgAspectRatio);
+  }
+  updateModel();
+});
+
 uploadInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -453,6 +527,7 @@ uploadInput.addEventListener('change', (e) => {
     reader.onload = (event) => {
       currentSvgText = event.target.result;
       engine.loadSVG(currentSvgText);
+      initDimensionsFromSVG();
       updateModel();
     };
     reader.readAsText(file);
@@ -518,6 +593,7 @@ uploadInput.addEventListener('change', (e) => {
           
           currentSvgText = new XMLSerializer().serializeToString(doc);
           engine.loadSVG(currentSvgText);
+          initDimensionsFromSVG();
           updateModel();
         }, options);
       };

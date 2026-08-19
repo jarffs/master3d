@@ -83,7 +83,10 @@
     "thickness_desc": "Largura da linha que faz o corte principal",
     "base_desc": "Base de apoio para os dedos e estabilidade extra",
     "base_height_desc": "Espessura (Z) da base de apoio",
-    "printer_size_desc": "Escolha a sua impressora para verificar se o modelo cabe"
+    "printer_size_desc": "Escolha a sua impressora para verificar se o modelo cabe",
+    "model_dimensions": "Dimensões do Modelo",
+    "width_mm": "Largura (mm)",
+    "depth_mm": "Profundidade (mm)"
   },
   "cropper": {
     "title": "Recortar Imagem",
