@@ -86,7 +86,14 @@
     "printer_size_desc": "Escolha a sua impressora para verificar se o modelo cabe",
     "model_dimensions": "Dimensões do Modelo",
     "width_mm": "Largura (mm)",
-    "depth_mm": "Profundidade (mm)"
+    "depth_mm": "Profundidade (mm)",
+    "contour_settings": "CONTORNO E CARIMBO",
+    "enable_contour": "Ativar Contorno",
+    "contour_desc": "Gera um cortador em volta de todo o desenho",
+    "contour_offset": "Distância do Contorno",
+    "contour_offset_desc": "Espaço entre o desenho e a borda do cortador",
+    "stamp_height": "Altura do Carimbo",
+    "stamp_height_desc": "Altura das linhas internas (deve ser menor que a do cortador)"
   },
   "cropper": {
     "title": "Recortar Imagem",
