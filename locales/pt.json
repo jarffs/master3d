@@ -74,11 +74,16 @@
     "drop_image": "Ou arraste e solte aqui",
     "processing": "Processando...",
     "no_file": "Nenhum arquivo selecionado"
-  },
-  "cropper": {
+    },
+    "cropper": {
     "title": "Recortar Imagem",
     "cancel": "Cancelar",
-    "save": "Salvar Foto"
+    "save": "Salvar Foto",
+    "processing": "A processar...",
+    "no_file": "Nenhum ficheiro selecionado",
+    "model_dimensions": "Dimensões do Modelo",
+    "width_mm": "Largura (mm)",
+    "depth_mm": "Profundidade (mm)"
   },
   "profile": {
     "title": "Meu Perfil",

@@ -74,11 +74,15 @@
     "drop_image": "Or drag and drop here",
     "processing": "Processing...",
     "no_file": "No file selected"
-  },
-  "cropper": {
+    },
+    "cropper": {
     "title": "Crop Image",
     "cancel": "Cancel",
-    "save": "Save Photo"
+    "save": "Save Photo",
+    "no_file": "No file selected",
+    "model_dimensions": "Model Dimensions",
+    "width_mm": "Width (mm)",
+    "depth_mm": "Depth (mm)"
   },
   "profile": {
     "title": "My Profile",
