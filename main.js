@@ -34,6 +34,14 @@ const baseWidthVal = document.getElementById('base-width-val-input');
 const baseHeightSlider = document.getElementById('base-height-slider');
 const baseHeightVal = document.getElementById('base-height-val-input');
 
+
+const enableContourToggle = document.getElementById('enable-contour');
+const contourSlidersDiv = document.getElementById('contour-sliders');
+const contourOffsetSlider = document.getElementById('contour-offset-slider');
+const contourOffsetVal = document.getElementById('contour-offset-val-input');
+const stampHeightSlider = document.getElementById('stamp-height-slider');
+const stampHeightVal = document.getElementById('stamp-height-val-input');
+
 // Model Dimensions
 const modelWidthInput = document.getElementById('model-width');
 const modelDepthInput = document.getElementById('model-depth');
@@ -409,9 +417,11 @@ function updateModel() {
     baseWidth: parseFloat(baseWidthSlider.value),
     baseHeight: parseFloat(baseHeightSlider.value),
     targetWidth: parseFloat(modelWidthInput.value) || 80,
-    targetDepth: parseFloat(modelDepthInput.value) || 80
+    targetDepth: parseFloat(modelDepthInput.value) || 80,
+    enableContour: enableContourToggle.checked,
+    contourOffset: parseFloat(contourOffsetSlider.value),
+    stampHeight: parseFloat(stampHeightSlider.value)
   };
-  
   const success = engine.generate3DModel(params);
   
   if (success) {
@@ -632,6 +642,14 @@ setupSlider(heightSlider, heightVal);
 setupSlider(wallSlider, wallVal);
 setupSlider(baseWidthSlider, baseWidthVal);
 setupSlider(baseHeightSlider, baseHeightVal);
+
+enableContourToggle.addEventListener('change', (e) => {
+  contourSlidersDiv.style.display = e.target.checked ? 'block' : 'none';
+  updateModel();
+});
+setupSlider(contourOffsetSlider, contourOffsetVal);
+setupSlider(stampHeightSlider, stampHeightVal);
+
 
 downloadBtn.addEventListener('click', async () => {
   if (!currentUser || !userProfile) {
