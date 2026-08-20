@@ -68,21 +68,30 @@
     "base_height": "Base Height",
     "build_plate": "Build Plate",
     "printer_size": "Printer / Size",
-    "warning_size": "\u26a0\ufe0f The model exceeds the build plate size!",
+    "warning_size": "⚠️ The model exceeds the build plate size!",
     "export": "Export STL",
     "upload_image": "Upload an image (PNG, JPG, SVG)",
     "drop_image": "Or drag and drop here",
     "processing": "Processing...",
-    "no_file": "No file selected"
-    },
-    "cropper": {
-    "title": "Crop Image",
-    "cancel": "Cancel",
-    "save": "Save Photo",
     "no_file": "No file selected",
+    "upload_image_title": "Cutter Image",
+    "mandatory": "MANDATORY",
+    "upload_desc": "Design that will serve as the base",
+    "upload_drag": "Drag and drop your image here or click to browse",
+    "upload_formats": "SVG, PNG or JPG (max 8MB)",
+    "height_desc": "Total thickness of the cutter",
+    "thickness_desc": "Width of the main cutting line",
+    "base_desc": "Finger support base and extra stability",
+    "base_height_desc": "Thickness (Z) of the support base",
+    "printer_size_desc": "Choose your printer to check if the model fits",
     "model_dimensions": "Model Dimensions",
     "width_mm": "Width (mm)",
     "depth_mm": "Depth (mm)"
+  },
+  "cropper": {
+    "title": "Crop Image",
+    "cancel": "Cancel",
+    "save": "Save Photo"
   },
   "profile": {
     "title": "My Profile",

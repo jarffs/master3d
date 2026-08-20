@@ -73,17 +73,25 @@
     "upload_image": "Envie uma imagem (PNG, JPG, SVG)",
     "drop_image": "Ou arraste e solte aqui",
     "processing": "Processando...",
-    "no_file": "Nenhum arquivo selecionado"
-    },
-    "cropper": {
-    "title": "Recortar Imagem",
-    "cancel": "Cancelar",
-    "save": "Salvar Foto",
-    "processing": "A processar...",
-    "no_file": "Nenhum ficheiro selecionado",
+    "no_file": "Nenhum arquivo selecionado",
+    "upload_image_title": "Imagem do Cortador",
+    "mandatory": "OBRIGATÓRIO",
+    "upload_desc": "Design que servirá de base",
+    "upload_drag": "Arraste e solte sua imagem aqui ou clique para buscar",
+    "upload_formats": "SVG, PNG ou JPG (máx 8MB)",
+    "height_desc": "Espessura total do cortador",
+    "thickness_desc": "Largura da linha que faz o corte principal",
+    "base_desc": "Base de apoio para os dedos e estabilidade extra",
+    "base_height_desc": "Espessura (Z) da base de apoio",
+    "printer_size_desc": "Escolha a sua impressora para verificar se o modelo cabe",
     "model_dimensions": "Dimensões do Modelo",
     "width_mm": "Largura (mm)",
     "depth_mm": "Profundidade (mm)"
+  },
+  "cropper": {
+    "title": "Recortar Imagem",
+    "cancel": "Cancelar",
+    "save": "Salvar Foto"
   },
   "profile": {
     "title": "Meu Perfil",
