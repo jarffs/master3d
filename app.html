@@ -76,6 +76,62 @@
 </div>
 
 
+        
+        <div class="settings" id="contour-section">
+          <div class="settings-header" style="margin-bottom: 20px;">
+            <span class="settings-title" data-i18n="app.contour_settings" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">CONTORNO E CARIMBO</span>
+          </div>
+
+          <div class="control-group toggle-group" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="label-container" style="display: flex; flex-direction: column;">
+              <label for="enable-contour" data-i18n="app.enable_contour" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Ativar Contorno</label>
+              <div class="label-desc" data-i18n="app.contour_desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Gera um cortador em volta de todo o desenho</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="enable-contour">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div id="contour-sliders" style="display: none; padding-top: 10px; border-top: 1px solid var(--border-color);">
+            <div class="slider-group">
+              <div class="slider-header">
+                <div class="label-container" style="display: flex; flex-direction: column;">
+                  <label for="contour-offset-slider" data-i18n="app.contour_offset" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Distância do Contorno</label>
+                  <div class="label-desc" data-i18n="app.contour_offset_desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Espaço entre o desenho e a borda do cortador</div>
+                </div>
+                <div class="slider-val-box">
+                  <input type="number" id="contour-offset-val-input" value="5" min="1" max="20" step="0.5" />
+                  <span class="slider-suffix">mm</span>
+                </div>
+              </div>
+              <div class="slider-track-wrapper">
+                <span class="limit limit-min">1</span>
+                <input type="range" id="contour-offset-slider" min="1" max="20" value="5" step="0.5" />
+                <span class="limit limit-max">20</span>
+              </div>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <div class="label-container" style="display: flex; flex-direction: column;">
+                  <label for="stamp-height-slider" data-i18n="app.stamp_height" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Altura do Carimbo</label>
+                  <div class="label-desc" data-i18n="app.stamp_height_desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Altura das linhas internas (deve ser menor que a do cortador)</div>
+                </div>
+                <div class="slider-val-box">
+                  <input type="number" id="stamp-height-val-input" value="10" min="1" max="30" step="1" />
+                  <span class="slider-suffix">mm</span>
+                </div>
+              </div>
+              <div class="slider-track-wrapper">
+                <span class="limit limit-min">1</span>
+                <input type="range" id="stamp-height-slider" min="1" max="30" value="10" step="1" />
+                <span class="limit limit-max">30</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="settings">
           <div class="settings-header" style="margin-bottom: 20px;">
   <span class="settings-title" data-i18n="app.settings" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">CONFIGURAÇÕES</span>

@@ -61,7 +61,17 @@ export class CookieCutterEngine {
       this.cookieGroup.remove(child);
     }
     
-    const { height, wallThickness, baseWidth, baseHeight, targetWidth, targetDepth } = params;
+    const { 
+      height, 
+      wallThickness, 
+      baseWidth, 
+      baseHeight, 
+      targetWidth, 
+      targetDepth,
+      enableContour,
+      contourOffset
+    } = params;
+    
     const scale = 1000; // ClipperLib uses integers, scale up by 1000 for precision
 
     // First extract all points and compute bounding box
@@ -98,66 +108,148 @@ export class CookieCutterEngine {
     // Separate scale factors for X and Y
     const scaleX = svgWidth > 0 ? tw / svgWidth : 1;
     const scaleY = svgHeight > 0 ? td / svgHeight : 1;
+    
+    const toClipperPath = (pts) => pts.map(p => ({ 
+      X: Math.round((p.x - centerX) * scaleX * scale), 
+      Y: Math.round(-(p.y - centerY) * scaleY * scale) 
+    }));
+    const toThreeVec2 = (pts) => pts.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
 
+    const allOriginalPaths = [];
     extractedShapes.forEach(points => {
-      // We need to translate, scale (non-uniform), and invert Y because SVG origin is top-left, 3D is bottom-left
-      const toClipperPath = (pts) => pts.map(p => ({ 
-        X: Math.round((p.x - centerX) * scaleX * scale), 
-        Y: Math.round(-(p.y - centerY) * scaleY * scale) 
-      }));
-      const toThreeVec2 = (pts) => pts.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
-      
-      const originalPath = toClipperPath(points.shape);
-
-      // 1. Create Cutter Wall
-      // We outset the original shape by wallThickness.
-      // Inner boundary (hole) is the original shape.
-      const outerWallPaths = new ClipperLib.Paths();
-      const coWall = new ClipperLib.ClipperOffset(2, 0.25);
-      coWall.AddPath(originalPath, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
-      coWall.Execute(outerWallPaths, wallThickness * scale);
-      
-      // 2. Create Base Flange
-      const outerBasePaths = new ClipperLib.Paths();
-      const coBase = new ClipperLib.ClipperOffset(2, 0.25);
-      coBase.AddPath(originalPath, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
-      coBase.Execute(outerBasePaths, (wallThickness + baseWidth) * scale);
-      
-      // Generate geometries if we got valid paths back
-      if (outerWallPaths.length > 0) {
-        // Find largest area path to use as main outer boundary (simplification)
-        const outerWallPts = toThreeVec2(outerWallPaths[0]);
-        const holePts = toThreeVec2(originalPath);
-        
-        const wallShape = new THREE.Shape(outerWallPts);
-        wallShape.holes.push(new THREE.Path(holePts));
-        
-        const wallGeom = new THREE.ExtrudeGeometry(wallShape, {
-          depth: height,
-          bevelEnabled: false,
-          curveSegments: 12
-        });
-        const wallMesh = new THREE.Mesh(wallGeom, this.material);
-        this.cookieGroup.add(wallMesh);
-      }
-      
-      if (outerBasePaths.length > 0 && baseWidth > 0 && baseHeight > 0) {
-        const outerBasePts = toThreeVec2(outerBasePaths[0]);
-        const holePts = toThreeVec2(originalPath);
-        
-        const baseShape = new THREE.Shape(outerBasePts);
-        // Base also has the inner hole so the cookie dough goes through
-        baseShape.holes.push(new THREE.Path(holePts));
-        
-        const baseGeom = new THREE.ExtrudeGeometry(baseShape, {
-          depth: baseHeight,
-          bevelEnabled: false,
-          curveSegments: 12
-        });
-        const baseMesh = new THREE.Mesh(baseGeom, this.material);
-        this.cookieGroup.add(baseMesh);
-      }
+      allOriginalPaths.push(toClipperPath(points.shape));
     });
+
+    if (enableContour && contourOffset > 0) {
+      // 1. Create the unified contour silhouette
+      const coContour = new ClipperLib.ClipperOffset(2, 0.25);
+      allOriginalPaths.forEach(path => {
+        coContour.AddPath(path, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+      });
+      
+      const masterContourPaths = new ClipperLib.Paths();
+      // Offset by contourOffset
+      coContour.Execute(masterContourPaths, contourOffset * scale);
+      
+      if (masterContourPaths.length > 0) {
+        // Find the largest outer path to use as the master contour (in case there are disjoint pieces that didn't merge)
+        // Usually, contour offset merges them into one big piece if the offset is large enough.
+        // We will process all resulting pieces just in case.
+        masterContourPaths.forEach(masterPath => {
+          // 2. Generate Cutter Wall for the master contour
+          const outerWallPaths = new ClipperLib.Paths();
+          const coWall = new ClipperLib.ClipperOffset(2, 0.25);
+          coWall.AddPath(masterPath, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+          coWall.Execute(outerWallPaths, wallThickness * scale);
+          
+          if (outerWallPaths.length > 0) {
+            const outerWallPts = toThreeVec2(outerWallPaths[0]);
+            const holePts = toThreeVec2(masterPath);
+            
+            const wallShape = new THREE.Shape(outerWallPts);
+            wallShape.holes.push(new THREE.Path(holePts));
+            
+            const wallGeom = new THREE.ExtrudeGeometry(wallShape, {
+              depth: height,
+              bevelEnabled: false,
+              curveSegments: 12
+            });
+            const wallMesh = new THREE.Mesh(wallGeom, this.material);
+            this.cookieGroup.add(wallMesh);
+          }
+          
+          // 3. Generate Base Flange for the master contour
+          if (baseWidth > 0 && baseHeight > 0) {
+            const outerBasePaths = new ClipperLib.Paths();
+            const coBase = new ClipperLib.ClipperOffset(2, 0.25);
+            coBase.AddPath(masterPath, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+            coBase.Execute(outerBasePaths, (wallThickness + baseWidth) * scale);
+            
+            if (outerBasePaths.length > 0) {
+              const outerBasePts = toThreeVec2(outerBasePaths[0]);
+              const holePts = toThreeVec2(masterPath);
+              
+              const baseShape = new THREE.Shape(outerBasePts);
+              baseShape.holes.push(new THREE.Path(holePts));
+              
+              const baseGeom = new THREE.ExtrudeGeometry(baseShape, {
+                depth: baseHeight,
+                bevelEnabled: false,
+                curveSegments: 12
+              });
+              const baseMesh = new THREE.Mesh(baseGeom, this.material);
+              this.cookieGroup.add(baseMesh);
+            }
+          }
+        });
+        
+        // 4. Create the Stamp (Carimbo) from the ORIGINAL paths
+        // The stamp should be slightly higher than the base, but lower than the cutter wall
+        const stampHeight = params.stampHeight || Math.max(baseHeight + 1, height - 3);
+        
+        allOriginalPaths.forEach(origPath => {
+          // We can just extrude the original path as a solid block up to stampHeight!
+          // Actually, if the stamp has some thickness, we might want to offset it slightly, 
+          // or just extrude the path directly as a filled shape.
+          const pts = toThreeVec2(origPath);
+          const stampShape = new THREE.Shape(pts);
+          const stampGeom = new THREE.ExtrudeGeometry(stampShape, {
+            depth: stampHeight,
+            bevelEnabled: false,
+            curveSegments: 12
+          });
+          const stampMesh = new THREE.Mesh(stampGeom, this.material);
+          this.cookieGroup.add(stampMesh);
+        });
+      }
+    } else {
+      // Standard behavior without contour offset
+      allOriginalPaths.forEach(originalPath => {
+        // 1. Create Cutter Wall
+        const outerWallPaths = new ClipperLib.Paths();
+        const coWall = new ClipperLib.ClipperOffset(2, 0.25);
+        coWall.AddPath(originalPath, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+        coWall.Execute(outerWallPaths, wallThickness * scale);
+        
+        // 2. Create Base Flange
+        const outerBasePaths = new ClipperLib.Paths();
+        const coBase = new ClipperLib.ClipperOffset(2, 0.25);
+        coBase.AddPath(originalPath, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+        coBase.Execute(outerBasePaths, (wallThickness + baseWidth) * scale);
+        
+        if (outerWallPaths.length > 0) {
+          const outerWallPts = toThreeVec2(outerWallPaths[0]);
+          const holePts = toThreeVec2(originalPath);
+          
+          const wallShape = new THREE.Shape(outerWallPts);
+          wallShape.holes.push(new THREE.Path(holePts));
+          
+          const wallGeom = new THREE.ExtrudeGeometry(wallShape, {
+            depth: height,
+            bevelEnabled: false,
+            curveSegments: 12
+          });
+          const wallMesh = new THREE.Mesh(wallGeom, this.material);
+          this.cookieGroup.add(wallMesh);
+        }
+        
+        if (outerBasePaths.length > 0 && baseWidth > 0 && baseHeight > 0) {
+          const outerBasePts = toThreeVec2(outerBasePaths[0]);
+          const holePts = toThreeVec2(originalPath);
+          
+          const baseShape = new THREE.Shape(outerBasePts);
+          baseShape.holes.push(new THREE.Path(holePts));
+          
+          const baseGeom = new THREE.ExtrudeGeometry(baseShape, {
+            depth: baseHeight,
+            bevelEnabled: false,
+            curveSegments: 12
+          });
+          const baseMesh = new THREE.Mesh(baseGeom, this.material);
+          this.cookieGroup.add(baseMesh);
+        }
+      });
+    }
 
     return true;
   }

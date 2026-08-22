@@ -86,7 +86,14 @@
     "printer_size_desc": "Choose your printer to check if the model fits",
     "model_dimensions": "Model Dimensions",
     "width_mm": "Width (mm)",
-    "depth_mm": "Depth (mm)"
+    "depth_mm": "Depth (mm)",
+    "contour_settings": "CONTOUR AND STAMP",
+    "enable_contour": "Enable Contour",
+    "contour_desc": "Generates a cutter around the entire design",
+    "contour_offset": "Contour Offset",
+    "contour_offset_desc": "Space between the design and the cutter edge",
+    "stamp_height": "Stamp Height",
+    "stamp_height_desc": "Height of inner lines (should be less than cutter height)"
   },
   "cropper": {
     "title": "Crop Image",
