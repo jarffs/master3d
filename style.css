@@ -601,3 +601,14 @@ input[type=range]::-webkit-slider-runnable-track {
 .switch .slider.round:before {
   border-radius: 50%;
 }
+
+.floating-export-btn {
+  position: absolute;
+  bottom: 32px;
+  right: 32px;
+  z-index: 1000;
+  box-shadow: 0 6px 24px rgba(217, 119, 6, 0.4);
+  padding: 16px 32px;
+  border-radius: 50px;
+  font-size: 18px;
+}

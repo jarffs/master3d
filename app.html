@@ -82,15 +82,15 @@
             <span class="settings-title" data-i18n="app.contour_settings" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">CONTORNO E CARIMBO</span>
           </div>
 
-          <div class="control-group toggle-group" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div class="label-container" style="display: flex; flex-direction: column;">
-              <label for="enable-contour" data-i18n="app.enable_contour" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Ativar Contorno</label>
-              <div class="label-desc" data-i18n="app.contour_desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Gera um cortador em volta de todo o desenho</div>
+          <div class="control-group toggle-group" style="margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+              <label for="enable-contour" data-i18n="app.enable_contour" style="font-size: 14px; font-weight: 600; color: var(--text-primary); cursor: pointer;">Ativar Contorno</label>
+              <label class="switch" style="margin: 0;">
+                <input type="checkbox" id="enable-contour">
+                <span class="slider round"></span>
+              </label>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="enable-contour">
-              <span class="slider round"></span>
-            </label>
+            <div class="label-desc" data-i18n="app.contour_desc" style="font-size: 12px; color: var(--text-secondary);">Gera um cortador em volta de todo o desenho</div>
           </div>
 
           <div id="contour-sliders" style="display: none; padding-top: 10px; border-top: 1px solid var(--border-color);">
@@ -245,14 +245,15 @@
           </div>
         </div>
 
-        <button id="download-btn" class="primary-btn" disabled>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span data-i18n="app.export">Exportar STL</span>
-        </button>
+        
       </aside>
 
       <main class="viewer-container">
         <div id="canvas-container"></div>
+        <button id="download-btn" class="primary-btn floating-export-btn" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span data-i18n="app.export">Exportar STL</span>
+        </button>
       </main>
       </div>
     </div>    <div id="auth-modal" class="modal hidden">
