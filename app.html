@@ -250,10 +250,16 @@
 
       <main class="viewer-container">
         <div id="canvas-container"></div>
-        <button id="download-btn" class="primary-btn floating-export-btn" disabled>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span data-i18n="app.export">Exportar STL</span>
-        </button>
+        <div class="floating-actions">
+          <button id="save-design-btn" class="secondary-btn" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 50px; padding: 14px 24px; font-size: 16px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: white; color: var(--text-primary); box-shadow: 0 4px 14px rgba(0,0,0,0.1); transition: all 0.2s;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            <span data-i18n="app.save_design">Salvar</span>
+          </button>
+          <button id="download-btn" class="primary-btn" disabled style="border-radius: 50px; padding: 14px 24px; box-shadow: 0 6px 24px rgba(217, 119, 6, 0.4);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span data-i18n="app.export">Exportar STL</span>
+          </button>
+        </div>
       </main>
       </div>
     </div>    <div id="auth-modal" class="modal hidden">
@@ -391,5 +397,19 @@
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./profile.js"></script>
     <script type="module" src="./main.js"></script>
+
+    <!-- Designs Modal -->
+    <div id="designs-modal" class="modal hidden">
+      <div class="modal-content" style="max-width: 700px; width: 90%;">
+        <button id="close-designs-btn" class="close-btn">&times;</button>
+        <h2 style="margin-top: 0; margin-bottom: 24px;" data-i18n="app.my_designs">Meus Projetos</h2>
+        <div id="designs-loading" style="text-align: center; color: var(--text-secondary); display: none;">Carregando...</div>
+        <div id="designs-empty" style="text-align: center; color: var(--text-secondary); display: none;">Nenhum projeto salvo encontrado.</div>
+        <div id="designs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; max-height: 60vh; overflow-y: auto; padding-right: 8px;">
+          <!-- Designs will be injected here -->
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>

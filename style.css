@@ -602,13 +602,26 @@ input[type=range]::-webkit-slider-runnable-track {
   border-radius: 50%;
 }
 
-.floating-export-btn {
+
+
+.floating-actions {
   position: absolute;
   bottom: 32px;
   right: 32px;
   z-index: 1000;
-  box-shadow: 0 6px 24px rgba(217, 119, 6, 0.4);
-  padding: 16px 32px;
-  border-radius: 50px;
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.floating-actions .secondary-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover, #f8fafc);
+  transform: translateY(-2px);
+}
+.floating-actions .secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+.floating-actions .primary-btn {
+  margin: 0;
 }

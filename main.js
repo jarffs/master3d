@@ -16,6 +16,7 @@ let printersData = [];
 const uploadInput = document.getElementById('svg-upload');
 const fileNameDisplay = document.getElementById('file-name');
 const downloadBtn = document.getElementById('download-btn');
+const saveDesignBtn = document.getElementById('save-design-btn');
 
 // Build Plate UI
 const bpWidthInput = document.getElementById('bp-width');
@@ -79,9 +80,11 @@ function initThree() {
     if (engine && currentSvgText) {
       if (user) {
         downloadBtn.disabled = false;
+      if(saveDesignBtn) saveDesignBtn.disabled = false;
         downloadBtn.title = '';
       } else {
         downloadBtn.disabled = true;
+      if(saveDesignBtn) saveDesignBtn.disabled = true;
         downloadBtn.title = t('js.login_to_export');
       }
     }
@@ -432,9 +435,11 @@ function updateModel() {
     
     if (currentUser) {
       downloadBtn.disabled = false;
+      if(saveDesignBtn) saveDesignBtn.disabled = false;
       downloadBtn.title = '';
     } else {
       downloadBtn.disabled = true;
+      if(saveDesignBtn) saveDesignBtn.disabled = true;
       downloadBtn.title = t('js.login_to_export');
     }
     checkBuildPlateLimits();
@@ -661,6 +666,7 @@ downloadBtn.addEventListener('click', async () => {
   const planType = userProfile.plan_type || 'free';
   if (planType === 'free') {
      downloadBtn.disabled = true;
+      if(saveDesignBtn) saveDesignBtn.disabled = true;
      const originalText = downloadBtn.innerHTML;
      downloadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span>...</span>`;
      
@@ -679,6 +685,7 @@ downloadBtn.addEventListener('click', async () => {
        if (data && data.length >= 1) {
          alert(t('js.free_limit_reached'));
          downloadBtn.disabled = false;
+      if(saveDesignBtn) saveDesignBtn.disabled = false;
          downloadBtn.innerHTML = originalText;
          return;
        }
@@ -690,11 +697,13 @@ downloadBtn.addEventListener('click', async () => {
        console.error("Erro na verificação de limites:", err);
        alert("Ocorreu um erro ao verificar o seu plano. Tente novamente.");
        downloadBtn.disabled = false;
+      if(saveDesignBtn) saveDesignBtn.disabled = false;
        downloadBtn.innerHTML = originalText;
        return;
      }
      
      downloadBtn.disabled = false;
+      if(saveDesignBtn) saveDesignBtn.disabled = false;
      downloadBtn.innerHTML = originalText;
   }
   
@@ -703,3 +712,278 @@ downloadBtn.addEventListener('click', async () => {
 
 // Initialize
 initThree();
+
+
+// --- SAVE DESIGN LOGIC ---
+if (saveDesignBtn) {
+  saveDesignBtn.addEventListener('click', async () => {
+    if (!currentUser) {
+      document.getElementById('auth-modal').classList.remove('hidden');
+      return;
+    }
+    
+    if (!currentSvgText) return;
+    
+    const projectName = prompt(t('app.save_prompt') || 'Name your design:');
+    if (!projectName) return; // User cancelled
+    
+    // UI Loading state
+    const originalText = saveDesignBtn.innerHTML;
+    saveDesignBtn.disabled = true;
+    saveDesignBtn.innerHTML = '...';
+    
+    try {
+      // Check for existing
+      const { data: existingDesign } = await supabase
+        .from('saved_designs')
+        .select('id, thumbnail_url')
+        .eq('user_id', currentUser.id)
+        .eq('name', projectName)
+        .maybeSingle();
+        
+      if (existingDesign) {
+        const confirmOverwrite = confirm("Um projeto com este nome já existe. Deseja substituí-lo?");
+        if (!confirmOverwrite) {
+          saveDesignBtn.innerHTML = originalText;
+          saveDesignBtn.disabled = false;
+          return;
+        }
+      }
+
+      // 1. Generate Thumbnail
+      const oldBg = scene.background;
+      scene.background = new THREE.Color(0xf8fafc);
+      renderer.render(scene, camera);
+      
+      const canvas = renderer.domElement;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // Restore background
+      scene.background = oldBg;
+      renderer.render(scene, camera);
+      const blob = await (await fetch(dataUrl)).blob();
+      
+      const fileName = `thumb_${Date.now()}.jpg`;
+      const filePath = `${currentUser.id}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('thumbnails')
+        .upload(filePath, blob, { contentType: 'image/jpeg' });
+        
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage
+        .from('thumbnails')
+        .getPublicUrl(filePath);
+        
+      const publicUrl = urlData.publicUrl;
+      
+      // 2. Save Settings
+      const settings = {
+        height: parseFloat(heightVal.value),
+        wall: parseFloat(wallVal.value),
+        baseWidth: parseFloat(baseWidthVal.value),
+        baseHeight: parseFloat(baseHeightVal.value),
+        enableContour: enableContourToggle.checked,
+        contourOffset: parseFloat(contourOffsetVal.value),
+        stampHeight: parseFloat(stampHeightVal.value),
+        modelWidth: parseFloat(modelWidthInput.value),
+        modelDepth: parseFloat(modelDepthInput.value)
+      };
+      
+      // 3. Insert or Update into Database
+      if (existingDesign) {
+        const { error: dbError } = await supabase.from('saved_designs').update({
+          svg_data: currentSvgText,
+          settings: settings,
+          thumbnail_url: publicUrl,
+          updated_at: new Date().toISOString()
+        }).eq('id', existingDesign.id);
+        
+        if (dbError) throw dbError;
+        
+        // Remove old thumbnail
+        if (existingDesign.thumbnail_url) {
+           const oldPath = existingDesign.thumbnail_url.split('/').pop();
+           supabase.storage.from('thumbnails').remove([`${currentUser.id}/${oldPath}`]);
+        }
+      } else {
+        const { error: dbError } = await supabase.from('saved_designs').insert({
+          user_id: currentUser.id,
+          name: projectName,
+          svg_data: currentSvgText,
+          settings: settings,
+          thumbnail_url: publicUrl
+        });
+        
+        if (dbError) throw dbError;
+      }
+      
+      alert(t('app.save_success') || 'Design saved successfully!');
+      
+    } catch (err) {
+      console.error('Error saving design:', err);
+      alert('Error saving design: ' + err.message);
+    } finally {
+      saveDesignBtn.innerHTML = originalText;
+      saveDesignBtn.disabled = false;
+    }
+  });
+}
+
+
+// --- MY DESIGNS MODAL LOGIC ---
+const designsModal = document.getElementById('designs-modal');
+const closeDesignsBtn = document.getElementById('close-designs-btn');
+const designsGrid = document.getElementById('designs-grid');
+const designsLoading = document.getElementById('designs-loading');
+const designsEmpty = document.getElementById('designs-empty');
+
+if (designsModal) {
+  window.addEventListener('open-designs-modal', () => {
+    if (!currentUser) return;
+    designsModal.classList.remove('hidden');
+    loadDesigns();
+  });
+
+  closeDesignsBtn?.addEventListener('click', () => {
+    designsModal.classList.add('hidden');
+  });
+}
+
+async function loadDesigns() {
+  if (!designsGrid) return;
+  designsGrid.innerHTML = '';
+  designsLoading.style.display = 'block';
+  designsEmpty.style.display = 'none';
+
+  try {
+    const { data, error } = await supabase
+      .from('saved_designs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    designsLoading.style.display = 'none';
+
+    if (!data || data.length === 0) {
+      designsEmpty.style.display = 'block';
+      designsEmpty.textContent = 'Nenhum projeto salvo encontrado.';
+      return;
+    }
+
+    data.forEach(design => {
+      const card = document.createElement('div');
+      card.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; background: var(--bg-surface);';
+      card.onmouseover = () => card.style.transform = 'translateY(-4px)';
+      card.onmouseout = () => card.style.transform = 'translateY(0)';
+      
+      const imgHtml = design.thumbnail_url 
+        ? `<img src="${design.thumbnail_url}" style="width: 100%; height: 150px; object-fit: cover; border-bottom: 1px solid var(--border-color); display: block;">`
+        : `<div style="width: 100%; height: 150px; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">Sem Imagem</div>`;
+
+      const date = new Date(design.created_at).toLocaleDateString();
+
+      card.innerHTML = `
+        ${imgHtml}
+        <div style="padding: 12px; position: relative;">
+          <h4 style="margin: 0 0 4px 0; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 30px;" title="${design.name}">${design.name}</h4>
+          <div style="font-size: 12px; color: var(--text-secondary);">${date}</div>
+          <button class="delete-design-btn" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; border-radius: 4px;" title="Excluir" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        loadDesignIntoEngine(design);
+        if (designsModal) designsModal.classList.add('hidden');
+      });
+      
+      const delBtn = card.querySelector('.delete-design-btn');
+      delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm(`Tem certeza que deseja apagar "${design.name}"?`)) {
+          const oldHtml = delBtn.innerHTML;
+          delBtn.innerHTML = '...';
+          
+          const { error } = await supabase.from('saved_designs').delete().eq('id', design.id);
+          
+          if (!error) {
+            // Remove thumb
+            if (design.thumbnail_url) {
+               const oldPath = design.thumbnail_url.split('/').pop();
+               supabase.storage.from('thumbnails').remove([`${currentUser.id}/${oldPath}`]);
+            }
+            card.remove();
+            if (designsGrid.children.length === 0) {
+              designsEmpty.style.display = 'block';
+            }
+          } else {
+            console.error(error);
+            alert('Erro ao apagar projeto.');
+            delBtn.innerHTML = oldHtml;
+          }
+        }
+      });
+
+      designsGrid.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Error loading designs:', err);
+    designsLoading.style.display = 'none';
+    designsEmpty.style.display = 'block';
+    designsEmpty.textContent = 'Erro ao carregar projetos: ' + err.message;
+  }
+}
+
+function loadDesignIntoEngine(design) {
+  // Load SVG
+  currentSvgText = design.svg_data;
+  engine.loadSVG(currentSvgText);
+  
+  // Update UI Inputs
+  if (design.settings) {
+    if (design.settings.height !== undefined) {
+      heightVal.value = design.settings.height;
+      heightSlider.value = design.settings.height;
+    }
+    if (design.settings.wall !== undefined) {
+      wallVal.value = design.settings.wall;
+      wallSlider.value = design.settings.wall;
+    }
+    if (design.settings.baseWidth !== undefined) {
+      baseWidthVal.value = design.settings.baseWidth;
+      baseWidthSlider.value = design.settings.baseWidth;
+    }
+    if (design.settings.baseHeight !== undefined) {
+      baseHeightVal.value = design.settings.baseHeight;
+      baseHeightSlider.value = design.settings.baseHeight;
+    }
+    if (design.settings.enableContour !== undefined) {
+      enableContourToggle.checked = design.settings.enableContour;
+      contourSlidersDiv.style.display = design.settings.enableContour ? 'block' : 'none';
+    }
+    if (design.settings.contourOffset !== undefined) {
+      contourOffsetVal.value = design.settings.contourOffset;
+      contourOffsetSlider.value = design.settings.contourOffset;
+    }
+    if (design.settings.stampHeight !== undefined) {
+      stampHeightVal.value = design.settings.stampHeight;
+      stampHeightSlider.value = design.settings.stampHeight;
+    }
+    if (design.settings.modelWidth !== undefined) {
+      modelWidthInput.value = design.settings.modelWidth;
+    }
+    if (design.settings.modelDepth !== undefined) {
+      modelDepthInput.value = design.settings.modelDepth;
+    }
+  }
+
+  // Visual Update
+  fileNameDisplay.style.display = 'block';
+  fileNameDisplay.textContent = design.name + ' (Carregado)';
+  
+  updateModel();
+}

@@ -80,21 +80,42 @@ function updateAuthUI() {
       : currentUser.email.charAt(0).toUpperCase();
 
     authSection.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <button id="logout-btn" class="text-btn" style="font-size: 13px; color: var(--text-secondary); background: none; border: none; cursor: pointer;">${t('nav.logout')}</button>
+      <div style="display: flex; align-items: center; gap: 12px; position: relative;">
         <div id="topbar-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--text-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; cursor: pointer;" title="${t('profile.title')}">
           ${avatarContent}
+        </div>
+        <!-- Dropdown Menu -->
+        <div id="avatar-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex-direction: column; min-width: 150px; z-index: 1000; overflow: hidden;">
+          <button id="dropdown-profile-btn" style="padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; color: var(--text-primary); font-size: 14px; border-bottom: 1px solid var(--border-color);" onmouseover="this.style.background='var(--bg-color)'" onmouseout="this.style.background='none'" data-i18n="profile.title">Perfil</button>
+          <button id="dropdown-designs-btn" style="padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; color: var(--text-primary); font-size: 14px; border-bottom: 1px solid var(--border-color);" onmouseover="this.style.background='var(--bg-color)'" onmouseout="this.style.background='none'" data-i18n="app.my_designs">Meus Projetos</button>
+          <button id="dropdown-logout-btn" style="padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; color: var(--text-secondary); font-size: 14px;" onmouseover="this.style.background='var(--bg-color)'" onmouseout="this.style.background='none'" data-i18n="nav.logout">Sair</button>
         </div>
       </div>
     `;
     
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await supabase.auth.signOut();
+    const avatar = document.getElementById('topbar-avatar');
+    const dropdown = document.getElementById('avatar-dropdown');
+    
+    avatar?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
     });
     
-    document.getElementById('topbar-avatar')?.addEventListener('click', async () => {
+    document.addEventListener('click', () => {
+      if (dropdown) dropdown.style.display = 'none';
+    });
+    
+    document.getElementById('dropdown-profile-btn')?.addEventListener('click', async () => {
       const { openProfileModal } = await import('./profile.js');
       openProfileModal();
+    });
+
+    document.getElementById('dropdown-designs-btn')?.addEventListener('click', () => {
+      window.dispatchEvent(new Event('open-designs-modal'));
+    });
+
+    document.getElementById('dropdown-logout-btn')?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
     });
   } else {
     authSection.innerHTML = `<button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">${t('nav.login')}</button>`;
