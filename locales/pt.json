@@ -93,7 +93,11 @@
     "contour_offset": "Distância do Contorno",
     "contour_offset_desc": "Espaço entre o desenho e a borda do cortador",
     "stamp_height": "Altura do Carimbo",
-    "stamp_height_desc": "Altura das linhas internas (deve ser menor que a do cortador)"
+    "stamp_height_desc": "Altura das linhas internas (deve ser menor que a do cortador)",
+    "save_design": "Salvar",
+    "my_designs": "Meus Projetos",
+    "save_prompt": "Nome do design:",
+    "save_success": "Projeto salvo com sucesso!"
   },
   "cropper": {
     "title": "Recortar Imagem",
