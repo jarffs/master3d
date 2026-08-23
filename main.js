@@ -5,9 +5,11 @@ import ImageTracer from 'imagetracerjs';
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange } from './auth.js';
 import { t } from './i18n.js';
+import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 
 let scene, camera, renderer, controls;
 let engine;
+let viewHelper;
 let currentSvgText = null;
 let buildPlateGroup = null;
 let printersData = [];
@@ -65,6 +67,27 @@ function initThree() {
   camera.up.set(0, 0, 1); // Z is up
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.autoClear = false;
+  viewHelper = new ViewHelper(camera, renderer.domElement);
+  if (viewHelper.location) {
+    viewHelper.location.bottom = null;
+    viewHelper.location.top = 16;
+    viewHelper.location.right = 16;
+  }
+  
+  const canvasContainer = document.getElementById('canvas-container');
+  if (canvasContainer) {
+    canvasContainer.addEventListener('pointerup', (e) => {
+      viewHelper.handleClick(e);
+    });
+  }
+
+  const homeBtn = document.getElementById('home-view-btn');
+  if (homeBtn) {
+    homeBtn.addEventListener('click', () => {
+      frameCamera();
+    });
+  }
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
@@ -176,7 +199,11 @@ function onWindowResize() {
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
+  renderer.clear();
   renderer.render(scene, camera);
+  if (viewHelper) {
+    viewHelper.render(renderer);
+  }
 }
 
 function updateBuildPlate() {
