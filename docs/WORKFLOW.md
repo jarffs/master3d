@@ -22,11 +22,15 @@ A plataforma adota uma abordagem Multi-Ferramentas. O ecossistema é dividido em
 
 ---
 
-## 3. Autenticação e Onboarding
-- **Registro/Login:** O usuário pode se cadastrar a qualquer momento clicando no botão "Login" no topo da tela, que abre um modal limpo e responsivo.
-- **Integração com Supabase:** O sistema utiliza Supabase Auth. Após o login, a página não precisa recarregar completamente (SPA mindset), atualizando apenas o estado dos botões.
-- **Perfil do Usuário:** Uma vez logado, a foto de perfil (ou avatar padrão) e o menu de usuário aparecem no cabeçalho.
-- **Recuperação:** Fluxo padrão de "Esqueci minha senha" está disponível no modal.
+## 3. Autenticação e Onboarding (Email & Google Auth)
+- **Registro/Login:** O usuário pode se cadastrar clicando no botão "Login" no topo da tela, que abre um modal limpo e responsivo.
+- **Autenticação via Google (OAuth):** 
+  - Ao clicar em "Entrar com Google", o frontend chama a função `signInWithOAuth` do Supabase.
+  - O utilizador é redirecionado para a página segura de login da Google, onde autoriza a aplicação.
+  - Após a autorização, a Google redireciona de volta para a nossa plataforma com um token seguro.
+  - O Supabase captura o token, cria a sessão na base de dados e, através de um *Trigger* SQL, cria automaticamente uma linha na tabela `profiles` com os dados do utilizador (nome, email, avatar da Google) e com um saldo inicial de 3 Créditos.
+- **Email e Senha:** Continua disponível com fluxo tradicional e recuperação de senha.
+- **Integração SPA:** Após o login, a página atualiza apenas o estado dos botões e exibe o saldo de créditos no cabeçalho.
 
 ---
 
@@ -52,16 +56,17 @@ O coração do aplicativo. O fluxo de criação de um modelo segue as seguintes 
 
 ---
 
-## 6. Exportação e Modelo de Negócios (Free vs PRO)
+## 6. Exportação e Economia de Créditos (Pay-As-You-Go)
 
-O sistema verifica os limites através da tabela `profiles` no Supabase antes de permitir downloads.
+O sistema verifica o saldo de créditos do utilizador na tabela `profiles` do Supabase antes de permitir downloads de ficheiros STL. O modelo de negócios baseia-se na venda de pacotes de créditos.
 
-### Usuário Free (Conta Gratuita)
-- **Criação e Salvamento:** Ilimitado na nuvem. O usuário pode criar dezenas de designs.
-- **Exportação STL:** Restrito por cotas semanais (ex: 1 a 3 downloads por semana).
-- **Paywall Inteligente:** Se a cota semanal for esgotada, ao clicar em "Baixar STL", o sistema bloqueia o download e abre um modal sugerindo o upgrade para o plano PRO via Stripe.
+### Usuário Starter (Conta Gratuita)
+- **Créditos Iniciais:** Ao criar a conta (via Google ou Email), o utilizador recebe automaticamente 3 Créditos grátis.
+- **Criação Visual:** Ilimitada no navegador. O utilizador pode gerar e visualizar em 3D dezenas de designs.
+- **Salvar na Nuvem:** Liberado.
+- **Paywall Inteligente:** Quando o saldo atinge `0`, o botão "Exportar STL" é bloqueado e o utilizador é convidado a visitar a página de preços para comprar um novo pacote.
 
-### Usuário PRO (Assinante Stripe)
-- **Desbloqueio Total:** O sistema identifica o status `plan_type = 'pro'` e remove qualquer trava de exportação.
-- **Downloads Ilimitados:** Arquivos STL podem ser exportados sem contadores.
-- **Gerenciamento de Assinatura:** Pelo menu do usuário, é possível acessar o "Portal do Cliente Stripe" para gerenciar o cartão de crédito, baixar faturas ou cancelar a assinatura de forma self-service.
+### Transações e Débito de Créditos (Stripe & Supabase)
+1. **Compra de Pacote:** O utilizador compra um pacote (ex: 50 STLs por €15) via *Stripe Payment Links*.
+2. **Webhook Seguro:** O Stripe dispara um evento para a nossa *Supabase Edge Function* (`stripe-webhook`). A função valida a compra e injeta `+50` créditos na tabela `profiles` do utilizador.
+3. **Débito Seguro (RPC):** Quando o utilizador clica em "Exportar STL", o frontend chama uma *Stored Procedure* (RPC) no Supabase. Esta função verifica se `credits > 0`. Se for verdade, a função subtrai `1` crédito na base de dados e devolve `true` ao frontend, permitindo finalmente a geração e download do ficheiro. Caso contrário, devolve `false` e bloqueia a ação. Isto impede qualquer manipulação via consola do navegador.
