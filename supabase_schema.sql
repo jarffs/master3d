@@ -29,6 +29,7 @@ create table public.saved_designs (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references auth.users on delete cascade not null,
   name text not null,
+  tool_type text default 'cookie_cutter' not null,
   svg_data text not null,
   settings jsonb not null,
   thumbnail_url text,

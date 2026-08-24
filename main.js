@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CookieCutterEngine } from './CookieCutterEngine.js';
+import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
+import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import ImageTracer from 'imagetracerjs';
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange } from './auth.js';
@@ -28,22 +29,7 @@ const bpWarning = document.getElementById('bp-warning');
 const printerProfileSelect = document.getElementById('printer-profile');
 
 // Sliders
-const heightSlider = document.getElementById('height-slider');
-const heightVal = document.getElementById('height-val-input');
-const wallSlider = document.getElementById('wall-slider');
-const wallVal = document.getElementById('wall-val-input');
-const baseWidthSlider = document.getElementById('base-width-slider');
-const baseWidthVal = document.getElementById('base-width-val-input');
-const baseHeightSlider = document.getElementById('base-height-slider');
-const baseHeightVal = document.getElementById('base-height-val-input');
-
-
-const enableContourToggle = document.getElementById('enable-contour');
-const contourSlidersDiv = document.getElementById('contour-sliders');
-const contourOffsetSlider = document.getElementById('contour-offset-slider');
-const contourOffsetVal = document.getElementById('contour-offset-val-input');
-const stampHeightSlider = document.getElementById('stamp-height-slider');
-const stampHeightVal = document.getElementById('stamp-height-val-input');
+let controlBuilder;
 
 // Model Dimensions
 const modelWidthInput = document.getElementById('model-width');
@@ -97,6 +83,15 @@ function initThree() {
   loadPrinters();
   initUI();
   updateBuildPlate();
+
+  // Hub Modal Logic
+  const hubModal = document.getElementById('hub-modal');
+  document.getElementById('tool-cookie-cutter').addEventListener('click', () => {
+    engine = new CookieCutterEngine(scene);
+    controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
+    controlBuilder.build(engine.getControlSchema(), t);
+    hubModal.style.display = 'none';
+  });
   
   onAuthChange((user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth
@@ -180,7 +175,8 @@ function initUI() {
   fillLight.position.set(-50, -50, -50);
   scene.add(fillLight);
 
-  engine = new CookieCutterEngine(scene);
+  // Engine is now initialized when user selects a tool in the Hub
+  // engine = new CookieCutterEngine(scene);
 
   window.addEventListener('resize', onWindowResize);
   
@@ -439,19 +435,12 @@ function frameCamera() {
 }
 
 function updateModel() {
-  if (!currentSvgText) return;
+  if (!currentSvgText || !engine || !controlBuilder) return;
   
-  const params = {
-    height: parseFloat(heightSlider.value),
-    wallThickness: parseFloat(wallSlider.value),
-    baseWidth: parseFloat(baseWidthSlider.value),
-    baseHeight: parseFloat(baseHeightSlider.value),
-    targetWidth: parseFloat(modelWidthInput.value) || 80,
-    targetDepth: parseFloat(modelDepthInput.value) || 80,
-    enableContour: enableContourToggle.checked,
-    contourOffset: parseFloat(contourOffsetSlider.value),
-    stampHeight: parseFloat(stampHeightSlider.value)
-  };
+  const params = controlBuilder.getValues();
+  params.targetWidth = parseFloat(modelWidthInput.value) || 80;
+  params.targetDepth = parseFloat(modelDepthInput.value) || 80;
+  
   const success = engine.generate3DModel(params);
   
   if (success) {
@@ -478,14 +467,10 @@ function initDimensionsFromSVG() {
   dimensionsSection.style.display = '';
   
   // Run a preliminary generation to get aspect ratio
-  const tempParams = {
-    height: parseFloat(heightSlider.value),
-    wallThickness: parseFloat(wallSlider.value),
-    baseWidth: parseFloat(baseWidthSlider.value),
-    baseHeight: parseFloat(baseHeightSlider.value),
-    targetWidth: 80,
-    targetDepth: 80
-  };
+  if (!engine || !controlBuilder) return;
+  const tempParams = controlBuilder.getValues();
+  tempParams.targetWidth = 80;
+  tempParams.targetDepth = 80;
   engine.generate3DModel(tempParams);
   
   if (engine.svgAspectRatio) {
@@ -645,42 +630,7 @@ uploadInput.addEventListener('change', (e) => {
   }
 });
 
-// Update value displays and model on slider change
-function setupSlider(slider, displayInput) {
-  // Update input when slider moves
-  slider.addEventListener('input', (e) => {
-    displayInput.value = e.target.value;
-    updateModel();
-  });
-  
-  // Update slider when input changes
-  displayInput.addEventListener('change', (e) => {
-    // Basic validation
-    let val = parseFloat(e.target.value);
-    const min = parseFloat(slider.min);
-    const max = parseFloat(slider.max);
-    
-    if (isNaN(val)) val = parseFloat(slider.value);
-    if (val < min) val = min;
-    if (val > max) val = max;
-    
-    e.target.value = val;
-    slider.value = val;
-    updateModel();
-  });
-}
-
-setupSlider(heightSlider, heightVal);
-setupSlider(wallSlider, wallVal);
-setupSlider(baseWidthSlider, baseWidthVal);
-setupSlider(baseHeightSlider, baseHeightVal);
-
-enableContourToggle.addEventListener('change', (e) => {
-  contourSlidersDiv.style.display = e.target.checked ? 'block' : 'none';
-  updateModel();
-});
-setupSlider(contourOffsetSlider, contourOffsetVal);
-setupSlider(stampHeightSlider, stampHeightVal);
+// Static slider listeners removed, handled by ControlBuilder
 
 
 downloadBtn.addEventListener('click', async () => {
@@ -806,17 +756,9 @@ if (saveDesignBtn) {
       const publicUrl = urlData.publicUrl;
       
       // 2. Save Settings
-      const settings = {
-        height: parseFloat(heightVal.value),
-        wall: parseFloat(wallVal.value),
-        baseWidth: parseFloat(baseWidthVal.value),
-        baseHeight: parseFloat(baseHeightVal.value),
-        enableContour: enableContourToggle.checked,
-        contourOffset: parseFloat(contourOffsetVal.value),
-        stampHeight: parseFloat(stampHeightVal.value),
-        modelWidth: parseFloat(modelWidthInput.value),
-        modelDepth: parseFloat(modelDepthInput.value)
-      };
+      const settings = controlBuilder ? controlBuilder.getValues() : {};
+      settings.modelWidth = parseFloat(modelWidthInput.value);
+      settings.modelDepth = parseFloat(modelDepthInput.value);
       
       // 3. Insert or Update into Database
       if (existingDesign) {
@@ -824,6 +766,7 @@ if (saveDesignBtn) {
           svg_data: currentSvgText,
           settings: settings,
           thumbnail_url: publicUrl,
+          tool_type: engine ? engine.name : 'cookie_cutter',
           updated_at: new Date().toISOString()
         }).eq('id', existingDesign.id);
         
@@ -840,6 +783,7 @@ if (saveDesignBtn) {
           name: projectName,
           svg_data: currentSvgText,
           settings: settings,
+          tool_type: engine ? engine.name : 'cookie_cutter',
           thumbnail_url: publicUrl
         });
         
@@ -966,40 +910,33 @@ async function loadDesigns() {
 }
 
 function loadDesignIntoEngine(design) {
+  // Identify engine based on tool_type
+  const toolType = design.tool_type || 'cookie_cutter';
+  
+  if (toolType === 'cookie_cutter') {
+    engine = new CookieCutterEngine(scene);
+  } else {
+    // Fallback for future engines
+    engine = new CookieCutterEngine(scene);
+  }
+
+  // Rebuild dynamic controls
+  controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
+  controlBuilder.build(engine.getControlSchema(), t);
+  document.getElementById('hub-modal').style.display = 'none';
+
   // Load SVG
   currentSvgText = design.svg_data;
   engine.loadSVG(currentSvgText);
   
   // Update UI Inputs
   if (design.settings) {
-    if (design.settings.height !== undefined) {
-      heightVal.value = design.settings.height;
-      heightSlider.value = design.settings.height;
+    // Remapear valores salvos antigos pro novo formato (ex: 'wall' -> 'wallThickness') se necessário
+    if (design.settings.wall !== undefined && design.settings.wallThickness === undefined) {
+      design.settings.wallThickness = design.settings.wall;
     }
-    if (design.settings.wall !== undefined) {
-      wallVal.value = design.settings.wall;
-      wallSlider.value = design.settings.wall;
-    }
-    if (design.settings.baseWidth !== undefined) {
-      baseWidthVal.value = design.settings.baseWidth;
-      baseWidthSlider.value = design.settings.baseWidth;
-    }
-    if (design.settings.baseHeight !== undefined) {
-      baseHeightVal.value = design.settings.baseHeight;
-      baseHeightSlider.value = design.settings.baseHeight;
-    }
-    if (design.settings.enableContour !== undefined) {
-      enableContourToggle.checked = design.settings.enableContour;
-      contourSlidersDiv.style.display = design.settings.enableContour ? 'block' : 'none';
-    }
-    if (design.settings.contourOffset !== undefined) {
-      contourOffsetVal.value = design.settings.contourOffset;
-      contourOffsetSlider.value = design.settings.contourOffset;
-    }
-    if (design.settings.stampHeight !== undefined) {
-      stampHeightVal.value = design.settings.stampHeight;
-      stampHeightSlider.value = design.settings.stampHeight;
-    }
+    controlBuilder.setValues(design.settings);
+    
     if (design.settings.modelWidth !== undefined) {
       modelWidthInput.value = design.settings.modelWidth;
     }
@@ -1007,7 +944,9 @@ function loadDesignIntoEngine(design) {
       modelDepthInput.value = design.settings.modelDepth;
     }
   }
-
+  
+  dimensionsSection.style.display = '';
+  
   // Visual Update
   fileNameDisplay.style.display = 'block';
   fileNameDisplay.textContent = design.name + ' (Carregado)';

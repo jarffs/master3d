@@ -1,0 +1,170 @@
+export class ControlBuilder {
+  constructor(containerId, onChangeCallback) {
+    this.container = document.getElementById(containerId);
+    this.onChangeCallback = onChangeCallback;
+    this.controls = {};
+  }
+
+  build(schema, t) {
+    if (!this.container) return;
+    this.container.innerHTML = '';
+    this.controls = {};
+
+    // Agrupar por categoria
+    const categories = {};
+    schema.forEach(item => {
+      const cat = item.category || 'general';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(item);
+    });
+
+    Object.keys(categories).forEach(cat => {
+      const section = document.createElement('div');
+      section.className = 'settings';
+      section.id = `section-${cat}`;
+      
+      const header = document.createElement('div');
+      header.className = 'settings-header';
+      header.style.marginBottom = '20px';
+      
+      const title = document.createElement('span');
+      title.className = 'settings-title';
+      title.style.fontSize = '13px';
+      title.style.fontWeight = '600';
+      title.style.color = 'var(--text-secondary)';
+      title.style.textTransform = 'uppercase';
+      title.style.letterSpacing = '0.5px';
+      // Localização da categoria pode ser mapeada, ou usar uma key
+      title.textContent = t ? t(`app.category_${cat}`) : cat.toUpperCase();
+      
+      header.appendChild(title);
+      section.appendChild(header);
+
+      categories[cat].forEach(item => {
+        const controlWrapper = this._createControl(item, t);
+        section.appendChild(controlWrapper);
+      });
+
+      this.container.appendChild(section);
+    });
+
+    // Inicializar lógica de dependências (visibility)
+    this._updateDependencies(schema);
+  }
+
+  _createControl(item, t) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'slider-group';
+    if (item.dependsOn) {
+      wrapper.id = `wrapper-${item.id}`;
+      wrapper.style.display = 'none'; // Hidden by default if it depends on something
+    }
+
+    if (item.type === 'slider') {
+      wrapper.innerHTML = `
+        <div class="slider-header">
+          <div class="label-container" style="display: flex; flex-direction: column;">
+            <label for="${item.id}-slider" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${t ? t(item.label) : item.label}</label>
+            <div class="label-desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${t ? t(item.desc) : item.desc}</div>
+          </div>
+          <div class="slider-val-box">
+            <input type="number" id="${item.id}-val-input" value="${item.default}" min="${item.min}" max="${item.max}" step="${item.step}" />
+            <span class="slider-suffix">${item.suffix || ''}</span>
+          </div>
+        </div>
+        <div class="slider-track-wrapper">
+          <span class="limit limit-min">${item.min}</span>
+          <input type="range" id="${item.id}-slider" min="${item.min}" max="${item.max}" value="${item.default}" step="${item.step}" />
+          <span class="limit limit-max">${item.max}</span>
+        </div>
+      `;
+
+      // Event listeners
+      setTimeout(() => {
+        const slider = document.getElementById(`${item.id}-slider`);
+        const input = document.getElementById(`${item.id}-val-input`);
+        this.controls[item.id] = { slider, input, type: 'slider', dependsOn: item.dependsOn };
+
+        const updateValue = (val) => {
+          let num = parseFloat(val);
+          if (isNaN(num)) num = item.default;
+          if (num < item.min) num = item.min;
+          if (num > item.max) num = item.max;
+          slider.value = num;
+          input.value = num;
+          if (this.onChangeCallback) this.onChangeCallback(item.id, num);
+        };
+
+        slider.addEventListener('input', (e) => updateValue(e.target.value));
+        input.addEventListener('change', (e) => updateValue(e.target.value));
+      }, 0);
+
+    } else if (item.type === 'toggle') {
+      wrapper.className = 'control-group toggle-group';
+      wrapper.style.marginBottom = '20px';
+      wrapper.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+          <label for="${item.id}" style="font-size: 14px; font-weight: 600; color: var(--text-primary); cursor: pointer;">${t ? t(item.label) : item.label}</label>
+          <label class="switch" style="margin: 0;">
+            <input type="checkbox" id="${item.id}" ${item.default ? 'checked' : ''}>
+            <span class="slider round"></span>
+          </label>
+        </div>
+        <div class="label-desc" style="font-size: 12px; color: var(--text-secondary);">${t ? t(item.desc) : item.desc}</div>
+      `;
+
+      setTimeout(() => {
+        const checkbox = document.getElementById(item.id);
+        this.controls[item.id] = { checkbox, type: 'toggle' };
+
+        checkbox.addEventListener('change', (e) => {
+          this._updateDependencies();
+          if (this.onChangeCallback) this.onChangeCallback(item.id, e.target.checked);
+        });
+      }, 0);
+    }
+
+    return wrapper;
+  }
+
+  _updateDependencies() {
+    Object.keys(this.controls).forEach(key => {
+      const ctrl = this.controls[key];
+      if (ctrl.dependsOn) {
+        const wrapper = document.getElementById(`wrapper-${key}`);
+        const dependencyCtrl = this.controls[ctrl.dependsOn];
+        if (dependencyCtrl && dependencyCtrl.type === 'toggle') {
+          wrapper.style.display = dependencyCtrl.checkbox.checked ? 'block' : 'none';
+        }
+      }
+    });
+  }
+
+  getValues() {
+    const values = {};
+    Object.keys(this.controls).forEach(key => {
+      const ctrl = this.controls[key];
+      if (ctrl.type === 'slider') {
+        values[key] = parseFloat(ctrl.slider.value);
+      } else if (ctrl.type === 'toggle') {
+        values[key] = ctrl.checkbox.checked;
+      }
+    });
+    return values;
+  }
+
+  setValues(values) {
+    Object.keys(values).forEach(key => {
+      const ctrl = this.controls[key];
+      if (ctrl) {
+        if (ctrl.type === 'slider') {
+          ctrl.slider.value = values[key];
+          ctrl.input.value = values[key];
+        } else if (ctrl.type === 'toggle') {
+          ctrl.checkbox.checked = values[key] === true || values[key] === 'true';
+        }
+      }
+    });
+    this._updateDependencies();
+  }
+}
