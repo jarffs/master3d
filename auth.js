@@ -215,7 +215,11 @@ authForm?.addEventListener('submit', async (e) => {
       authModal.classList.add('hidden');
     }
   } catch (err) {
-    authError.textContent = err.message || t('js.error_login');
+    if (err.message && err.message.includes("Failed to execute 'fetch'")) {
+      authError.textContent = "Erro de configuração: Verifique as variáveis de ambiente do Supabase no Vercel.";
+    } else {
+      authError.textContent = err.message || t('js.error_login');
+    }
     authError.classList.remove('hidden');
   } finally {
     if (!isRecoveryMode) {
