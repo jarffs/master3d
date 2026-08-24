@@ -179,5 +179,27 @@
     "loading": "Loading...",
     "error_avatar": "Error saving avatar.",
     "error_load_printers": "Error loading printers."
+  },
+  "pricing": {
+    "title": "Plans & Credits",
+    "starter_title": "Starter",
+    "starter_price": "€0",
+    "starter_f1": "3 Free Credits (STLs)",
+    "starter_f2": "Unlimited visual generator",
+    "starter_f3": "Personal Use",
+    "starter_btn": "Try for Free",
+    "pack_title": "Popular Pack",
+    "pack_price": "€14.90",
+    "pack_price_desc": " / 50 STLs",
+    "pack_f1": "50 Credits (~€0.29/STL)",
+    "pack_f2": "Credits never expire",
+    "pack_btn": "Buy Pack",
+    "commercial_license": "Commercial Selling License",
+    "annual_title": "Pro Maker (Annual)",
+    "annual_price": "€99",
+    "annual_price_desc": "/year",
+    "annual_f1": "500 Credits (~€0.20/STL)",
+    "annual_f2": "Cloud Save Designs",
+    "annual_btn": "Subscribe Annual"
   }
 }

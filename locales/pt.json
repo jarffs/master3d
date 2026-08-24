@@ -179,5 +179,27 @@
     "loading": "Carregando...",
     "error_avatar": "Erro ao salvar avatar.",
     "error_load_printers": "Erro ao carregar impressoras."
+  },
+  "pricing": {
+    "title": "Planos e Créditos",
+    "starter_title": "Starter",
+    "starter_price": "€0",
+    "starter_f1": "3 Créditos Grátis (STLs)",
+    "starter_f2": "Gerador visual Ilimitado",
+    "starter_f3": "Uso Pessoal",
+    "starter_btn": "Testar Grátis",
+    "pack_title": "Pacote Popular",
+    "pack_price": "€14.90",
+    "pack_price_desc": " / 50 STLs",
+    "pack_f1": "50 Créditos (~€0.29/STL)",
+    "pack_f2": "Os créditos não expiram",
+    "pack_btn": "Comprar Pacote",
+    "commercial_license": "Licença Comercial de Venda",
+    "annual_title": "Pro Maker (Anual)",
+    "annual_price": "€99",
+    "annual_price_desc": "/ano",
+    "annual_f1": "500 Créditos (~€0.20/STL)",
+    "annual_f2": "Salvar Designs na Nuvem",
+    "annual_btn": "Assinar Anual"
   }
 }

@@ -12,9 +12,10 @@ Este roadmap define as etapas para evoluir a aplicação estática (Vanilla HTML
 ## FASE 2: Sistema de Autenticação (Auth)
 - [x] Implementar Modal / Página de Login e Registro.
 - [x] Integrar a autenticação de E-mail/Senha com o Supabase Auth.
+- [ ] Integrar autenticação Google OAuth no Supabase.
 - [x] Adicionar fluxo de "Esqueci a minha senha" (Recuperação de Senha).
 - [x] Controlar o estado global de Auth (Saber se o usuário está logado ou não e alterar a UI do topo do site).
-- [x] Bloquear o botão "Exportar STL" para usuários não autenticados (conforme regra de negócio).
+- [x] Bloquear o botão "Exportar STL" para usuários não autenticados ou sem créditos.
 
 ## FASE 3: Perfil do Usuário
 - [x] Criar aba "Meu Perfil" na interface.
@@ -22,13 +23,14 @@ Este roadmap define as etapas para evoluir a aplicação estática (Vanilla HTML
 - [x] Criar interface para o usuário cadastrar novas mesas (`custom_build_plates`).
 - [x] Integrar a lista de mesas customizadas ao dropdown da aplicação (combinando com o `printers.json`).
 
-## FASE 4: Landing Page, Monetização (Stripe) e Limites
-- [x] **Landing Page:** Criar uma página inicial (`index.html`) para apresentar o produto, benefícios e tabela de preços.
+## FASE 4: Landing Page, Monetização (Stripe) e Economia de Créditos
+- [x] **Landing Page:** Criar uma página inicial (`index.html`) para apresentar o produto.
+- [ ] **Nova Estrutura de Preços (Créditos):** Reformular o `index.html` para exibir a venda de Pacotes de Créditos avulsos (Pay-As-You-Go) e um Plano Anual.
 - [x] **Configuração de Build:** Configurar `vite.config.js` para múltiplas páginas (`index.html` e `app.html`).
-- [x] **Integração Stripe:** Configurar Stripe Checkout para permitir que os usuários assinem planos.
-- [x] **Webhook do Stripe:** Criar uma Supabase Edge Function para escutar os pagamentos do Stripe e atualizar o status do usuário na tabela `profiles`.
-- [x] **Limites de Exportação (Free Tier):** Bloqueio para usuários gratuitos que excedem o limite semanal de exportações (tabela `export_logs`).
-- [x] **Portal do Cliente:** Integrar o Stripe Customer Portal para o usuário poder cancelar ou alterar a assinatura.
+- [ ] **Tabela Profiles (Créditos):** Adicionar coluna `credits` à tabela `profiles` no Supabase (com default 3 para novos usuários).
+- [ ] **Integração Stripe:** Configurar Stripe Checkout (Payment Links) para a venda dos pacotes de créditos e plano anual.
+- [ ] **Supabase Edge Function (Webhook do Stripe):** Criar e hospedar uma Edge Function (`stripe-webhook`) para escutar compras de créditos e usar o *Service Role* para somá-los de forma segura na tabela `profiles`.
+- [ ] **Débito Seguro de Créditos:** Criar uma RPC (Remote Procedure Call) no Supabase para deduzir 1 crédito de forma segura sempre que um utilizador solicitar um download de STL.
 
 ## FASE 5: Integração Principal (Salvar Designs)
 - [x] Adicionar botão "Salvar Design".
