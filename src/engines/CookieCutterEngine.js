@@ -80,14 +80,14 @@ export class CookieCutterEngine extends BaseEngine {
         dependsOn: 'enableContour'
       },
       {
-        id: 'stampHeight',
+        id: 'contourHeight',
         type: 'slider',
-        label: 'app.stamp_height',
-        desc: 'app.stamp_height_desc',
-        min: 1,
+        label: 'app.contour_height',
+        desc: 'app.contour_height_desc',
+        min: 5,
         max: 30,
         step: 1,
-        default: 10,
+        default: 15,
         suffix: 'mm',
         category: 'contour',
         dependsOn: 'enableContour'
@@ -101,6 +101,7 @@ export class CookieCutterEngine extends BaseEngine {
     this.clear(); // Limpa a geometria anterior da scene
 
     // Mapeando variáveis com fallback pros valores default se omitidos
+    // Quando o contorno está ligado, height passa a ser a altura do desenho (carimbo)
     const height = parseFloat(params.height) || 15;
     const wallThickness = parseFloat(params.wallThickness) || 1.2;
     const baseWidth = parseFloat(params.baseWidth) || 4;
@@ -112,7 +113,9 @@ export class CookieCutterEngine extends BaseEngine {
 
     const enableContour = params.enableContour === true || params.enableContour === 'true';
     const contourOffset = parseFloat(params.contourOffset) || 5;
-    const stampHeight = parseFloat(params.stampHeight) || Math.max(baseHeight + 1, height - 3);
+    
+    // Altura da parede externa do contorno
+    const contourHeight = parseFloat(params.contourHeight) || Math.max(baseHeight + 1, height + 3);
 
     const scale = 1000;
 
@@ -179,7 +182,7 @@ export class CookieCutterEngine extends BaseEngine {
             const wallShape = new THREE.Shape(outerWallPts);
             wallShape.holes.push(new THREE.Path(holePts));
             
-            const wallGeom = new THREE.ExtrudeGeometry(wallShape, { depth: height, bevelEnabled: false, curveSegments: 12 });
+            const wallGeom = new THREE.ExtrudeGeometry(wallShape, { depth: contourHeight, bevelEnabled: false, curveSegments: 12 });
             const wallMesh = new THREE.Mesh(wallGeom, this.material);
             this.group.add(wallMesh);
           }
@@ -222,7 +225,7 @@ export class CookieCutterEngine extends BaseEngine {
           });
         }
         
-        // Stamp (same hollow wall format as standard, but with stampHeight)
+        // Stamp (same hollow wall format as standard, but with height since it's the main drawing)
         allOriginalPaths.forEach(originalPath => {
           const outerStampPaths = new ClipperLib.Paths();
           const coStamp = new ClipperLib.ClipperOffset(2, 0.25);
@@ -236,7 +239,7 @@ export class CookieCutterEngine extends BaseEngine {
             const stampShape = new THREE.Shape(outerStampPts);
             stampShape.holes.push(new THREE.Path(holePts));
             
-            const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: stampHeight, bevelEnabled: false, curveSegments: 12 });
+            const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: height, bevelEnabled: false, curveSegments: 12 });
             const stampMesh = new THREE.Mesh(stampGeom, this.material);
             this.group.add(stampMesh);
           }
