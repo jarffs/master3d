@@ -32,37 +32,27 @@ export class SvgEditor {
   open(svgString, onConfirm) {
     this.onConfirmCallback = onConfirm;
     
-    // Parse the SVG
-    const parser = new DOMParser();
-    this.svgDoc = parser.parseFromString(svgString, "image/svg+xml");
+    // Parse the SVG and put it directly in the container
+    this.container.innerHTML = svgString;
     
     // Add selectable class to all geometry elements
-    const elements = this.svgDoc.querySelectorAll('path, circle, rect, polygon, polyline, ellipse');
+    const elements = this.container.querySelectorAll('path, circle, rect, polygon, polyline, ellipse');
     elements.forEach(el => {
       el.classList.add('svg-path-selectable');
-      // Some tracer generators apply inline fills. To make our CSS selection visible, we might need to rely on !important in CSS.
     });
-
-    // Render it in container
-    this.container.innerHTML = '';
-    this.container.appendChild(this.svgDoc.documentElement);
 
     // Show modal
     this.modal.style.display = 'flex';
   }
 
   deleteSelected() {
-    if (!this.svgDoc) return;
-    
-    const selected = this.svgDoc.querySelectorAll('.svg-path-selected');
+    const selected = this.container.querySelectorAll('.svg-path-selected');
     selected.forEach(el => el.remove());
   }
 
   confirm() {
-    if (!this.svgDoc) return;
-    
     // Clean up our temporary classes before exporting
-    const elements = this.svgDoc.querySelectorAll('.svg-path-selectable, .svg-path-selected');
+    const elements = this.container.querySelectorAll('.svg-path-selectable, .svg-path-selected');
     elements.forEach(el => {
       el.classList.remove('svg-path-selectable', 'svg-path-selected');
       if (el.getAttribute('class') === '') {
@@ -71,8 +61,11 @@ export class SvgEditor {
     });
 
     // Serialize back to string
+    const svgElement = this.container.querySelector('svg');
+    if (!svgElement) return;
+    
     const serializer = new XMLSerializer();
-    const cleanSvgString = serializer.serializeToString(this.svgDoc);
+    const cleanSvgString = serializer.serializeToString(svgElement);
 
     this.close();
     
@@ -80,6 +73,7 @@ export class SvgEditor {
       this.onConfirmCallback(cleanSvgString);
     }
   }
+
 
   close() {
     this.modal.style.display = 'none';
