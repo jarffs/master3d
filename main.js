@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
+import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange } from './auth.js';
@@ -10,6 +11,8 @@ import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 
 let scene, camera, renderer, controls;
 let engine;
+let controlBuilder;
+let svgEditor;
 let viewHelper;
 let currentSvgText = null;
 let buildPlateGroup = null;
@@ -28,8 +31,6 @@ const bpRotateBtn = document.getElementById('bp-rotate-btn');
 const bpWarning = document.getElementById('bp-warning');
 const printerProfileSelect = document.getElementById('printer-profile');
 
-// Sliders
-let controlBuilder;
 
 // Model Dimensions
 const modelWidthInput = document.getElementById('model-width');
@@ -97,6 +98,8 @@ function initThree() {
 
   controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
   controlBuilder.build(engine.getControlSchema(), t);
+  
+  svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
   
   onAuthChange((user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth
@@ -557,10 +560,13 @@ uploadInput.addEventListener('change', (e) => {
   if (file.name.toLowerCase().endsWith('.svg')) {
     const reader = new FileReader();
     reader.onload = (event) => {
-      currentSvgText = event.target.result;
-      engine.loadSVG(currentSvgText);
-      initDimensionsFromSVG();
-      updateModel();
+      const svgText = event.target.result;
+      svgEditor.open(svgText, (editedSvg) => {
+        currentSvgText = editedSvg;
+        engine.loadSVG(currentSvgText);
+        initDimensionsFromSVG();
+        updateModel();
+      });
     };
     reader.readAsText(file);
   } else {
@@ -623,10 +629,15 @@ uploadInput.addEventListener('change', (e) => {
              }
           });
           
-          currentSvgText = new XMLSerializer().serializeToString(doc);
-          engine.loadSVG(currentSvgText);
-          initDimensionsFromSVG();
-          updateModel();
+          const initialSvg = new XMLSerializer().serializeToString(doc);
+          
+          // Open editor for cleanup
+          svgEditor.open(initialSvg, (editedSvg) => {
+            currentSvgText = editedSvg;
+            engine.loadSVG(currentSvgText);
+            initDimensionsFromSVG();
+            updateModel();
+          });
         }, options);
       };
       img.src = dataUrl;
