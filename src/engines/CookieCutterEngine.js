@@ -183,27 +183,44 @@ export class CookieCutterEngine extends BaseEngine {
             const wallMesh = new THREE.Mesh(wallGeom, this.material);
             this.group.add(wallMesh);
           }
-          
-          // Base Flange
-          if (baseWidth > 0 && baseHeight > 0) {
-            const outerBasePaths = new ClipperLib.Paths();
-            const coBase = new ClipperLib.ClipperOffset(2, 0.25);
-            coBase.AddPath(masterPath, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
-            coBase.Execute(outerBasePaths, (wallThickness + baseWidth) * scale);
-            
-            if (outerBasePaths.length > 0) {
-              const outerBasePts = toThreeVec2(outerBasePaths[0]);
-              const holePts = toThreeVec2(masterPath);
-              
-              const baseShape = new THREE.Shape(outerBasePts);
-              baseShape.holes.push(new THREE.Path(holePts));
-              
-              const baseGeom = new THREE.ExtrudeGeometry(baseShape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
-              const baseMesh = new THREE.Mesh(baseGeom, this.material);
-              this.group.add(baseMesh);
-            }
-          }
         });
+        
+        // Solid Backing Plate (connects the contour wall to the stamp)
+        if (baseWidth > 0 && baseHeight > 0) {
+          const fullBasePaths = new ClipperLib.Paths();
+          const coBase = new ClipperLib.ClipperOffset(2, 0.25);
+          coBase.AddPaths(masterContourPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+          coBase.Execute(fullBasePaths, (wallThickness + baseWidth) * scale);
+          
+          const outerShapes = [];
+          fullBasePaths.forEach(path => {
+            if (ClipperLib.Clipper.Orientation(path)) {
+              outerShapes.push({
+                shape: new THREE.Shape(toThreeVec2(path)),
+                holes: [],
+                rawPath: path
+              });
+            }
+          });
+          
+          fullBasePaths.forEach(path => {
+            if (!ClipperLib.Clipper.Orientation(path)) {
+              const pt = path[0];
+              for (let i = 0; i < outerShapes.length; i++) {
+                 if (ClipperLib.Clipper.PointInPolygon(pt, outerShapes[i].rawPath) !== 0) {
+                   outerShapes[i].shape.holes.push(new THREE.Path(toThreeVec2(path)));
+                   break;
+                 }
+              }
+            }
+          });
+          
+          outerShapes.forEach(os => {
+            const baseGeom = new THREE.ExtrudeGeometry(os.shape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
+            const baseMesh = new THREE.Mesh(baseGeom, this.material);
+            this.group.add(baseMesh);
+          });
+        }
         
         // Stamp (same hollow wall format as standard, but with stampHeight)
         allOriginalPaths.forEach(originalPath => {
