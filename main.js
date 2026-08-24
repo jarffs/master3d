@@ -84,14 +84,19 @@ function initThree() {
   initUI();
   updateBuildPlate();
 
-  // Hub Modal Logic
-  const hubModal = document.getElementById('hub-modal');
-  document.getElementById('tool-cookie-cutter').addEventListener('click', () => {
+  // Load tool from URL
+  const params = new URLSearchParams(window.location.search);
+  const tool = params.get('tool') || 'cookie_cutter';
+
+  if (tool === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
-    controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
-    controlBuilder.build(engine.getControlSchema(), t);
-    hubModal.style.display = 'none';
-  });
+  } else {
+    // Fallback
+    engine = new CookieCutterEngine(scene);
+  }
+
+  controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
+  controlBuilder.build(engine.getControlSchema(), t);
   
   onAuthChange((user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth
@@ -923,7 +928,6 @@ function loadDesignIntoEngine(design) {
   // Rebuild dynamic controls
   controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
   controlBuilder.build(engine.getControlSchema(), t);
-  document.getElementById('hub-modal').style.display = 'none';
 
   // Load SVG
   currentSvgText = design.svg_data;

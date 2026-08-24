@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Master3D - Hub de Ferramentas</title>
+  <link rel="stylesheet" href="./style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+    
+    .hub-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    
+    .hub-content {
+      max-width: 800px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .hub-content h1 {
+      font-size: 36px;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+    
+    .hub-content p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+    }
+    
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .tool-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px 24px;
+      text-decoration: none;
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .tool-card:hover:not(.disabled) {
+      transform: translateY(-4px);
+      border-color: var(--accent-color);
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.15);
+    }
+    
+    .tool-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      position: relative;
+    }
+    
+    .tool-icon {
+      margin-bottom: 16px;
+      color: var(--accent-color);
+    }
+    
+    .tool-card.disabled .tool-icon {
+      color: var(--text-secondary);
+    }
+    
+    .tool-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .tool-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    
+    .badge-soon {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="./index.html" class="logo">CutterMaker3D</a>
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <a href="./index.html" style="color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500;">Voltar ao Início</a>
+    </div>
+  </header>
+
+  <main class="hub-container">
+    <div class="hub-content">
+      <h1>Bem-vindo ao Hub de Ferramentas</h1>
+      <p>O que você gostaria de criar hoje? Selecione uma ferramenta para começar.</p>
+      
+      <div class="tools-grid">
+        <a href="./app.html?tool=cookie_cutter" class="tool-card">
+          <svg class="tool-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div class="tool-title">Cortador de Biscoito</div>
+          <div class="tool-desc">Gerador parametrizado para cortadores e carimbos</div>
+        </a>
+        
+        <div class="tool-card disabled" title="Disponível em breve!">
+          <div class="badge-soon">Em Breve</div>
+          <svg class="tool-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          <div class="tool-title">Chaveiro 3D</div>
+          <div class="tool-desc">Crie chaveiros personalizados a partir de imagens</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
