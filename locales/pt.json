@@ -146,7 +146,8 @@
     "reset_title": "Recuperar Senha",
     "reset_desc": "Insira o seu e-mail para receber um link de recuperação.",
     "reset_btn": "Enviar Link",
-    "back_login": "Voltar ao login"
+    "back_login": "Voltar ao login",
+    "google_login": "Continuar com o Google"
   },
   "js": {
     "free_limit_reached": "Você atingiu o limite do plano Grátis de 1 exportação por semana. Faça o upgrade para um plano pago para exportar mais!",

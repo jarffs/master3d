@@ -150,6 +150,21 @@ authSwitchAction?.addEventListener('click', () => {
   }
 });
 
+document.getElementById('google-auth-btn')?.addEventListener('click', async () => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
+    if (error) throw error;
+  } catch (err) {
+    authError.textContent = err.message || t('js.error_login');
+    authError.classList.remove('hidden');
+  }
+});
+
 forgotPasswordBtn?.addEventListener('click', async () => {
   const email = document.getElementById('auth-email').value;
   authError.classList.add('hidden');

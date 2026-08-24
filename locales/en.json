@@ -146,7 +146,8 @@
     "reset_title": "Reset Password",
     "reset_desc": "Enter your email to receive a recovery link.",
     "reset_btn": "Send Link",
-    "back_login": "Back to login"
+    "back_login": "Back to login",
+    "google_login": "Continue with Google"
   },
   "js": {
     "free_limit_reached": "You have reached your Free plan limit of 1 export per week. Upgrade to a paid plan to export more!",
