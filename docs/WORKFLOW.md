@@ -1,22 +1,29 @@
 # WORKFLOW DO USUÁRIO
 
-Este documento descreve como os usuários de diferentes níveis de acesso interagem com o sistema.
+Este documento descreve como os usuários de diferentes níveis de acesso interagem com a plataforma (agora focada em ser multi-ferramentas).
 
 ## 1. Visitante (Usuário Não Autenticado)
-O visitante tem acesso à demonstração do gerador 3D.
-- **Acesso ao Gerador:** Pode abrir o app, fazer upload de um SVG, ajustar as barras e visualizar a prévia em 3D.
-- **Restrição de Download:** O botão de "Exportar STL" fica **bloqueado**. Ao tentar clicar, é exibida uma mensagem de que é necessário criar uma conta para fazer o download.
-- **Restrição de Salvamento:** O botão de "Salvar Design" exibe um modal ou redireciona para a página de Login/Cadastro.
+- **Acesso à Landing Page:** O usuário chega pela `index.html` e vê os benefícios, ferramentas disponíveis e a tabela de preços.
+- **Acesso ao Gerador (`app.html`):** Pode abrir o app, fazer upload de um SVG/Imagem, ajustar as barras e visualizar a prévia em 3D de forma gratuita.
+- **Restrição de Download:** O botão de "Exportar STL" fica **bloqueado**. Ao tentar clicar, é exibida uma mensagem de que é necessário criar uma conta.
+- **Restrição de Salvamento:** O botão de "Salvar Design" exibe o modal de Login/Cadastro.
 
 ## 2. Processo de Autenticação
-- O usuário acessa a funcionalidade de Login (via menu ou ao tentar uma ação bloqueada).
-- Informa E-mail e Senha, ou usa autenticação social (Google/GitHub, dependendo da configuração).
+- O usuário acessa a funcionalidade de Login/Registro via modal no topo da tela.
 - Após login bem-sucedido, a interface é atualizada para mostrar a área logada e a imagem de perfil do usuário.
+- Existe fluxo de recuperação de senha caso o usuário precise.
 
-## 3. Usuário Autenticado (Área Logada)
-O usuário logado possui todas as permissões ativadas:
-- **Exportação:** Pode baixar arquivos STL gerados sem restrições.
-- **Salvar Projetos:** Pode salvar a configuração atual (SVG + sliders de configuração) com um nome na nuvem.
-- **Meus Projetos:** Possui um menu ou página para visualizar e carregar (restaurar) modelos salvos anteriormente.
-- **Perfil do Usuário:** Pode atualizar seus dados e subir uma foto de perfil (Avatar).
-- **Mesas Personalizadas (Build Plates):** Pode adicionar novas mesas de impressão às configurações. Essas mesas personalizadas aparecerão automaticamente na lista (dropdown) de mesas disponíveis para aquele usuário.
+## 3. Usuário Free (Conta Gratuita)
+- **Criação e Salvamento:** Pode gerar e salvar seus projetos livremente na nuvem, acessando-os pelo menu lateral "Meus Projetos" ou aba de gerenciamento.
+- **Exportação STL Limitada:** Pode baixar arquivos STL, mas existe uma restrição de cotas (ex: 1 download gratuito por semana).
+- **Paywall:** Se a cota semanal for atingida, ao tentar baixar, um modal sugere o upgrade via Stripe Checkout.
+- **Customização de Mesa:** Pode criar e salvar configurações de mesas personalizadas.
+
+## 4. Usuário PRO (Assinante Stripe)
+- **Status PRO:** A aplicação identifica via tabela `profiles` que o usuário é assinante.
+- **Exportação STL Ilimitada:** O sistema ignora a verificação de cotas, permitindo downloads infinitos.
+- **Portal do Cliente:** O usuário tem acesso ao Stripe Customer Portal pelo menu de usuário para gerenciar ou cancelar sua assinatura.
+
+## 5. Hub e Multi-Ferramentas (Fase 6)
+- **Escolha de Ferramenta:** Ao logar, o usuário seleciona qual ferramenta deseja utilizar (ex: Cookie Cutter, Chaveiros, Litofanias).
+- O motor de renderização `ToolEngine` adapta o painel lateral com as propriedades exatas da ferramenta escolhida e carrega o projeto correto do Supabase.
