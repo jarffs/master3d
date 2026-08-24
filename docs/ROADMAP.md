@@ -46,26 +46,4 @@ A aplicação evoluirá de um "Gerador de Cortadores de Biscoito" para uma plata
 - [ ] **Revisão de Estado e UI:** Adotar um padrão de gerenciamento de estado mais robusto (ou migração para React/Vue via Vite) para facilitar a criação de novos painéis de controle dinâmicos para cada ferramenta.
 - [ ] **Extensão do Banco de Dados:** Adicionar coluna `tool_type` na tabela `saved_designs` para identificar qual motor deve ser carregado ao abrir um projeto.
 
----
 
-## Estrutura Atual (Workflow e Banco de Dados)
-
-### Workflow (Fluxo do Usuário)
-1. **Acesso:** O usuário entra em `index.html` (Landing Page). Se logado, é redirecionado ou clica para ir para o app.
-2. **Editor (`app.html`):**
-   - O usuário faz upload de um SVG ou imagem.
-   - O `ImageTracer` vetoriza as imagens e o `CookieCutterEngine` (Three.js) gera o modelo 3D em tempo real.
-   - Ajustes paramétricos ocorrem no painel esquerdo (altura, espessura, mesa de impressão).
-3. **Gestão de Projetos:** O usuário salva o projeto no Supabase (SVG + Parâmetros + Screenshot) ou carrega projetos antigos pela aba "Meus Projetos".
-4. **Exportação:** A exportação STL requer conta logada e valida limites via banco de dados (Stripe Paywall).
-
-### DB Schema Resumido (Supabase)
-- **`users`**: Tabela Auth nativa do Supabase.
-- **`profiles`**: Nome, Avatar URL, Status do plano (Free/Pro).
-- **`saved_designs`**: Projetos salvos contendo:
-  - `name`: Nome dado pelo usuário.
-  - `svg_data`: O texto/código do arquivo.
-  - `settings`: JSON com valores dos sliders.
-  - `thumbnail_url`: Link da imagem salva no bucket `thumbnails`.
-- **`custom_build_plates`**: Mesas criadas pelo usuário.
-- **`export_logs`**: Tabela para controle e limitação de uso da versão gratuita.
