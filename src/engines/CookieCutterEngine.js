@@ -205,13 +205,24 @@ export class CookieCutterEngine extends BaseEngine {
           }
         });
         
-        // Stamp
-        allOriginalPaths.forEach(origPath => {
-          const pts = toThreeVec2(origPath);
-          const stampShape = new THREE.Shape(pts);
-          const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: stampHeight, bevelEnabled: false, curveSegments: 12 });
-          const stampMesh = new THREE.Mesh(stampGeom, this.material);
-          this.group.add(stampMesh);
+        // Stamp (same hollow wall format as standard, but with stampHeight)
+        allOriginalPaths.forEach(originalPath => {
+          const outerStampPaths = new ClipperLib.Paths();
+          const coStamp = new ClipperLib.ClipperOffset(2, 0.25);
+          coStamp.AddPath(originalPath, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+          coStamp.Execute(outerStampPaths, wallThickness * scale);
+          
+          if (outerStampPaths.length > 0) {
+            const outerStampPts = toThreeVec2(outerStampPaths[0]);
+            const holePts = toThreeVec2(originalPath);
+            
+            const stampShape = new THREE.Shape(outerStampPts);
+            stampShape.holes.push(new THREE.Path(holePts));
+            
+            const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: stampHeight, bevelEnabled: false, curveSegments: 12 });
+            const stampMesh = new THREE.Mesh(stampGeom, this.material);
+            this.group.add(stampMesh);
+          }
         });
       }
     } else {
