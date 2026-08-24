@@ -61,6 +61,8 @@
   "app": {
     "back": "Back",
     "settings": "Settings",
+    "category_settings": "Cutter Settings",
+    "category_contour": "Contour & Stamp",
     "width": "Width (mm)",
     "height": "Height (mm)",
     "thickness": "Wall Thickness",

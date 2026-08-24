@@ -61,6 +61,8 @@
   "app": {
     "back": "Voltar",
     "settings": "Configurações",
+    "category_settings": "Configurações do Cortador",
+    "category_contour": "Contorno e Carimbo",
     "width": "Largura (mm)",
     "height": "Altura (mm)",
     "thickness": "Espessura da Parede",
