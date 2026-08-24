@@ -111,24 +111,45 @@ export class SvgEditor {
     svgElement.style.transform = '';
     svgElement.style.transformOrigin = 'center center';
     
-    // Get true natural size of the SVG
-    let svgWidth = parseFloat(svgElement.getAttribute('width'));
-    let svgHeight = parseFloat(svgElement.getAttribute('height'));
+    let svgWidth = 300;
+    let svgHeight = 300;
     
-    if (isNaN(svgWidth) || isNaN(svgHeight)) {
+    // The most robust way to find the actual dimensions of the SVG geometry:
+    try {
+        const bbox = svgElement.getBBox();
+        if (bbox.width > 0 && bbox.height > 0) {
+            // Use the actual geometry bounding box
+            const strokePadding = 10;
+            const bx = bbox.x - strokePadding;
+            const by = bbox.y - strokePadding;
+            const bw = bbox.width + strokePadding * 2;
+            const bh = bbox.height + strokePadding * 2;
+            
+            // Set viewBox so it wraps perfectly around the geometry
+            svgElement.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`);
+            svgWidth = bw;
+            svgHeight = bh;
+        }
+    } catch (e) {
+        // Fallback if getBBox fails
         if (svgElement.viewBox && svgElement.viewBox.baseVal && svgElement.viewBox.baseVal.width > 0) {
             svgWidth = svgElement.viewBox.baseVal.width;
             svgHeight = svgElement.viewBox.baseVal.height;
         } else {
-            const rect = svgElement.getBoundingClientRect();
-            svgWidth = rect.width;
-            svgHeight = rect.height;
+            const wAttr = svgElement.getAttribute('width');
+            const hAttr = svgElement.getAttribute('height');
+            if (wAttr && !wAttr.includes('%')) svgWidth = parseFloat(wAttr);
+            if (hAttr && !hAttr.includes('%')) svgHeight = parseFloat(hAttr);
         }
     }
     
     if (!svgWidth || !svgHeight) return;
 
-    // Ensure the SVG takes exactly its natural size so scaling is predictable
+    // Remove fixed width/height attributes if they exist, so CSS width/height fully control it
+    svgElement.removeAttribute('width');
+    svgElement.removeAttribute('height');
+
+    // Set explicit pixel dimensions
     svgElement.style.width = svgWidth + 'px';
     svgElement.style.height = svgHeight + 'px';
 
@@ -147,7 +168,7 @@ export class SvgEditor {
     const scaleY = availableHeight / svgHeight;
     
     this.scale = Math.min(scaleX, scaleY);
-    if (this.scale > 5) this.scale = 5; 
+    if (this.scale > 10) this.scale = 10; 
     
     this.translateX = (containerRect.width - svgWidth) / 2;
     this.translateY = (containerRect.height - svgHeight) / 2;
