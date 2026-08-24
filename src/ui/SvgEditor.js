@@ -111,10 +111,30 @@ export class SvgEditor {
     svgElement.style.transform = '';
     svgElement.style.transformOrigin = 'center center';
     
-    const containerRect = this.container.getBoundingClientRect();
-    const svgRect = svgElement.getBoundingClientRect();
+    // Get true natural size of the SVG
+    let svgWidth = parseFloat(svgElement.getAttribute('width'));
+    let svgHeight = parseFloat(svgElement.getAttribute('height'));
     
-    if (containerRect.width === 0 || svgRect.width === 0) {
+    if (isNaN(svgWidth) || isNaN(svgHeight)) {
+        if (svgElement.viewBox && svgElement.viewBox.baseVal && svgElement.viewBox.baseVal.width > 0) {
+            svgWidth = svgElement.viewBox.baseVal.width;
+            svgHeight = svgElement.viewBox.baseVal.height;
+        } else {
+            const rect = svgElement.getBoundingClientRect();
+            svgWidth = rect.width;
+            svgHeight = rect.height;
+        }
+    }
+    
+    if (!svgWidth || !svgHeight) return;
+
+    // Ensure the SVG takes exactly its natural size so scaling is predictable
+    svgElement.style.width = svgWidth + 'px';
+    svgElement.style.height = svgHeight + 'px';
+
+    const containerRect = this.container.getBoundingClientRect();
+    
+    if (containerRect.width === 0 || containerRect.height === 0) {
       setTimeout(() => this.centerAndFit(), 50);
       return;
     }
@@ -123,20 +143,14 @@ export class SvgEditor {
     const availableWidth = Math.max(10, containerRect.width - padding * 2);
     const availableHeight = Math.max(10, containerRect.height - padding * 2);
 
-    const scaleX = availableWidth / svgRect.width;
-    const scaleY = availableHeight / svgRect.height;
+    const scaleX = availableWidth / svgWidth;
+    const scaleY = availableHeight / svgHeight;
     
     this.scale = Math.min(scaleX, scaleY);
     if (this.scale > 5) this.scale = 5; 
     
-    const svgCenterX = svgRect.left - containerRect.left + svgRect.width / 2;
-    const svgCenterY = svgRect.top - containerRect.top + svgRect.height / 2;
-    
-    const containerCenterX = containerRect.width / 2;
-    const containerCenterY = containerRect.height / 2;
-    
-    this.translateX = containerCenterX - svgCenterX;
-    this.translateY = containerCenterY - svgCenterY;
+    this.translateX = (containerRect.width - svgWidth) / 2;
+    this.translateY = (containerRect.height - svgHeight) / 2;
 
     this.applyTransform();
   }
