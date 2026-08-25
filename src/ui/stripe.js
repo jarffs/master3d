@@ -5,19 +5,19 @@ import { supabase } from '../../supabaseClient.js';
 // The user needs to replace the price_XXX with their actual Stripe Price IDs
 export const STRIPE_CONFIG = {
   mini: {
-    priceId: 'price_1Q_MINI_PLACEHOLDER', // TODO: Substituir pelo ID real do Stripe
+    priceId: 'price_1U8RlSBjCb453CpTSlVJMaEg',
     credits: 10
   },
   popular: {
-    priceId: 'price_1Q_POPULAR_PLACEHOLDER', // TODO: Substituir pelo ID real do Stripe
+    priceId: 'price_1U8RmQBjCb453CpTJchIXIeA',
     credits: 50
   },
   advanced: {
-    priceId: 'price_1Q_ADVANCED_PLACEHOLDER', // TODO: Substituir pelo ID real do Stripe
+    priceId: 'price_1U8RnQBjCb453CpTGigWhWW5',
     credits: 200
   },
   studio: {
-    priceId: 'price_1Q_STUDIO_PLACEHOLDER', // TODO: Substituir pelo ID real do Stripe
+    priceId: 'price_1U8RnoBjCb453CpT11CsKeii',
     credits: 500
   }
 };
