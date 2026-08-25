@@ -51,7 +51,11 @@
     "studio_f1": "500 Créditos (~€0.20/STL)",
     "studio_f2": "Suporte Prioritário",
     "studio_btn": "Comprar Studio",
-    "commercial_license": "Licença Comercial de Venda"
+    "commercial_license": "Licença Comercial de Venda",
+    "popular_title": "Pacote Popular",
+    "popular_btn": "Comprar Popular",
+    "advanced_title": "Pacote Avançado",
+    "advanced_btn": "Comprar Avançado"
   },
   "footer": {
     "rights": "© 2026 CutterMaker3D. Todos os direitos reservados."

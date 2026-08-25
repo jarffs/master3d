@@ -21,7 +21,7 @@
     "f3_desc": "Export directly to STL, ready to slice and print."
   },
   "pricing": {
-    "title": "Plans & Credits",
+    "title": "Plans and Credits",
     "starter_title": "Starter",
     "starter_price": "€0",
     "starter_f1": "3 Free Credits (STLs)",
@@ -51,7 +51,11 @@
     "studio_f1": "500 Credits (~€0.20/STL)",
     "studio_f2": "Priority Support",
     "studio_btn": "Buy Studio",
-    "commercial_license": "Commercial Selling License"
+    "commercial_license": "Commercial Selling License",
+    "popular_title": "Popular Pack",
+    "popular_btn": "Buy Popular",
+    "advanced_title": "Advanced Pack",
+    "advanced_btn": "Buy Advanced"
   },
   "footer": {
     "rights": "© 2026 CutterMaker3D. All rights reserved."

@@ -769,9 +769,9 @@ input[type=range]::-webkit-slider-runnable-track {
 }
 
 .compact-price-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
-  margin-top: -8px;
+  margin: 4px 0 0 0;
 }
 
 .compact-price-btn {
