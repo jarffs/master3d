@@ -512,8 +512,6 @@ input[type=range]::-webkit-slider-runnable-track {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 300px;
-  overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px;
@@ -742,6 +740,8 @@ input[type=range]::-webkit-slider-runnable-track {
   padding: 16px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
   gap: 12px;
 }
 
