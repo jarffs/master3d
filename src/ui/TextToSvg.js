@@ -23,8 +23,6 @@ export class TextToSvg {
     this.fontsPerPage = 30;
     this.isLoadingMore = false;
 
-    // Cache of loaded font URLs (family -> ttf URL)
-    this.fontUrlCache = {};
     // Cache of loaded opentype.js Font objects
     this.fontObjectCache = {};
 
@@ -32,7 +30,6 @@ export class TextToSvg {
     this.textInput = document.getElementById('text-to-svg-input');
     this.fontSearch = document.getElementById('text-to-svg-search');
     this.fontGrid = document.getElementById('text-to-svg-font-grid');
-    this.previewArea = document.getElementById('text-to-svg-preview');
     this.btnCancel = document.getElementById('text-to-svg-cancel');
     this.btnConfirm = document.getElementById('text-to-svg-confirm');
     this.loadingIndicator = document.getElementById('text-to-svg-loading');
@@ -47,7 +44,6 @@ export class TextToSvg {
 
     this.textInput.addEventListener('input', () => {
       this.updateAllPreviews();
-      this.updateMainPreview();
     });
 
     this.fontSearch.addEventListener('input', () => {
@@ -68,16 +64,13 @@ export class TextToSvg {
 
   async fetchGoogleFonts() {
     try {
-      // Use the public Google Fonts CSS API to get popular fonts
-      // We fetch from the developer API (no key needed for CSS endpoint)
+      // Fetch popular fonts from Google Fonts API
+      // Using the public webfonts endpoint
       const response = await fetch(
         'https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key=AIzaSyBwIX97bVWr3-6AIUvGkcNnmFgirefZ-5Q'
       );
 
-      if (!response.ok) {
-        // Fallback: use a static curated list
-        this.fonts = this.getFallbackFonts();
-      } else {
+      if (response.ok) {
         const data = await response.json();
         this.fonts = data.items.map(f => ({
           family: f.family,
@@ -85,16 +78,16 @@ export class TextToSvg {
           variants: f.variants,
           files: f.files
         }));
+      } else {
+        this.fonts = this.getFallbackFonts();
       }
-
-      this.filteredFonts = [...this.fonts];
-      this.renderFontGrid();
     } catch (err) {
-      console.error('Error fetching Google Fonts:', err);
+      console.warn('Google Fonts API unavailable, using fallback list:', err.message);
       this.fonts = this.getFallbackFonts();
-      this.filteredFonts = [...this.fonts];
-      this.renderFontGrid();
     }
+
+    this.filteredFonts = [...this.fonts];
+    this.renderFontGrid();
   }
 
   getFallbackFonts() {
@@ -103,8 +96,20 @@ export class TextToSvg {
       'Raleway', 'Poppins', 'Nunito', 'Playfair Display', 'Merriweather',
       'Ubuntu', 'Lobster', 'Pacifico', 'Bebas Neue', 'Dancing Script',
       'Permanent Marker', 'Righteous', 'Alfa Slab One', 'Bangers', 'Bungee',
-      'Fredoka One', 'Press Start 2P', 'Anton', 'Archivo Black', 'Black Ops One',
-      'Bungee Shade', 'Carter One', 'Chewy', 'Courgette', 'Creepster'
+      'Fredoka', 'Press Start 2P', 'Anton', 'Archivo Black', 'Black Ops One',
+      'Carter One', 'Chewy', 'Courgette', 'Creepster', 'Fugaz One',
+      'Gloria Hallelujah', 'Indie Flower', 'Kablammo', 'Luckiest Guy', 'Monoton',
+      'Orbitron', 'Passion One', 'Patua One', 'Russo One', 'Satisfy',
+      'Shadows Into Light', 'Special Elite', 'Titan One', 'Ultra', 'Zilla Slab',
+      'Abril Fatface', 'Bungee Shade', 'Concert One', 'Frijole', 'Gravitas One',
+      'Inter', 'Josefin Sans', 'Kaushan Script', 'Libre Baskerville', 'Noto Sans',
+      'Outfit', 'PT Sans', 'Quicksand', 'Source Sans 3', 'Work Sans',
+      'Caveat', 'Comfortaa', 'DM Sans', 'Exo 2', 'Fira Sans',
+      'Great Vibes', 'Hind', 'IBM Plex Sans', 'Jost', 'Kanit',
+      'League Spartan', 'Manrope', 'Nunito Sans', 'Overpass', 'Philosopher',
+      'Questrial', 'Rubik', 'Sacramento', 'Teko', 'Urbanist',
+      'Varela Round', 'Yanone Kaffeesatz', 'Zeyada', 'Abel', 'Barlow',
+      'Cinzel', 'Domine', 'EB Garamond', 'Fjalla One', 'Gudea'
     ];
     return families.map(f => ({ family: f, category: 'sans-serif', variants: ['regular'], files: {} }));
   }
@@ -126,23 +131,28 @@ export class TextToSvg {
     const fontsToShow = this.filteredFonts.slice(0, end);
 
     fontsToShow.forEach(font => {
-      const card = document.createElement('div');
-      card.className = 'text-font-card' + (this.selectedFont?.family === font.family ? ' selected' : '');
-      card.dataset.family = font.family;
-
-      // Load font via Google Fonts CSS for preview
-      this.loadFontCSS(font.family);
-
-      const text = this.textInput.value || 'Aa';
-
-      card.innerHTML = `
-        <div class="text-font-preview" style="font-family: '${font.family}', ${font.category};">${this.escapeHtml(text)}</div>
-        <div class="text-font-name">${font.family}</div>
-      `;
-
-      card.addEventListener('click', () => this.selectFont(font, card));
+      const card = this.createFontCard(font);
       this.fontGrid.appendChild(card);
     });
+  }
+
+  createFontCard(font) {
+    const card = document.createElement('div');
+    card.className = 'text-font-card' + (this.selectedFont?.family === font.family ? ' selected' : '');
+    card.dataset.family = font.family;
+
+    // Load font via Google Fonts CSS for visual preview
+    this.loadFontCSS(font.family);
+
+    const text = this.textInput.value || 'Aa';
+
+    card.innerHTML = `
+      <div class="text-font-preview" style="font-family: '${font.family}', ${font.category};">${this.escapeHtml(text)}</div>
+      <div class="text-font-name">${font.family}</div>
+    `;
+
+    card.addEventListener('click', () => this.selectFont(font, card));
+    return card;
   }
 
   loadMoreFonts() {
@@ -157,19 +167,7 @@ export class TextToSvg {
     const fontsToAdd = this.filteredFonts.slice(start, end);
 
     fontsToAdd.forEach(font => {
-      const card = document.createElement('div');
-      card.className = 'text-font-card';
-      card.dataset.family = font.family;
-
-      this.loadFontCSS(font.family);
-      const text = this.textInput.value || 'Aa';
-
-      card.innerHTML = `
-        <div class="text-font-preview" style="font-family: '${font.family}', ${font.category};">${this.escapeHtml(text)}</div>
-        <div class="text-font-name">${font.family}</div>
-      `;
-
-      card.addEventListener('click', () => this.selectFont(font, card));
+      const card = this.createFontCard(font);
       this.fontGrid.appendChild(card);
     });
 
@@ -193,16 +191,17 @@ export class TextToSvg {
     cardElement.classList.add('selected');
     this.selectedFont = font;
 
-    // Show loading state on confirm button
-    this.btnConfirm.disabled = true;
+    // Show loading state
     if (this.loadingIndicator) this.loadingIndicator.style.display = 'block';
+    this.btnConfirm.disabled = true;
 
     try {
       await this.loadOpenTypeFont(font);
-      this.updateMainPreview();
       this.btnConfirm.disabled = false;
     } catch (err) {
-      console.error('Error loading font:', err);
+      console.error('Error loading font for SVG conversion:', err);
+      // Even if opentype loading fails, still allow confirm — we'll use canvas fallback
+      this.loadedOpenTypeFont = null;
       this.btnConfirm.disabled = false;
     } finally {
       if (this.loadingIndicator) this.loadingIndicator.style.display = 'none';
@@ -218,16 +217,17 @@ export class TextToSvg {
       return;
     }
 
-    // Get the TTF URL — try from API files first, then construct from Google Fonts
-    let ttfUrl = font.files?.regular || font.files?.['400'];
-
-    if (!ttfUrl) {
-      // Construct URL via Google Fonts CSS API and parse it
-      ttfUrl = await this.resolveFontUrl(family);
+    // Try to get TTF URL from API files
+    let ttfUrl = font.files?.regular || font.files?.['400'] || font.files?.['300'] || font.files?.['700'];
+    
+    // Try any available variant
+    if (!ttfUrl && font.files) {
+      const keys = Object.keys(font.files);
+      if (keys.length > 0) ttfUrl = font.files[keys[0]];
     }
 
     if (!ttfUrl) {
-      throw new Error(`Could not resolve font URL for ${family}`);
+      throw new Error(`No TTF URL available for ${family}`);
     }
 
     // Ensure HTTPS
@@ -238,27 +238,6 @@ export class TextToSvg {
     this.loadedOpenTypeFont = loadedFont;
   }
 
-  async resolveFontUrl(family) {
-    if (this.fontUrlCache[family]) return this.fontUrlCache[family];
-
-    try {
-      const res = await fetch(
-        `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}`,
-        { headers: { 'User-Agent': 'Mozilla/5.0' } } // Needed to get TTF instead of WOFF2
-      );
-      const css = await res.text();
-      // Extract URL from CSS @font-face src
-      const match = css.match(/url\((https:\/\/[^)]+\.ttf)\)/);
-      if (match) {
-        this.fontUrlCache[family] = match[1];
-        return match[1];
-      }
-    } catch (err) {
-      console.warn('Could not resolve font URL from CSS:', err);
-    }
-    return null;
-  }
-
   updateAllPreviews() {
     const text = this.textInput.value || 'Aa';
     this.fontGrid.querySelectorAll('.text-font-preview').forEach(el => {
@@ -266,37 +245,13 @@ export class TextToSvg {
     });
   }
 
-  updateMainPreview() {
-    if (!this.loadedOpenTypeFont || !this.previewArea) return;
-
-    const text = this.textInput.value || 'Aa';
-    const fontSize = 120;
-
-    try {
-      const path = this.loadedOpenTypeFont.getPath(text, 0, fontSize, fontSize);
-      const bb = path.getBoundingBox();
-
-      const padding = 10;
-      const width = bb.x2 - bb.x1 + padding * 2;
-      const height = bb.y2 - bb.y1 + padding * 2;
-
-      const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bb.x1 - padding} ${bb.y1 - padding} ${width} ${height}" width="100%" height="100%">
-        <path d="${path.toPathData()}" fill="#333"/>
-      </svg>`;
-
-      this.previewArea.innerHTML = svgString;
-    } catch (err) {
-      console.warn('Preview error:', err);
-    }
-  }
-
-  generateSvg() {
+  generateSvgFromOpenType() {
     if (!this.loadedOpenTypeFont) return null;
 
     const text = this.textInput.value.trim();
     if (!text) return null;
 
-    const fontSize = 200; // High resolution for 3D conversion
+    const fontSize = 200;
     const path = this.loadedOpenTypeFont.getPath(text, 0, fontSize, fontSize);
     const bb = path.getBoundingBox();
 
@@ -309,6 +264,40 @@ export class TextToSvg {
     </svg>`;
   }
 
+  generateSvgFromCanvas() {
+    const text = this.textInput.value.trim();
+    if (!text || !this.selectedFont) return null;
+
+    const fontSize = 200;
+    const family = this.selectedFont.family;
+
+    // Create a canvas to render the text
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Measure text
+    ctx.font = `${fontSize}px '${family}'`;
+    const metrics = ctx.measureText(text);
+    const textWidth = Math.ceil(metrics.width) + 40;
+    const textHeight = Math.ceil(fontSize * 1.4) + 40;
+
+    canvas.width = textWidth;
+    canvas.height = textHeight;
+
+    // Fill white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw text in black
+    ctx.fillStyle = 'black';
+    ctx.font = `${fontSize}px '${family}'`;
+    ctx.textBaseline = 'top';
+    ctx.fillText(text, 20, 20);
+
+    // Convert to data URL and return it for tracing
+    return canvas.toDataURL('image/png');
+  }
+
   open(callback) {
     this.onConfirmCallback = callback;
     this.textInput.value = '';
@@ -317,8 +306,6 @@ export class TextToSvg {
     this.loadedOpenTypeFont = null;
     this.currentPage = 0;
     this.btnConfirm.disabled = true;
-
-    if (this.previewArea) this.previewArea.innerHTML = '';
 
     this.filterFonts();
     this.renderFontGrid();
@@ -331,16 +318,34 @@ export class TextToSvg {
   }
 
   confirm() {
-    const svgString = this.generateSvg();
-    if (!svgString) {
-      alert('Por favor, escreva um texto e escolha uma fonte.');
+    const text = this.textInput.value.trim();
+    if (!text) {
+      alert('Por favor, digite um texto.');
+      return;
+    }
+    if (!this.selectedFont) {
+      alert('Por favor, selecione uma fonte.');
       return;
     }
 
-    this.close();
+    // Try opentype.js first (perfect vector paths)
+    let svgString = this.generateSvgFromOpenType();
 
-    if (this.onConfirmCallback) {
-      this.onConfirmCallback(svgString);
+    if (svgString) {
+      this.close();
+      if (this.onConfirmCallback) {
+        this.onConfirmCallback(svgString);
+      }
+    } else {
+      // Fallback: use canvas rendering + ImageTracer in main.js
+      const dataUrl = this.generateSvgFromCanvas();
+      if (dataUrl) {
+        this.close();
+        if (this.onConfirmCallback) {
+          // Pass data URL with a special prefix so main.js knows to trace it
+          this.onConfirmCallback({ type: 'raster', dataUrl });
+        }
+      }
     }
   }
 
