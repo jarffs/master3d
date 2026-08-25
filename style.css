@@ -716,9 +716,9 @@ input[type=range]::-webkit-slider-runnable-track {
 
 /* Compact Price Cards */
 .compact-pricing-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   max-height: 450px;
   overflow-y: auto;
   padding-right: 8px;
