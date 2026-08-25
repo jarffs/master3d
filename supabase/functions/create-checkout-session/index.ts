@@ -1,11 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.4.0?target=deno";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2022-11-15",
-  httpClient: Stripe.createFetchHttpClient(),
-});
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -19,6 +14,16 @@ serve(async (req) => {
   }
 
   try {
+    const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecret) {
+      throw new Error("STRIPE_SECRET_KEY is not set in environment variables");
+    }
+
+    const stripe = new Stripe(stripeSecret, {
+      apiVersion: "2022-11-15",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+
     const { priceId, userId, credits, successUrl, cancelUrl } = await req.json();
 
     if (!priceId || !userId || !credits) {
