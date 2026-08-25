@@ -8,11 +8,13 @@ import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange } from './auth.js';
 import { t } from './i18n.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
+import { TextToSvg } from './src/ui/TextToSvg.js';
 
 let scene, camera, renderer, controls;
 let engine;
 let controlBuilder;
 let svgEditor;
+let textToSvg;
 let viewHelper;
 let currentSvgText = null;
 let buildPlateGroup = null;
@@ -100,6 +102,23 @@ function initThree() {
   controlBuilder.build(engine.getControlSchema(), t);
   
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
+  
+  // Initialize Text to SVG module
+  textToSvg = new TextToSvg('text-to-svg-modal');
+  
+  const createFromTextBtn = document.getElementById('create-from-text-btn');
+  if (createFromTextBtn) {
+    createFromTextBtn.addEventListener('click', () => {
+      textToSvg.open((svgString) => {
+        currentSvgText = svgString;
+        engine.loadSVG(currentSvgText);
+        fileNameDisplay.textContent = '✏️ Texto';
+        fileNameDisplay.style.display = 'block';
+        initDimensionsFromSVG();
+        updateModel();
+      });
+    });
+  }
   
   onAuthChange((user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth
