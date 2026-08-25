@@ -353,6 +353,25 @@
     </div>
     
     
+    <!-- Cropper Modal -->
+    <div id="cropper-modal" class="modal hidden" style="z-index: 1050;">
+      <div class="modal-content" style="max-width: 600px; display: flex; flex-direction: column; height: 80vh;">
+        <h2 style="margin-top: 0; margin-bottom: 16px;" data-i18n="cropper.title">Recortar Imagem</h2>
+        <div class="cropper-image-container" style="flex: 1; min-height: 0; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
+          <img id="cropper-image" src="" alt="Para recortar" style="max-width: 100%; display: block;">
+        </div>
+        <div class="cropper-actions" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: auto;">
+          <button id="cropper-cancel-btn" class="secondary-btn" data-i18n="cropper.cancel">Cancelar</button>
+          <button id="cropper-save-btn" class="primary-btn" data-i18n="cropper.save">Salvar Foto</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./i18n.js"></script>
+    <script type="module" src="./auth.js"></script>
+    <script type="module" src="./profile.js"></script>
+    <script type="module" src="./main.js"></script>
+
     <!-- Designs Modal -->
     <div id="designs-modal" class="modal hidden">
       <div class="modal-content" style="max-width: 700px; width: 90%;">
