@@ -68,6 +68,22 @@ export function openProfileModal() {
   document.getElementById('profile-new-password').value = '';
   document.getElementById('profile-confirm-password').value = '';
   
+  const isGoogleAuth = currentUser.app_metadata?.providers?.includes('google') || currentUser.app_metadata?.provider === 'google';
+  const pwdForm = document.getElementById('change-password-form');
+  if (pwdForm) {
+    const title = pwdForm.previousElementSibling;
+    const hr = title?.previousElementSibling;
+    if (isGoogleAuth) {
+      pwdForm.style.display = 'none';
+      if (title) title.style.display = 'none';
+      if (hr) hr.style.display = 'none';
+    } else {
+      pwdForm.style.display = 'flex';
+      if (title) title.style.display = 'block';
+      if (hr) hr.style.display = 'block';
+    }
+  }
+  
   // Render Printers List
   renderPrintersList();
   
