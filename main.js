@@ -655,50 +655,48 @@ downloadBtn.addEventListener('click', async () => {
     return;
   }
   
-  // Verifica limites do plano Free
-  const planType = userProfile.plan_type || 'free';
-  if (planType === 'free') {
-     downloadBtn.disabled = true;
-      if(saveDesignBtn) saveDesignBtn.disabled = true;
-     const originalText = downloadBtn.innerHTML;
-     downloadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span>...</span>`;
-     
-     try {
-       const sevenDaysAgo = new Date();
-       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-       
-       const { data, error } = await supabase
-          .from('export_logs')
-          .select('id')
-          .gte('exported_at', sevenDaysAgo.toISOString())
-          .eq('user_id', currentUser.id);
-          
-       if (error) throw error;
-       
-       if (data && data.length >= 1) {
-         alert(t('js.free_limit_reached'));
-         downloadBtn.disabled = false;
+  downloadBtn.disabled = true;
+  if(saveDesignBtn) saveDesignBtn.disabled = true;
+  const originalText = downloadBtn.innerHTML;
+  downloadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span>...</span>`;
+  
+  // Desconta o crédito no Backend usando RPC
+  try {
+    const { data: success, error } = await supabase.rpc('deduct_credit');
+    
+    if (error) throw error;
+    
+    if (!success) {
+      alert("Não tem créditos suficientes. Por favor, adquira mais pacotes de STLs.");
+      
+      const profileModal = document.getElementById('profile-modal');
+      if (profileModal) profileModal.classList.remove('hidden');
+      
+      downloadBtn.disabled = false;
       if(saveDesignBtn) saveDesignBtn.disabled = false;
-         downloadBtn.innerHTML = originalText;
-         return;
-       }
-       
-       // Regista a exportação
-       await supabase.from('export_logs').insert([{ user_id: currentUser.id }]);
-       
-     } catch (err) {
-       console.error("Erro na verificação de limites:", err);
-       alert("Ocorreu um erro ao verificar o seu plano. Tente novamente.");
-       downloadBtn.disabled = false;
-      if(saveDesignBtn) saveDesignBtn.disabled = false;
-       downloadBtn.innerHTML = originalText;
-       return;
-     }
-     
-     downloadBtn.disabled = false;
-      if(saveDesignBtn) saveDesignBtn.disabled = false;
-     downloadBtn.innerHTML = originalText;
+      downloadBtn.innerHTML = originalText;
+      return;
+    }
+    
+    // Atualizar a UI
+    if (userProfile && typeof userProfile.credits === 'number') {
+      userProfile.credits -= 1;
+      const shopCreditsEl = document.getElementById('profile-current-credits-shop');
+      if (shopCreditsEl) shopCreditsEl.textContent = userProfile.credits;
+    }
+    
+  } catch (err) {
+    console.error("Erro ao descontar crédito:", err);
+    alert("Ocorreu um erro ao processar o seu crédito. Tente novamente.");
+    downloadBtn.disabled = false;
+    if(saveDesignBtn) saveDesignBtn.disabled = false;
+    downloadBtn.innerHTML = originalText;
+    return;
   }
+  
+  downloadBtn.disabled = false;
+  if(saveDesignBtn) saveDesignBtn.disabled = false;
+  downloadBtn.innerHTML = originalText;
   
   engine.exportSTL();
 });

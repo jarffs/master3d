@@ -63,6 +63,10 @@ export function openProfileModal() {
   // Render Account Info
   profileEmail.value = currentUser.email;
   profileName.value = userProfile?.username || '';
+  
+  const shopCreditsEl = document.getElementById('profile-current-credits-shop');
+  if (shopCreditsEl) shopCreditsEl.textContent = userProfile?.credits || 0;
+
   passwordMessage.style.display = 'none';
   document.getElementById('profile-current-password').value = '';
   document.getElementById('profile-new-password').value = '';
