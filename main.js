@@ -9,6 +9,7 @@ import { currentUser, userProfile, onAuthChange } from './auth.js';
 import { t } from './i18n.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { TextToSvg } from './src/ui/TextToSvg.js';
+import { initStripeCheckout } from './src/ui/stripe.js';
 
 let scene, camera, renderer, controls;
 let engine;
@@ -86,6 +87,7 @@ function initThree() {
   loadPrinters();
   initUI();
   updateBuildPlate();
+  initStripeCheckout();
 
   // Load tool from URL
   const params = new URLSearchParams(window.location.search);
