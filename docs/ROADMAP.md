@@ -25,12 +25,12 @@ Este roadmap define as etapas para evoluir a aplicação estática (Vanilla HTML
 
 ## FASE 4: Landing Page, Monetização (Stripe) e Economia de Créditos
 - [x] **Landing Page:** Criar uma página inicial (`index.html`) para apresentar o produto.
-- [ ] **Nova Estrutura de Preços (Créditos):** Reformular o `index.html` para exibir a venda de Pacotes de Créditos avulsos (Pay-As-You-Go) e um Plano Anual.
+- [x] **Nova Estrutura de Preços (Créditos):** Reformular o `index.html` para exibir a venda de Pacotes de Créditos avulsos (Pay-As-You-Go) e um Plano Anual.
 - [x] **Configuração de Build:** Configurar `vite.config.js` para múltiplas páginas (`index.html` e `app.html`).
-- [ ] **Tabela Profiles (Créditos):** Adicionar coluna `credits` à tabela `profiles` no Supabase (com default 3 para novos usuários).
+- [x] **Tabela Profiles (Créditos):** Adicionar coluna `credits` à tabela `profiles` no Supabase (com default 3 para novos usuários).
 - [ ] **Integração Stripe:** Configurar Stripe Checkout (Payment Links) para a venda dos pacotes de créditos e plano anual.
 - [ ] **Supabase Edge Function (Webhook do Stripe):** Criar e hospedar uma Edge Function (`stripe-webhook`) para escutar compras de créditos e usar o *Service Role* para somá-los de forma segura na tabela `profiles`.
-- [ ] **Débito Seguro de Créditos:** Criar uma RPC (Remote Procedure Call) no Supabase para deduzir 1 crédito de forma segura sempre que um utilizador solicitar um download de STL.
+- [x] **Débito Seguro de Créditos:** Criar uma RPC (Remote Procedure Call) no Supabase para deduzir 1 crédito de forma segura sempre que um utilizador solicitar um download de STL.
 
 ## FASE 5: Integração Principal (Salvar Designs)
 - [x] Adicionar botão "Salvar Design".
