@@ -139,13 +139,13 @@ authSwitchAction?.addEventListener('click', () => {
   authError.classList.add('hidden');
   if (isLoginMode) {
     authTitle.textContent = t('auth.login_title');
-    if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Entre para personalizar modelos 3D';
+    if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Personalize seus modelos 3D';
     authSubmitBtn.textContent = t('auth.login_btn');
     authSwitchText.textContent = t('auth.no_account');
     authSwitchAction.textContent = t('auth.register');
   } else {
     authTitle.textContent = t('auth.register_title');
-    if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Crie uma conta para começar';
+    if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Personalize seus modelos 3D';
     authSubmitBtn.textContent = t('auth.register_btn');
     authSwitchText.textContent = t('auth.has_account');
     authSwitchAction.textContent = t('auth.login');
