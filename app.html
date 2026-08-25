@@ -125,7 +125,7 @@
         </button>
         <div id="canvas-container"></div>
         <div class="floating-actions">
-          <button id="save-design-btn" class="secondary-btn" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 50px; padding: 14px 24px; font-size: 16px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 4px 14px rgba(0,0,0,0.1); transition: all 0.2s;">
+          <button id="save-design-btn" class="secondary-btn" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 50px; padding: 14px 24px; font-size: 16px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 4px 14px rgba(0,0,0,0.1); transition: all 0.2s;">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
             <span data-i18n="app.save_design">Salvar</span>
           </button>
@@ -137,8 +137,8 @@
       </main>
       </div>
     </div>
-    <div id="auth-modal" class="modal hidden">>
-      <div class="modal-content" style="max-width: 420px; border-radius: 12px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); background: var(--panel-bg);">
+    <div id="auth-modal" class="modal hidden">
+      <div class="modal-content" style="max-width: 420px; border-radius: 12px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); background: var(--bg-surface);">
         <button id="close-modal-btn" class="close-btn">&times;</button>
         
         <div style="text-align: center; margin-bottom: 24px;">
@@ -146,7 +146,7 @@
           <p id="auth-subtitle" style="margin: 0; color: var(--text-secondary); font-size: 14px;" data-i18n="auth.login_subtitle">Personalize seus modelos 3D</p>
         </div>
 
-        <button id="google-auth-btn" type="button" style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: var(--panel-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; font-weight: 500; font-size: 14px; cursor: pointer; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: background 0.3s;">
+        <button id="google-auth-btn" type="button" style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; font-weight: 500; font-size: 14px; cursor: pointer; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: background 0.3s;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--text-secondary);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -227,7 +227,7 @@
           <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
             <div class="input-group">
               <label for="profile-email" data-i18n="profile.email">E-mail</label>
-              <input type="email" id="profile-email" readonly style="background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px; border-radius: 6px; cursor: not-allowed;" />
+              <input type="email" id="profile-email" readonly style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px; border-radius: 6px; cursor: not-allowed;" />
             </div>
             <div class="input-group">
               <label for="profile-name" data-i18n="profile.display_name">Nome de Exibição</label>
@@ -290,7 +290,7 @@
             </div>
             <button type="submit" id="custom-printer-submit" class="secondary-btn" data-i18n="profile.add_printer">Adicionar Impressora</button>
           </form>
-        <button id="google-auth-btn" type="button" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--panel-bg); color: #333; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 16px; margin-bottom: 16px; transition: background 0.3s;">
+        <button id="google-auth-btn" type="button" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--bg-surface); color: #333; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 16px; margin-bottom: 16px; transition: background 0.3s;">
           <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
