@@ -60,7 +60,7 @@ async function handleSession(session) {
     
     if (error || !data) {
       // Tenta criar o perfil se não existir
-      const { data: newProfile } = await supabase.from('profiles').insert([{ id: currentUser.id }]).select().single();
+      const { data: newProfile } = await supabase.from('profiles').insert([{ id: currentUser.id, credits: 3 }]).select().single();
       userProfile = newProfile;
     } else {
       userProfile = data;

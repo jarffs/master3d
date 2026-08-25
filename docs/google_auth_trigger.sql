@@ -1,36 +1,56 @@
 -- SQL Script para Configurar Perfis e Créditos Iniciais no Supabase
 
--- 1. Garante que a tabela 'profiles' tem a coluna 'credits' com o default correto.
+-- 1. Garante que a tabela 'profiles' tem as colunas necessárias
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS credits integer DEFAULT 3;
+ALTER TABLE public.profiles ALTER COLUMN credits SET DEFAULT 3;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;
 
--- 2. Cria a função que será executada automaticamente após o registo de um utilizador.
+-- 2. Cria a função que será executada automaticamente após o registo
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS trigger 
 LANGUAGE plpgsql 
 SECURITY DEFINER SET search_path = public
 AS $$
+DECLARE
+  _username TEXT;
+  _avatar_url TEXT;
 BEGIN
+  -- Trata dados meta que podem ser nulos de forma segura (email/senha vs Google)
+  IF new.raw_user_meta_data IS NOT NULL THEN
+    _username := new.raw_user_meta_data->>'full_name';
+    _avatar_url := new.raw_user_meta_data->>'avatar_url';
+  END IF;
+
+  -- Fallback para o nome de utilizador usando o email se não vier nome do Google
+  IF _username IS NULL OR _username = '' THEN
+    _username := split_part(new.email, '@', 1);
+  END IF;
+
   INSERT INTO public.profiles (id, username, email, avatar_url, credits)
   VALUES (
     new.id,
-    -- Extrai o nome se estiver disponível no raw_user_meta_data (Google)
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    _username,
     new.email,
-    -- Extrai o avatar se estiver disponível (Google)
-    new.raw_user_meta_data->>'avatar_url',
-    3 -- Oferece 3 créditos grátis (pode ser omitido devido ao DEFAULT da tabela, mas colocamos por segurança)
+    _avatar_url,
+    3
   )
-  -- Se o utilizador já existir (ex: erro de sinc), ignora
+  ON CONFLICT (id) DO NOTHING;
+  
+  RETURN new;
+EXCEPTION WHEN OTHERS THEN
+  -- Em caso de erro extremo (ex: a tabela ainda não ter as colunas), garante pelo menos o ID
+  INSERT INTO public.profiles (id, credits)
+  VALUES (new.id, 3)
   ON CONFLICT (id) DO NOTHING;
   
   RETURN new;
 END;
 $$;
 
--- 3. Cria o Trigger que "escuta" a tabela auth.users.
--- Atenção: Se o trigger já existir, é preciso eliminá-lo primeiro.
+-- 3. Associa a função ao Trigger na tabela auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
