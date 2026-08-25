@@ -101,7 +101,14 @@
     "save_design": "Salvar",
     "my_designs": "Meus Projetos",
     "save_prompt": "Nome do design:",
-    "save_success": "Projeto salvo com sucesso!"
+    "save_success": "Projeto salvo com sucesso!",
+    "or_separator": "OU",
+    "create_from_text": "Criar com Texto",
+    "text_modal_title": "Criar Cortador com Texto",
+    "text_input_placeholder": "Digite seu texto...",
+    "search_fonts": "Buscar fonte...",
+    "use_this_text": "Usar este Texto",
+    "text_preview_placeholder": "Escolha uma fonte abaixo para ver o preview"
   },
   "cropper": {
     "title": "Recortar Imagem",

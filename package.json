@@ -16,6 +16,7 @@
     "clipper-lib": "^6.4.2",
     "cropperjs": "^1.6.2",
     "imagetracerjs": "^1.2.6",
+    "opentype.js": "^2.0.0",
     "three": "^0.185.1"
   }
 }

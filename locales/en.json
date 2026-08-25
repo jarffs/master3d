@@ -101,7 +101,14 @@
     "save_design": "Save",
     "my_designs": "My Designs",
     "save_prompt": "Design name:",
-    "save_success": "Project saved successfully!"
+    "save_success": "Project saved successfully!",
+    "or_separator": "OR",
+    "create_from_text": "Create from Text",
+    "text_modal_title": "Create Cutter from Text",
+    "text_input_placeholder": "Type your text...",
+    "search_fonts": "Search font...",
+    "use_this_text": "Use this Text",
+    "text_preview_placeholder": "Choose a font below to see the preview"
   },
   "cropper": {
     "title": "Crop Image",

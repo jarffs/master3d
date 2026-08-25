@@ -8,11 +8,13 @@ import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange } from './auth.js';
 import { t } from './i18n.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
+import { TextToSvg } from './src/ui/TextToSvg.js';
 
 let scene, camera, renderer, controls;
 let engine;
 let controlBuilder;
 let svgEditor;
+let textToSvg;
 let viewHelper;
 let currentSvgText = null;
 let buildPlateGroup = null;
@@ -100,6 +102,73 @@ function initThree() {
   controlBuilder.build(engine.getControlSchema(), t);
   
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
+  
+  // Initialize Text to SVG module
+  textToSvg = new TextToSvg('text-to-svg-modal');
+  
+  const createFromTextBtn = document.getElementById('create-from-text-btn');
+  if (createFromTextBtn) {
+    createFromTextBtn.addEventListener('click', () => {
+      textToSvg.open((result) => {
+        if (typeof result === 'string') {
+          // Direct SVG from opentype.js — perfect vector
+          currentSvgText = result;
+          engine.loadSVG(currentSvgText);
+          fileNameDisplay.textContent = '✏️ Texto';
+          fileNameDisplay.style.display = 'block';
+          initDimensionsFromSVG();
+          updateModel();
+        } else if (result?.type === 'raster' && result.dataUrl) {
+          // Canvas fallback — need to trace to SVG via ImageTracer
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            // Threshold to pure B&W
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const brightness = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+              const color = brightness > 128 ? 255 : 0;
+              data[i] = color; data[i+1] = color; data[i+2] = color; data[i+3] = 255;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            
+            const flatUrl = canvas.toDataURL('image/png');
+            const options = {
+              ltres: 1, qtres: 1, pathomit: 8,
+              colorsampling: 0, numberofcolors: 2,
+              pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
+            };
+            
+            ImageTracer.imageToSVG(flatUrl, (svgString) => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(svgString, "image/svg+xml");
+              doc.querySelectorAll('path').forEach(p => {
+                const fill = p.getAttribute('fill');
+                if (fill && (fill.replace(/\s/g, '') === 'rgb(255,255,255)' || fill === '#ffffff')) {
+                  p.remove();
+                }
+              });
+              currentSvgText = new XMLSerializer().serializeToString(doc);
+              engine.loadSVG(currentSvgText);
+              fileNameDisplay.textContent = '✏️ Texto';
+              fileNameDisplay.style.display = 'block';
+              initDimensionsFromSVG();
+              updateModel();
+            }, options);
+          };
+          img.src = result.dataUrl;
+        }
+      });
+    });
+  }
   
   onAuthChange((user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth

@@ -796,3 +796,130 @@ input[type=range]::-webkit-slider-runnable-track {
 .compact-price-btn:hover {
   opacity: 0.9;
 }
+
+/* ========== Text to SVG ========== */
+
+/* OR Separator */
+.or-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.or-separator::before,
+.or-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.or-separator span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Create from Text Button */
+.text-create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 2px solid var(--accent-color);
+  border-radius: 8px;
+  color: var(--accent-color);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.text-create-btn:hover {
+  background: var(--accent-color);
+  color: white;
+}
+
+.text-create-btn svg {
+  flex-shrink: 0;
+}
+
+/* Font Grid */
+.text-font-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.text-font-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.text-font-grid::-webkit-scrollbar-track {
+  background: var(--bg-main);
+  border-radius: 4px;
+}
+
+.text-font-grid::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+/* Font Card */
+.text-font-card {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-color);
+  text-align: center;
+  overflow: hidden;
+}
+
+.text-font-card:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.text-font-card.selected {
+  border: 2px solid var(--accent-color);
+  background: rgba(217, 119, 6, 0.05);
+}
+
+.text-font-preview {
+  font-size: 28px;
+  line-height: 1.3;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  word-break: break-all;
+  overflow: hidden;
+}
+
+.text-font-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .text-font-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
