@@ -140,11 +140,19 @@ function updateAuthUI() {
     });
     
     document.getElementById('dropdown-profile-btn')?.addEventListener('click', async () => {
+      if (!window.location.pathname.includes('app.html')) {
+        window.location.href = './app.html?action=profile';
+        return;
+      }
       const { openProfileModal } = await import('./profile.js');
       openProfileModal();
     });
 
     document.getElementById('dropdown-designs-btn')?.addEventListener('click', () => {
+      if (!window.location.pathname.includes('app.html')) {
+        window.location.href = './app.html?action=designs';
+        return;
+      }
       window.dispatchEvent(new Event('open-designs-modal'));
     });
 
