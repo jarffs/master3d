@@ -1,4 +1,5 @@
 import opentype from 'opentype.js';
+import { Dialog } from './Dialog.js';
 import { t } from '../../i18n.js';
 
 /**
@@ -43,7 +44,7 @@ export class TextToSvg {
 
   setupListeners() {
     this.btnCancel.addEventListener('click', () => this.close());
-    this.btnConfirm.addEventListener('click', () => this.confirm());
+    this.btnConfirm.addEventListener('click', async () => await this.confirm());
 
     this.textInput.addEventListener('input', () => {
       this.updateAllPreviews();
@@ -365,12 +366,13 @@ export class TextToSvg {
     this.modal.classList.add('hidden');
   }
 
-  confirm() {
+  async confirm() {
+    if (!this.selectedFont) {
+      await Dialog.alert('Por favor, selecione uma fonte.');
+      return;
+    }
+
     if (this.mode === 'font-picker') {
-      if (!this.selectedFont) {
-        alert('Por favor, selecione uma fonte.');
-        return;
-      }
       const family = this.selectedFont.family;
       this.close();
       if (this.fontPickerCallback) this.fontPickerCallback(family);
@@ -379,11 +381,7 @@ export class TextToSvg {
 
     const text = this.textInput.value.trim();
     if (!text) {
-      alert('Por favor, digite um texto.');
-      return;
-    }
-    if (!this.selectedFont) {
-      alert('Por favor, selecione uma fonte.');
+      await Dialog.alert('Por favor, digite um texto.');
       return;
     }
 

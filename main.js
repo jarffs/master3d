@@ -13,6 +13,7 @@ import { t } from './i18n.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { TextToSvg } from './src/ui/TextToSvg.js';
 import { initStripeCheckout, processStripeCheckout } from './src/ui/stripe.js';
+import { Dialog } from './src/ui/Dialog.js';
 
 let scene, camera, renderer, controls;
 let engine;
@@ -890,7 +891,7 @@ downloadBtn.addEventListener('click', async () => {
     if (error) throw error;
     
     if (!success) {
-      alert("Não tem créditos suficientes. Por favor, adquira mais pacotes de STLs.");
+      await Dialog.alert("Não tem créditos suficientes. Por favor, adquira mais pacotes de STLs.");
       
       const profileModal = document.getElementById('profile-modal');
       if (profileModal) profileModal.classList.remove('hidden');
@@ -912,7 +913,7 @@ downloadBtn.addEventListener('click', async () => {
     
   } catch (err) {
     console.error("Erro ao descontar crédito:", err);
-    alert("Ocorreu um erro ao processar o seu crédito. Tente novamente.");
+    await Dialog.alert("Ocorreu um erro ao processar o seu crédito. Tente novamente.");
     downloadBtn.disabled = false;
     if(saveDesignBtn) saveDesignBtn.disabled = false;
     downloadBtn.innerHTML = originalText;
@@ -944,9 +945,9 @@ if (saveDesignBtn) {
       return;
     }
     
-    if (!currentSvgText && engine?.name !== 'keychain') return;
+    if (!currentSvgText) return;
     
-    const projectName = prompt(t('app.save_prompt') || 'Name your design:');
+    const projectName = await Dialog.prompt(t('app.save_prompt') || 'Name your design:');
     if (!projectName) return; // User cancelled
     
     // UI Loading state
@@ -964,7 +965,7 @@ if (saveDesignBtn) {
         .maybeSingle();
         
       if (existingDesign) {
-        const confirmOverwrite = confirm("Um projeto com este nome já existe. Deseja substituí-lo?");
+        const confirmOverwrite = await Dialog.confirm("Um projeto com este nome já existe. Deseja substituí-lo?");
         if (!confirmOverwrite) {
           saveDesignBtn.innerHTML = originalText;
           saveDesignBtn.disabled = false;
@@ -1030,11 +1031,11 @@ if (saveDesignBtn) {
         if (dbError) throw dbError;
       }
       
-      alert(t('app.save_success') || 'Design saved successfully!');
+      await Dialog.alert(t('app.save_success') || 'Design saved successfully!');
       
     } catch (err) {
       console.error('Error saving design:', err);
-      alert('Error saving design: ' + err.message);
+      await Dialog.alert('Error saving design: ' + err.message);
     } finally {
       saveDesignBtn.innerHTML = originalText;
       saveDesignBtn.disabled = false;
@@ -1107,8 +1108,8 @@ async function loadDesigns() {
         </div>
       `;
 
-      card.addEventListener('click', () => {
-        if (!confirm('Deseja sair do projeto atual? Alterações não salvas serão perdidas.')) {
+      card.addEventListener('click', async () => {
+        if (!(await Dialog.confirm('Deseja sair do projeto atual? Alterações não salvas serão perdidas.'))) {
           return;
         }
         
@@ -1126,7 +1127,7 @@ async function loadDesigns() {
       const delBtn = card.querySelector('.delete-design-btn');
       delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm(`Tem certeza que deseja apagar "${design.name}"?`)) {
+        if (await Dialog.confirm(`Tem certeza que deseja apagar "${design.name}"?`)) {
           const oldHtml = delBtn.innerHTML;
           delBtn.innerHTML = '...';
           
@@ -1144,7 +1145,7 @@ async function loadDesigns() {
             }
           } else {
             console.error(error);
-            alert('Erro ao apagar projeto.');
+            await Dialog.alert('Erro ao apagar projeto.');
             delBtn.innerHTML = oldHtml;
           }
         }

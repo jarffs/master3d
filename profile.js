@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile } from './auth.js';
 import { t } from './i18n.js';
+import { Dialog } from './src/ui/Dialog.js';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
 
@@ -184,7 +185,7 @@ cropperSaveBtn.addEventListener('click', async () => {
     
   } catch (err) {
     console.error(err);
-    alert(t('js.error_avatar'));
+    await Dialog.alert(t('js.error_avatar'));
   } finally {
     cropperSaveBtn.disabled = false;
     cropperSaveBtn.textContent = t('profile.save_photo');
@@ -210,10 +211,10 @@ saveNameBtn?.addEventListener('click', async () => {
     if (userProfile) {
       userProfile.username = newName;
     }
-    alert(t('js.name_updated'));
+    await Dialog.alert(t('js.name_updated'));
   } catch (error) {
     console.error(error);
-    alert(t('js.error_name'));
+    await Dialog.alert(t('js.error_name'));
   } finally {
     saveNameBtn.disabled = false;
     saveNameBtn.textContent = t('profile.save');
@@ -344,7 +345,7 @@ async function renderPrintersList() {
           e.preventDefault();
           e.stopPropagation(); // Evita que clique no label marque o checkbox
           
-          if (confirm(t('js.delete_printer_confirm', { name: printer.name }))) {
+          if (await Dialog.confirm(t('js.delete_printer_confirm', { name: printer.name }))) {
             try {
               const { error } = await supabase.from('custom_build_plates').delete().eq('id', printer.id);
               if (error) throw error;
@@ -358,7 +359,7 @@ async function renderPrintersList() {
               renderPrintersList();
               window.dispatchEvent(new Event('auth-state-changed'));
             } catch (error) {
-              alert(t('js.error_delete_printer'));
+              await Dialog.alert(t('js.error_delete_printer'));
             }
           }
         });
@@ -416,13 +417,13 @@ savePrintersBtn?.addEventListener('click', async () => {
       userProfile.selected_printers = selectedIds;
     }
     
-    alert(t('js.preferences_saved'));
+    await Dialog.alert(t('js.preferences_saved'));
     // Trigger main.js to reload printers
     window.dispatchEvent(new Event('auth-state-changed')); // We need a way to reload printers in main.js
     
   } catch (err) {
     console.error(err);
-    alert(t('js.error_save_printers'));
+    await Dialog.alert(t('js.error_save_printers'));
   } finally {
     savePrintersBtn.disabled = false;
     savePrintersBtn.textContent = t('profile.save_changes');
@@ -467,7 +468,7 @@ addCustomPrinterForm?.addEventListener('submit', async (e) => {
     
   } catch (error) {
     console.error(error);
-    alert(t('js.error_add_printer'));
+    await Dialog.alert(t('js.error_add_printer'));
   } finally {
     customPrinterSubmit.disabled = false;
     customPrinterSubmit.textContent = t('profile.add_printer');

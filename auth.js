@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { t } from './i18n.js';
+import { Dialog } from './src/ui/Dialog.js';
 
 const loginBtn = document.getElementById('login-btn');
 const authSection = document.getElementById('auth-section');
@@ -231,24 +232,26 @@ authForm?.addEventListener('submit', async (e) => {
   try {
     if (isRecoveryMode) {
       const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      alert(t('js.password_updated'));
-      authModal.classList.add('hidden');
-      isRecoveryMode = false;
-      document.getElementById('auth-email').parentElement.classList.remove('hidden');
-      forgotPasswordBtn.classList.remove('hidden');
-      authSwitchText.parentElement.classList.remove('hidden');
-      authTitle.textContent = t('auth.login_title');
-      authSubmitBtn.textContent = t('auth.login_btn');
+      if (!error) {
+        await Dialog.alert(t('js.password_updated'));
+        authModal.classList.add('hidden');
+        isRecoveryMode = false;
+        document.getElementById('auth-email').parentElement.classList.remove('hidden');
+        forgotPasswordBtn.classList.remove('hidden');
+        authSwitchText.parentElement.classList.remove('hidden');
+        authTitle.textContent = t('auth.login_title');
+        authSubmitBtn.textContent = t('auth.login_btn');
+      } else throw error;
     } else if (isLoginMode) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       authModal.classList.add('hidden');
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      alert(t('js.check_email'));
-      authModal.classList.add('hidden');
+      if (!error) {
+        await Dialog.alert(t('js.check_email'));
+        authModal.classList.add('hidden');
+      } else throw error;
     }
   } catch (err) {
     if (err.message && err.message.includes("Failed to execute 'fetch'")) {
