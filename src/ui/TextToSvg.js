@@ -1,4 +1,5 @@
 import opentype from 'opentype.js';
+import { t } from '../../i18n.js';
 
 /**
  * TextToSvg — Modular component for generating SVG from text using Google Fonts.
@@ -22,6 +23,8 @@ export class TextToSvg {
     this.currentPage = 0;
     this.fontsPerPage = 30;
     this.isLoadingMore = false;
+    this.mode = 'generate';
+    this.fontPickerCallback = null;
 
     // Cache of loaded opentype.js Font objects
     this.fontObjectCache = {};
@@ -35,7 +38,7 @@ export class TextToSvg {
     this.loadingIndicator = document.getElementById('text-to-svg-loading');
 
     this.setupListeners();
-    this.fetchGoogleFonts();
+    this.fontCatalogPromise = this.fetchGoogleFonts();
   }
 
   setupListeners() {
@@ -78,11 +81,12 @@ export class TextToSvg {
 
       if (response.ok) {
         const data = await response.json();
-        this.fonts = data.items.map(f => ({
+        this.fonts = data.items.map((f, popularityRank) => ({
           family: f.family,
           category: f.category,
           variants: f.variants,
-          files: f.files
+          files: f.files,
+          popularityRank
         }));
       } else {
         this.fonts = this.getFallbackFonts();
@@ -92,7 +96,7 @@ export class TextToSvg {
       this.fonts = this.getFallbackFonts();
     }
 
-    this.filteredFonts = [...this.fonts];
+    this.filteredFonts = this.sortByPopularity(this.fonts);
     this.renderFontGrid();
   }
 
@@ -117,17 +121,27 @@ export class TextToSvg {
       'Varela Round', 'Yanone Kaffeesatz', 'Zeyada', 'Abel', 'Barlow',
       'Cinzel', 'Domine', 'EB Garamond', 'Fjalla One', 'Gudea'
     ];
-    return families.map(f => ({ family: f, category: 'sans-serif', variants: ['regular'], files: {} }));
+    return families.map((f, popularityRank) => ({
+      family: f,
+      category: 'sans-serif',
+      variants: ['regular'],
+      files: {},
+      popularityRank
+    }));
+  }
+
+  sortByPopularity(fonts) {
+    return [...fonts].sort((a, b) => a.popularityRank - b.popularityRank);
   }
 
   filterFonts() {
     const query = this.fontSearch.value.toLowerCase().trim();
     if (!query) {
-      this.filteredFonts = [...this.fonts];
+      this.filteredFonts = this.sortByPopularity(this.fonts);
     } else {
-      this.filteredFonts = this.fonts.filter(f =>
+      this.filteredFonts = this.sortByPopularity(this.fonts.filter(f =>
         f.family.toLowerCase().includes(query)
-      );
+      ));
     }
   }
 
@@ -196,6 +210,11 @@ export class TextToSvg {
     this.fontGrid.querySelectorAll('.text-font-card').forEach(c => c.classList.remove('selected'));
     cardElement.classList.add('selected');
     this.selectedFont = font;
+
+    if (this.mode === 'font-picker') {
+      this.btnConfirm.disabled = false;
+      return;
+    }
 
     // Show loading state
     if (this.loadingIndicator) this.loadingIndicator.style.display = 'block';
@@ -305,7 +324,11 @@ export class TextToSvg {
   }
 
   open(callback) {
+    this.mode = 'generate';
+    this.fontPickerCallback = null;
     this.onConfirmCallback = callback;
+    this.modal.querySelector('h2').textContent = t('app.text_modal_title');
+    this.btnConfirm.textContent = t('app.generate_3d');
     this.textInput.value = '';
     this.fontSearch.value = '';
     this.selectedFont = null;
@@ -319,11 +342,41 @@ export class TextToSvg {
     this.modal.classList.remove('hidden');
   }
 
+  async openFontPicker({ text, selectedFamily, onSelect }) {
+    await this.fontCatalogPromise;
+    this.mode = 'font-picker';
+    this.fontPickerCallback = onSelect;
+    this.onConfirmCallback = null;
+    this.textInput.value = text || 'Aa';
+    this.fontSearch.value = '';
+    this.selectedFont = this.fonts.find(font => font.family === selectedFamily) || null;
+    this.loadedOpenTypeFont = null;
+    this.currentPage = 0;
+    this.btnConfirm.disabled = !this.selectedFont;
+    this.modal.querySelector('h2').textContent = t('app.choose_font_title');
+    this.btnConfirm.textContent = t('app.use_font');
+
+    this.filterFonts();
+    this.renderFontGrid();
+    this.modal.classList.remove('hidden');
+  }
+
   close() {
     this.modal.classList.add('hidden');
   }
 
   confirm() {
+    if (this.mode === 'font-picker') {
+      if (!this.selectedFont) {
+        alert('Por favor, selecione uma fonte.');
+        return;
+      }
+      const family = this.selectedFont.family;
+      this.close();
+      if (this.fontPickerCallback) this.fontPickerCallback(family);
+      return;
+    }
+
     const text = this.textInput.value.trim();
     if (!text) {
       alert('Por favor, digite um texto.');
