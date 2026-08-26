@@ -12,6 +12,10 @@ const authSwitchAction = document.getElementById('auth-switch-action');
 const authSwitchText = document.getElementById('auth-switch-text');
 const authError = document.getElementById('auth-error');
 const authSuccess = document.getElementById('auth-success');
+
+export function openAuthModal() {
+  authModal.classList.remove('hidden');
+}
 const forgotPasswordBtn = document.getElementById('forgot-password-btn');
 
 let isLoginMode = true;

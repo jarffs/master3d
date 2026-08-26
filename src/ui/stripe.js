@@ -22,6 +22,59 @@ export const STRIPE_CONFIG = {
   }
 };
 
+export async function processStripeCheckout(planKey, btnElement = null) {
+  if (!currentUser) {
+    alert('Por favor, inicie sessão para comprar créditos.');
+    return;
+  }
+
+  const planConfig = STRIPE_CONFIG[planKey];
+  if (!planConfig) {
+    console.error('Plano não encontrado na configuração:', planKey);
+    return;
+  }
+
+  let originalText = '';
+  if (btnElement) {
+    originalText = btnElement.innerHTML;
+    btnElement.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:#fff;animation:spin 1s ease-in-out infinite;"></span>';
+    btnElement.disabled = true;
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+      body: {
+        priceId: planConfig.priceId,
+        userId: currentUser.id,
+        credits: planConfig.credits,
+        successUrl: window.location.href,
+        cancelUrl: window.location.href
+      }
+    });
+
+    if (error) {
+      console.error("Erro detalhado do invoke:", error);
+      throw error;
+    }
+
+    if (data?.url) {
+      window.location.href = data.url;
+    } else if (data && data.error) {
+      console.error("Erro retornado no body da função:", data.error);
+      throw new Error(data.error);
+    } else {
+      throw new Error('Erro ao iniciar checkout: URL não retornada.');
+    }
+  } catch (err) {
+    console.error('Erro ao iniciar checkout:', err);
+    alert('Erro ao iniciar checkout. Por favor, tente novamente mais tarde.');
+    if (btnElement) {
+      btnElement.innerHTML = originalText;
+      btnElement.disabled = false;
+    }
+  }
+}
+
 export function initStripeCheckout() {
   const buyButtons = document.querySelectorAll('.compact-price-btn');
   
@@ -29,53 +82,8 @@ export function initStripeCheckout() {
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
       
-      if (!currentUser) {
-        alert('Por favor, inicie sessão para comprar créditos.');
-        return;
-      }
-
       const planKey = btn.getAttribute('data-plan');
-      const planConfig = STRIPE_CONFIG[planKey];
-
-      if (!planConfig) {
-        console.error('Plano não encontrado na configuração:', planKey);
-        return;
-      }
-
-      // Desativar botão e mostrar estado de carregamento
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:#fff;animation:spin 1s ease-in-out infinite;"></span>';
-      btn.disabled = true;
-
-      try {
-        // Obter URL atual para sucesso/cancelamento
-        const currentUrl = window.location.href;
-
-        // Chamar a Edge Function do Supabase
-        const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-          body: {
-            priceId: planConfig.priceId,
-            userId: currentUser.id,
-            credits: planConfig.credits,
-            successUrl: currentUrl,
-            cancelUrl: currentUrl
-          }
-        });
-
-        if (error) throw error;
-        
-        if (data && data.url) {
-          // Redirecionar para o Checkout do Stripe
-          window.location.href = data.url;
-        } else {
-          throw new Error('URL de checkout não retornado.');
-        }
-      } catch (err) {
-        console.error('Erro ao iniciar checkout:', err);
-        alert('Ocorreu um erro ao iniciar a compra. Tente novamente.');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-      }
+      await processStripeCheckout(planKey, btn);
     });
   });
 }
