@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
+import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
@@ -95,6 +96,8 @@ function initThree() {
 
   if (tool === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
+  } else if (tool === 'keychain') {
+    engine = new KeychainEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -102,6 +105,19 @@ function initThree() {
 
   controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
   controlBuilder.build(engine.getControlSchema(), t);
+  
+  // Dynamic UI texts based on tool
+  if (tool === 'keychain') {
+    const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
+    const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
+    
+    if (titleEl) {
+      titleEl.setAttribute('data-i18n', 'app.upload_image_title_keychain');
+    }
+    if (uploadDescEl) {
+      uploadDescEl.setAttribute('data-i18n', 'app.upload_desc_keychain');
+    }
+  }
   
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
   
