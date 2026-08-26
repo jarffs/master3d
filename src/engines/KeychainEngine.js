@@ -7,13 +7,48 @@ export class KeychainEngine extends BaseEngine {
     super(scene);
     this.name = 'keychain';
     
-    // Material customizado para chaveiro (ex: uma cor dourada/bronze ou vermelho para destacar)
-    this.material = new THREE.MeshStandardMaterial({
-      color: 0xeab308, // Amarelo/Dourado do Tailwind
-      roughness: 0.3,
-      metalness: 0.2,
-      side: THREE.DoubleSide
-    });
+    this.imageSvgShapes = [];
+    this.textSvgShapes = [];
+    
+    // Default PLA colors for the simplified palette
+    this.plaColors = [
+      { value: '#ffffff', label: 'Branco' },
+      { value: '#1a1a1a', label: 'Preto' },
+      { value: '#dc2626', label: 'Vermelho' },
+      { value: '#2563eb', label: 'Azul' },
+      { value: '#eab308', label: 'Amarelo' },
+      { value: '#16a34a', label: 'Verde' },
+      { value: '#f97316', label: 'Laranja' }
+    ];
+    
+    this.partMaterials = {
+      base: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide }),
+      ring: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide }),
+      image: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
+    };
+    this.textMaterials = []; // One per letter
+  }
+
+  loadSVG(svgText) {
+    // Default behavior is to load as image
+    this.loadImageSVG(svgText);
+  }
+
+  loadImageSVG(svgText) {
+    this.imageSvgShapes = this.parseSVG(svgText);
+    this.currentSvgShapes = [...this.imageSvgShapes, ...this.textSvgShapes];
+  }
+
+  loadTextSVG(svgText) {
+    this.textSvgShapes = this.parseSVG(svgText);
+    this.currentSvgShapes = [...this.imageSvgShapes, ...this.textSvgShapes];
+    
+    // Ensure we have enough materials for each letter
+    while (this.textMaterials.length < this.textSvgShapes.length) {
+      this.textMaterials.push(
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
+      );
+    }
   }
 
   getControlSchema() {
@@ -89,14 +124,66 @@ export class KeychainEngine extends BaseEngine {
         default: 2,
         suffix: 'mm',
         category: 'keyring'
+      },
+      {
+        id: 'colorBase',
+        type: 'select',
+        label: 'Cor da Base',
+        desc: 'Cor da placa principal',
+        options: this.plaColors,
+        default: '#1a1a1a',
+        category: 'colors'
+      },
+      {
+        id: 'colorImage',
+        type: 'select',
+        label: 'Cor da Imagem',
+        desc: 'Cor do desenho base',
+        options: this.plaColors,
+        default: '#ffffff',
+        category: 'colors'
+      },
+      {
+        id: 'colorRing',
+        type: 'select',
+        label: 'Cor da Argola',
+        desc: 'Cor da argola',
+        options: this.plaColors,
+        default: '#1a1a1a',
+        category: 'colors'
       }
     ];
+
+    // Add color pickers for each text letter
+    this.textSvgShapes.forEach((shape, index) => {
+      schema.push({
+        id: `colorText${index}`,
+        type: 'select',
+        label: `Cor Letra ${index + 1}`,
+        desc: `Cor do elemento de texto ${index + 1}`,
+        options: this.plaColors,
+        default: '#ffffff',
+        category: 'colors'
+      });
+    });
+
+    return schema;
   }
 
   generate3DModel(params) {
     if (!this.currentSvgShapes || this.currentSvgShapes.length === 0) return false;
     
     this.clear(); // Limpa a geometria anterior
+
+    // Update material colors from params
+    if (params.colorBase) this.partMaterials.base.color.set(params.colorBase);
+    if (params.colorRing) this.partMaterials.ring.color.set(params.colorRing);
+    if (params.colorImage) this.partMaterials.image.color.set(params.colorImage);
+    
+    this.textMaterials.forEach((mat, index) => {
+      const colorParam = params[`colorText${index}`];
+      if (colorParam) mat.color.set(colorParam);
+    });
 
     const baseHeight = parseFloat(params.baseHeight) || 2.5;
     const stampHeight = parseFloat(params.stampHeight) || 2; // altura acima da base
@@ -188,12 +275,15 @@ export class KeychainEngine extends BaseEngine {
     
     outerShapes.forEach(os => {
       const baseGeom = new THREE.ExtrudeGeometry(os.shape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
-      const baseMesh = new THREE.Mesh(baseGeom, this.material);
+      const baseMesh = new THREE.Mesh(baseGeom, this.partMaterials.base);
+      baseMesh.name = 'Base';
       this.group.add(baseMesh);
     });
 
     // 2. Criar o Desenho/Texto em Relevo (Stamp)
-    extractedShapes.forEach(points => {
+    // First, process image SVG shapes
+    const imageShapesCount = this.imageSvgShapes.length;
+    extractedShapes.forEach((points, index) => {
       const shapePts = toThreeVec2(points.shape);
       const stampShape = new THREE.Shape(shapePts);
       
@@ -202,7 +292,20 @@ export class KeychainEngine extends BaseEngine {
       });
 
       const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: totalHeight, bevelEnabled: false, curveSegments: 12 });
-      const stampMesh = new THREE.Mesh(stampGeom, this.material);
+      
+      let material;
+      let meshName;
+      if (index < imageShapesCount) {
+        material = this.partMaterials.image;
+        meshName = `Image_${index}`;
+      } else {
+        const textIndex = index - imageShapesCount;
+        material = this.textMaterials[textIndex];
+        meshName = `Text_${textIndex}`;
+      }
+      
+      const stampMesh = new THREE.Mesh(stampGeom, material);
+      stampMesh.name = meshName;
       this.group.add(stampMesh);
     });
 
@@ -243,7 +346,8 @@ export class KeychainEngine extends BaseEngine {
       ringShape.holes.push(ringHole);
 
       const ringGeom = new THREE.ExtrudeGeometry(ringShape, { depth: baseHeight, bevelEnabled: false, curveSegments: 24 });
-      const ringMesh = new THREE.Mesh(ringGeom, this.material);
+      const ringMesh = new THREE.Mesh(ringGeom, this.partMaterials.ring);
+      ringMesh.name = 'Ring';
       this.group.add(ringMesh);
     }
 

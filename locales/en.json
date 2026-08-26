@@ -121,7 +121,16 @@
     "ring_radius_desc": "Outer radius of the keyring (mm)",
     "ring_thickness": "Keyring Thickness",
     "ring_thickness_desc": "Thickness of the keyring wall",
-    "category_keyring": "Keyring Settings"
+    "category_keyring": "Keyring Settings",
+    "category_colors": "Colors (3MF)",
+    "color_white": "White",
+    "color_black": "Black",
+    "color_red": "Red",
+    "color_blue": "Blue",
+    "color_yellow": "Yellow",
+    "color_green": "Green",
+    "color_orange": "Orange",
+    "export_3mf": "Export 3MF"
   },
   "cropper": {
     "title": "Crop Image",
