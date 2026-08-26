@@ -171,6 +171,7 @@
   },
   "profile": {
     "title": "Meu Perfil",
+    "credits": "Créditos",
     "tab_account": "Minha Conta",
     "tab_printers": "Minhas Impressoras",
     "change_photo": "Alterar Foto",
@@ -218,6 +219,8 @@
     "error_stl": "Erro ao gerar o STL",
     "downloading": "Baixando...",
     "login_to_export": "Faça login para exportar o STL",
+    "account_required_export": "Crie uma conta gratuita para exportar o seu modelo",
+    "account_required_save": "Crie uma conta gratuita para salvar o seu projeto",
     "saving": "Salvando...",
     "name_updated": "Nome atualizado com sucesso!",
     "error_name": "Erro ao atualizar nome.",

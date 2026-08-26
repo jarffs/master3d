@@ -272,17 +272,7 @@ function initThree() {
   
   onAuthChange((user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth
-    if (engine && currentSvgText) {
-      if (user) {
-        downloadBtn.disabled = false;
-      if(saveDesignBtn) saveDesignBtn.disabled = false;
-        downloadBtn.title = '';
-      } else {
-        downloadBtn.disabled = true;
-      if(saveDesignBtn) saveDesignBtn.disabled = true;
-        downloadBtn.title = t('js.login_to_export');
-      }
-    }
+    if (engine?.group?.children.length > 0) refreshExportButtons();
   });
   
   // Ouve atualizações de perfil vindas do profile.js
@@ -611,13 +601,27 @@ function frameCamera() {
   controls.update();
 }
 
+// Os botões seguem clicáveis sem login para que o usuário saiba que precisa de conta
+function refreshExportButtons() {
+  downloadBtn.disabled = false;
+  downloadBtn.title = currentUser ? '' : t('js.account_required_export');
+  if (saveDesignBtn) {
+    saveDesignBtn.disabled = false;
+    saveDesignBtn.title = currentUser ? '' : t('js.account_required_save');
+  }
+}
+
 async function updateModel() {
   if (!currentSvgText && engine?.name !== 'keychain') return;
   if (!engine || !controlBuilder) return;
 
   const updateId = ++modelUpdateId;
   modelLoading?.classList.remove('hidden');
-  await new Promise(resolve => requestAnimationFrame(resolve));
+  // Deixa o loader pintar antes da geração; em aba oculta o rAF não dispara, então há um limite
+  await new Promise(resolve => {
+    requestAnimationFrame(resolve);
+    setTimeout(resolve, 50);
+  });
 
   const params = controlBuilder.getValues();
   params.targetWidth = parseFloat(modelWidthInput.value) || 80;
@@ -636,15 +640,7 @@ async function updateModel() {
       svgAspectRatio = engine.svgAspectRatio;
     }
     
-    if (currentUser) {
-      downloadBtn.disabled = false;
-      if(saveDesignBtn) saveDesignBtn.disabled = false;
-      downloadBtn.title = '';
-    } else {
-      downloadBtn.disabled = true;
-      if(saveDesignBtn) saveDesignBtn.disabled = true;
-      downloadBtn.title = t('js.login_to_export');
-    }
+    refreshExportButtons();
     checkBuildPlateLimits();
   }
 }
@@ -838,7 +834,7 @@ uploadInput.addEventListener('change', (e) => {
 
 downloadBtn.addEventListener('click', async () => {
   if (!currentUser || !userProfile) {
-    alert(t('js.login_to_export'));
+    openAuthModal(t('js.account_required_export'));
     return;
   }
   
@@ -870,6 +866,8 @@ downloadBtn.addEventListener('click', async () => {
       userProfile.credits -= 1;
       const shopCreditsEl = document.getElementById('profile-current-credits-shop');
       if (shopCreditsEl) shopCreditsEl.textContent = userProfile.credits;
+      const topbarCreditsEl = document.querySelector('#topbar-credits strong');
+      if (topbarCreditsEl) topbarCreditsEl.textContent = userProfile.credits;
     }
     
   } catch (err) {
@@ -900,7 +898,7 @@ initThree();
 if (saveDesignBtn) {
   saveDesignBtn.addEventListener('click', async () => {
     if (!currentUser) {
-      document.getElementById('auth-modal').classList.remove('hidden');
+      openAuthModal(t('js.account_required_save'));
       return;
     }
     
