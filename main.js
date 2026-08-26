@@ -925,7 +925,7 @@ if (saveDesignBtn) {
       return;
     }
     
-    if (!currentSvgText) return;
+    if (!currentSvgText && engine?.name !== 'keychain') return;
     
     const projectName = prompt(t('app.save_prompt') || 'Name your design:');
     if (!projectName) return; // User cancelled
@@ -953,33 +953,28 @@ if (saveDesignBtn) {
         }
       }
 
-      // 1. Generate Thumbnail
-      const oldBg = scene.background;
-      scene.background = new THREE.Color(0xf8fafc);
-      renderer.render(scene, camera);
-      
-      const canvas = renderer.domElement;
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      
-      // Restore background
-      scene.background = oldBg;
-      renderer.render(scene, camera);
-      const blob = await (await fetch(dataUrl)).blob();
-      
-      const fileName = `thumb_${Date.now()}.jpg`;
-      const filePath = `${currentUser.id}/${fileName}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('thumbnails')
-        .upload(filePath, blob, { contentType: 'image/jpeg' });
-        
-      if (uploadError) throw uploadError;
-      
-      const { data: urlData } = supabase.storage
-        .from('thumbnails')
-        .getPublicUrl(filePath);
-        
-      const publicUrl = urlData.publicUrl;
+      // Thumbnail storage is optional; projects must still save if the bucket is unavailable.
+      let publicUrl = existingDesign?.thumbnail_url || null;
+      try {
+        const oldBg = scene.background;
+        scene.background = new THREE.Color(0xf8fafc);
+        renderer.render(scene, camera);
+        const dataUrl = renderer.domElement.toDataURL('image/jpeg', 0.8);
+        scene.background = oldBg;
+        renderer.render(scene, camera);
+
+        const blob = await (await fetch(dataUrl)).blob();
+        const fileName = `thumb_${Date.now()}.jpg`;
+        const filePath = `${currentUser.id}/${fileName}`;
+        const { error: uploadError } = await supabase.storage
+          .from('thumbnails')
+          .upload(filePath, blob, { contentType: 'image/jpeg' });
+
+        if (uploadError) throw uploadError;
+        publicUrl = supabase.storage.from('thumbnails').getPublicUrl(filePath).data.publicUrl;
+      } catch (thumbnailError) {
+        console.warn('Unable to save project thumbnail:', thumbnailError);
+      }
       
       // 2. Save Settings
       const settings = controlBuilder ? controlBuilder.getValues() : {};
@@ -989,7 +984,7 @@ if (saveDesignBtn) {
       // 3. Insert or Update into Database
       if (existingDesign) {
         const { error: dbError } = await supabase.from('saved_designs').update({
-          svg_data: currentSvgText,
+          svg_data: currentSvgText || '<svg xmlns="http://www.w3.org/2000/svg"/>',
           settings: settings,
           thumbnail_url: publicUrl,
           tool_type: engine ? engine.name : 'cookie_cutter',
@@ -1007,7 +1002,7 @@ if (saveDesignBtn) {
         const { error: dbError } = await supabase.from('saved_designs').insert({
           user_id: currentUser.id,
           name: projectName,
-          svg_data: currentSvgText,
+          svg_data: currentSvgText || '<svg xmlns="http://www.w3.org/2000/svg"/>',
           settings: settings,
           tool_type: engine ? engine.name : 'cookie_cutter',
           thumbnail_url: publicUrl
@@ -1141,6 +1136,8 @@ function loadDesignIntoEngine(design) {
   
   if (toolType === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
+  } else if (toolType === 'keychain') {
+    engine = new KeychainEngine(scene);
   } else if (toolType === 'coloring') {
     engine = new ColoringEngine(scene);
   } else {
@@ -1154,7 +1151,7 @@ function loadDesignIntoEngine(design) {
 
   // Load SVG
   currentSvgText = design.svg_data;
-  engine.loadSVG(currentSvgText);
+  if (engine.name !== 'keychain') engine.loadSVG(currentSvgText);
   
   // Update UI Inputs
   if (design.settings) {
