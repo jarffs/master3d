@@ -315,6 +315,39 @@ input[type=range]::-webkit-slider-runnable-track {
   visibility: hidden;
 }
 
+.model-loading {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+}
+
+.model-loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: model-loading-spin 0.8s linear infinite;
+}
+
+@keyframes model-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Build Plate Settings */
 .build-plate-controls {
   display: flex;

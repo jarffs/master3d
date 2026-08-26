@@ -6,8 +6,9 @@ export class KeychainEngine extends BaseEngine {
   constructor(scene) {
     super(scene);
     this.name = 'keychain';
-    
+
     this.textSvgShapes = [];
+    this.generationId = 0;
     
     // Default PLA colors for the simplified palette
     this.plaColors = [
@@ -22,9 +23,9 @@ export class KeychainEngine extends BaseEngine {
     
     this.partMaterials = {
       base: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide }),
-      ring: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
+      ring: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide }),
+      top: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
     };
-    this.textMaterials = []; // One per shape/letter
   }
 
   loadSVG(svgText) {
@@ -38,17 +39,49 @@ export class KeychainEngine extends BaseEngine {
   loadTextSVG(svgText) {
     this.textSvgShapes = this.parseSVG(svgText);
     this.currentSvgShapes = this.textSvgShapes;
-    
-    // Ensure we have enough materials for each letter
-    while (this.textMaterials.length < this.textSvgShapes.length) {
-      this.textMaterials.push(
-        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
-      );
-    }
   }
 
   getControlSchema() {
+    const fontFamilies = [
+      'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald',
+      'Raleway', 'Poppins', 'Nunito', 'Playfair Display', 'Merriweather',
+      'Ubuntu', 'Lobster', 'Pacifico', 'Bebas Neue', 'Dancing Script',
+      'Permanent Marker', 'Righteous', 'Alfa Slab One', 'Bangers', 'Bungee',
+      'Fredoka', 'Press Start 2P', 'Anton', 'Archivo Black', 'Black Ops One',
+      'Carter One', 'Chewy', 'Courgette', 'Creepster', 'Fugaz One',
+      'Gloria Hallelujah', 'Indie Flower', 'Kablammo', 'Luckiest Guy', 'Monoton',
+      'Orbitron', 'Passion One', 'Patua One', 'Russo One', 'Satisfy',
+      'Shadows Into Light', 'Special Elite', 'Titan One', 'Ultra', 'Zilla Slab',
+      'Abril Fatface', 'Bungee Shade', 'Concert One', 'Frijole', 'Gravitas One',
+      'Inter', 'Josefin Sans', 'Kaushan Script', 'Libre Baskerville', 'Noto Sans',
+      'Outfit', 'PT Sans', 'Quicksand', 'Source Sans 3', 'Work Sans',
+      'Caveat', 'Comfortaa', 'DM Sans', 'Exo 2', 'Fira Sans',
+      'Great Vibes', 'Hind', 'IBM Plex Sans', 'Jost', 'Kanit',
+      'League Spartan', 'Manrope', 'Nunito Sans', 'Overpass', 'Philosopher'
+    ].sort();
+
+    const fontOptions = fontFamilies.map(f => ({ value: f, label: f }));
+
     const schema = [
+      {
+        id: 'textContent',
+        type: 'text',
+        label: 'app.text_content',
+        desc: 'app.text_content_desc',
+        placeholder: 'app.text_input_placeholder',
+        default: 'Master3D',
+        multiline: true,
+        category: 'settings'
+      },
+      {
+        id: 'textFont',
+        type: 'select',
+        label: 'app.text_font',
+        desc: 'app.text_font_desc',
+        options: fontOptions,
+        default: 'Roboto',
+        category: 'settings'
+      },
       {
         id: 'enableBase',
         type: 'toggle',
@@ -94,6 +127,30 @@ export class KeychainEngine extends BaseEngine {
         category: 'settings'
       },
       {
+        id: 'letterSpacing',
+        type: 'slider',
+        label: 'app.letter_spacing',
+        desc: 'app.letter_spacing_desc',
+        min: -50,
+        max: 200,
+        step: 1,
+        default: 0,
+        suffix: '%',
+        category: 'settings'
+      },
+      {
+        id: 'lineSpacing',
+        type: 'slider',
+        label: 'app.line_spacing',
+        desc: 'app.line_spacing_desc',
+        min: -50,
+        max: 200,
+        step: 1,
+        default: 0,
+        suffix: '%',
+        category: 'settings'
+      },
+      {
         id: 'ringAngle',
         type: 'slider',
         label: 'app.ring_angle',
@@ -132,52 +189,151 @@ export class KeychainEngine extends BaseEngine {
       {
         id: 'colorBase',
         type: 'select',
-        label: 'Cor da Base',
-        desc: 'Cor da placa principal',
+        label: 'app.color_base',
+        desc: 'app.color_base_desc',
         options: this.plaColors,
         default: '#1a1a1a',
         category: 'colors'
       },
       {
-        id: 'colorRing',
+        id: 'colorTop',
         type: 'select',
-        label: 'Cor da Argola',
-        desc: 'Cor da argola',
+        label: 'app.color_top',
+        desc: 'app.color_top_desc',
         options: this.plaColors,
-        default: '#1a1a1a',
+        default: '#ffffff',
         category: 'colors'
       }
     ];
 
-    // Add color pickers for each text letter
-    this.textSvgShapes.forEach((shape, index) => {
-      schema.push({
-        id: `colorText${index}`,
-        type: 'select',
-        label: `Cor Letra ${index + 1}`,
-        desc: `Cor do elemento de texto ${index + 1}`,
-        options: this.plaColors,
-        default: '#ffffff',
-        category: 'colors'
-      });
-    });
-
     return schema;
   }
 
-  generate3DModel(params) {
-    if (!this.currentSvgShapes || this.currentSvgShapes.length === 0) return false;
-    
-    this.clear(); // Limpa a geometria anterior
+  async loadFontCSS(family) {
+    const id = `gfont-${family.replace(/\s+/g, '-')}`;
+    if (document.getElementById(id)) {
+      try {
+        await document.fonts.load(`150px '${family}'`);
+      } catch(e) {}
+      return;
+    }
 
-    // Update material colors from params
-    if (params.colorBase) this.partMaterials.base.color.set(params.colorBase);
-    if (params.colorRing) this.partMaterials.ring.color.set(params.colorRing);
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/\s+/g, '+')}&display=swap`;
+    document.head.appendChild(link);
+
+    // Wait for browser to process the stylesheet and load the font
+    try {
+      await document.fonts.load(`150px '${family}'`);
+    } catch(e) {
+      console.warn("Font loading timeout or error", e);
+    }
+  }
+
+  async generateSvgFromTextCanvas(text, family, letterSpacing, lineSpacing) {
+    await this.loadFontCSS(family);
+
+    const fontSize = 150;
+    const letterSpacingPx = fontSize * ((letterSpacing || 0) / 100);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const lines = text.split('\n');
+    ctx.font = `bold ${fontSize}px '${family}'`;
     
-    this.textMaterials.forEach((mat, index) => {
-      const colorParam = params[`colorText${index}`];
-      if (colorParam) mat.color.set(colorParam);
+    ctx.letterSpacing = `${letterSpacingPx}px`;
+
+    let maxWidth = 0;
+    for (const line of lines) {
+      const metrics = ctx.measureText(line);
+      if (metrics.width > maxWidth) maxWidth = metrics.width;
+    }
+    
+    const textWidth = Math.max(10, Math.ceil(maxWidth) + 60);
+    const lineHeight = fontSize * 1.2 + (fontSize * (lineSpacing / 100));
+    const textHeight = Math.max(10, Math.ceil(lines.length * lineHeight) + 60);
+
+    canvas.width = textWidth;
+    canvas.height = textHeight;
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = 'black';
+    ctx.font = `bold ${fontSize}px '${family}'`;
+    ctx.letterSpacing = `${letterSpacingPx}px`;
+    ctx.textBaseline = 'top';
+
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], 30, 30 + (i * lineHeight));
+    }
+
+    return canvas.toDataURL('image/png');
+  }
+
+  async generate3DModel(params) {
+    const generationId = ++this.generationId;
+    const textItems = (params.textContent || 'Master3D')
+      .split(',')
+      .map(text => text.trim())
+      .filter(Boolean);
+    const textFont = params.textFont || 'Roboto';
+    const letterSpacing = parseFloat(params.letterSpacing) || 0;
+    const lineSpacing = parseFloat(params.lineSpacing) || 0;
+
+    const shapesByItem = await Promise.all(textItems.map(async text => {
+      const dataUrl = await this.generateSvgFromTextCanvas(text, textFont, letterSpacing, lineSpacing);
+      const svgString = await new Promise(resolve => {
+        window.ImageTracer.imageToSVG(dataUrl, resolve, {
+          ltres: 1,
+          qtres: 1,
+          pathomit: 8,
+          rightangleenhance: true,
+          colorsampling: 0,
+          numberofcolors: 2,
+          mincolorratio: 0,
+          colorquantcycles: 3,
+          pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
+        });
+      });
+      return this.parseSVG(svgString);
+    }));
+
+    if (generationId !== this.generationId) return false;
+    if (shapesByItem.some(shapes => shapes.length === 0)) return false;
+
+    this.clear();
+    this.textSvgShapes = shapesByItem.flat();
+    this.currentSvgShapes = this.textSvgShapes;
+
+    if (params.colorBase) this.partMaterials.base.color.set(params.colorBase);
+    if (params.colorBase) this.partMaterials.ring.color.set(params.colorBase);
+    if (params.colorTop) this.partMaterials.top.color.set(params.colorTop);
+
+    const targetWidth = parseFloat(params.targetWidth) || 50;
+    const ringRadius = parseFloat(params.ringRadius) || 5;
+    const itemStep = targetWidth + (ringRadius * 2) + 10;
+    const firstItemX = -((shapesByItem.length - 1) * itemStep) / 2;
+
+    shapesByItem.forEach((shapes, index) => {
+      this.buildKeychain(params, shapes, firstItemX + (index * itemStep), index);
     });
+
+    if (shapesByItem.length > 1) {
+      const targetDepth = parseFloat(params.targetDepth) || 50;
+      this.svgAspectRatio = ((shapesByItem.length - 1) * itemStep + targetWidth) / targetDepth;
+    }
+
+    return true;
+  }
+
+  buildKeychain(params, svgShapes, positionX, itemIndex) {
+    const keychainGroup = new THREE.Group();
+    keychainGroup.name = `Keychain_${itemIndex + 1}`;
+    keychainGroup.position.x = positionX;
+    this.group.add(keychainGroup);
 
     const baseHeight = parseFloat(params.baseHeight) || 2.5;
     const stampHeight = parseFloat(params.stampHeight) || 2; // altura acima da base
@@ -201,7 +357,7 @@ export class KeychainEngine extends BaseEngine {
     let maxX = -Infinity, maxY = -Infinity;
     const extractedShapes = [];
 
-    this.currentSvgShapes.forEach((svgShape) => {
+    svgShapes.forEach((svgShape) => {
       const points = svgShape.extractPoints(10);
       
       extractedShapes.push(points);
@@ -278,27 +434,27 @@ export class KeychainEngine extends BaseEngine {
         const baseGeom = new THREE.ExtrudeGeometry(os.shape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
         const baseMesh = new THREE.Mesh(baseGeom, this.partMaterials.base);
         baseMesh.name = 'Base';
-        this.group.add(baseMesh);
+        keychainGroup.add(baseMesh);
       });
     }
 
     // 2. Criar o Desenho/Texto em Relevo (Stamp)
     extractedShapes.forEach((points, index) => {
-      const shapePts = toThreeVec2(points.shape);
+      const shapePts = toThreeVec2(toClipperPath(points.shape));
       const stampShape = new THREE.Shape(shapePts);
       
       points.holes.forEach(hole => {
-        stampShape.holes.push(new THREE.Path(toThreeVec2(hole)));
+        stampShape.holes.push(new THREE.Path(toThreeVec2(toClipperPath(hole))));
       });
 
       const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: totalHeight, bevelEnabled: false, curveSegments: 12 });
       
-      const material = this.textMaterials[index];
+      const material = this.partMaterials.top;
       const meshName = `Text_${index}`;
       
       const stampMesh = new THREE.Mesh(stampGeom, material);
       stampMesh.name = meshName;
-      this.group.add(stampMesh);
+      keychainGroup.add(stampMesh);
     });
 
     // 3. Adicionar a Argola (Keyring)
@@ -340,9 +496,7 @@ export class KeychainEngine extends BaseEngine {
       const ringGeom = new THREE.ExtrudeGeometry(ringShape, { depth: baseHeight, bevelEnabled: false, curveSegments: 24 });
       const ringMesh = new THREE.Mesh(ringGeom, this.partMaterials.ring);
       ringMesh.name = 'Ring';
-      this.group.add(ringMesh);
+      keychainGroup.add(ringMesh);
     }
-
-    return true;
   }
 }

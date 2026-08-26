@@ -5,6 +5,7 @@ import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
+window.ImageTracer = ImageTracer;
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange, openAuthModal } from './auth.js';
 import { t } from './i18n.js';
@@ -21,12 +22,14 @@ let viewHelper;
 let currentSvgText = null;
 let buildPlateGroup = null;
 let printersData = [];
+let modelUpdateId = 0;
 
 // UI Elements
 const uploadInput = document.getElementById('svg-upload');
 const fileNameDisplay = document.getElementById('file-name');
 const downloadBtn = document.getElementById('download-btn');
 const saveDesignBtn = document.getElementById('save-design-btn');
+const modelLoading = document.getElementById('model-loading');
 
 // Build Plate UI
 const bpWidthInput = document.getElementById('bp-width');
@@ -128,15 +131,16 @@ function initThree() {
     const orSeparator = document.querySelector('.or-separator');
     if (uploadGroup) uploadGroup.style.display = 'none';
     if (orSeparator) orSeparator.style.display = 'none';
+    const textCreateBtn = document.getElementById('create-from-text-btn');
+    if (textCreateBtn) textCreateBtn.style.display = 'none';
+    if (orSeparator) orSeparator.style.display = 'none';
   }
   
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
-  
-  // Initialize Text to SVG module
-  textToSvg = new TextToSvg('text-to-svg-modal');
-  
+
   const createFromTextBtn = document.getElementById('create-from-text-btn');
-  if (createFromTextBtn) {
+  if (createFromTextBtn && tool !== 'keychain') {
+    textToSvg = new TextToSvg('text-to-svg-modal');
     createFromTextBtn.addEventListener('click', () => {
       textToSvg.open((result) => {
         if (typeof result === 'string') {
@@ -183,7 +187,7 @@ function initThree() {
               pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
             };
             
-            ImageTracer.imageToSVG(flatUrl, (svgString) => {
+            ImageTracer.imageToSVG(flatUrl, async (svgString) => {
               const parser = new DOMParser();
               const doc = parser.parseFromString(svgString, "image/svg+xml");
               doc.querySelectorAll('path').forEach(p => {
@@ -203,8 +207,8 @@ function initThree() {
               }
               fileNameDisplay.textContent = '✏️ Texto';
               fileNameDisplay.style.display = 'block';
-              initDimensionsFromSVG();
-              updateModel();
+              await initDimensionsFromSVG();
+              await updateModel();
             }, options);
           };
           img.src = result.dataUrl;
@@ -554,14 +558,24 @@ function frameCamera() {
   controls.update();
 }
 
-function updateModel() {
-  if (!currentSvgText || !engine || !controlBuilder) return;
-  
+async function updateModel() {
+  if (!currentSvgText && engine?.name !== 'keychain') return;
+  if (!engine || !controlBuilder) return;
+
+  const updateId = ++modelUpdateId;
+  modelLoading?.classList.remove('hidden');
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
   const params = controlBuilder.getValues();
   params.targetWidth = parseFloat(modelWidthInput.value) || 80;
   params.targetDepth = parseFloat(modelDepthInput.value) || 80;
-  
-  const success = engine.generate3DModel(params);
+
+  let success = false;
+  try {
+    success = await engine.generate3DModel(params);
+  } finally {
+    if (updateId === modelUpdateId) modelLoading?.classList.add('hidden');
+  }
   
   if (success) {
     // After first generation, update dimension inputs with correct aspect ratio
@@ -582,7 +596,7 @@ function updateModel() {
   }
 }
 
-function initDimensionsFromSVG() {
+async function initDimensionsFromSVG() {
   // Show the dimensions section
   dimensionsSection.style.display = '';
   
@@ -591,7 +605,7 @@ function initDimensionsFromSVG() {
   const tempParams = controlBuilder.getValues();
   tempParams.targetWidth = 80;
   tempParams.targetDepth = 80;
-  engine.generate3DModel(tempParams);
+  await engine.generate3DModel(tempParams);
   
   if (engine.svgAspectRatio) {
     svgAspectRatio = engine.svgAspectRatio;
@@ -673,15 +687,15 @@ uploadInput.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const svgText = event.target.result;
-      svgEditor.open(svgText, (editedSvg) => {
+      svgEditor.open(svgText, async (editedSvg) => {
         currentSvgText = editedSvg;
         if (engine.name === 'keychain') {
           engine.loadImageSVG(currentSvgText);
         } else {
           engine.loadSVG(currentSvgText);
         }
-        initDimensionsFromSVG();
-        updateModel();
+        await initDimensionsFromSVG();
+        await updateModel();
       });
     };
     reader.readAsText(file);
@@ -732,7 +746,7 @@ uploadInput.addEventListener('change', (e) => {
           pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
         };
         
-        ImageTracer.imageToSVG(flattenedDataUrl, (svgString) => {
+        ImageTracer.imageToSVG(flattenedDataUrl, async (svgString) => {
           // Parse SVG safely and remove white paths
           const parser = new DOMParser();
           const doc = parser.parseFromString(svgString, "image/svg+xml");
@@ -748,15 +762,15 @@ uploadInput.addEventListener('change', (e) => {
           const initialSvg = new XMLSerializer().serializeToString(doc);
           
           // Open editor for cleanup
-          svgEditor.open(initialSvg, (editedSvg) => {
+          svgEditor.open(initialSvg, async (editedSvg) => {
             currentSvgText = editedSvg;
             if (engine.name === 'keychain') {
               engine.loadImageSVG(currentSvgText);
             } else {
               engine.loadSVG(currentSvgText);
             }
-            initDimensionsFromSVG();
-            updateModel();
+            await initDimensionsFromSVG();
+            await updateModel();
           });
         }, options);
       };

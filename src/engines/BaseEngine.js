@@ -67,8 +67,10 @@ export class BaseEngine {
       
       if (style) {
         const fill = (style.fill || '').toLowerCase().replace(/\s/g, '');
+        const rgb = fill.match(/^rgb\((\d+),(\d+),(\d+)\)$/);
+        const isNearWhite = rgb && rgb.slice(1).every(value => Number(value) >= 245);
         // Ignore white paths (typically background from image tracing or explicit SVG backgrounds)
-        if (fill === 'rgb(255,255,255)' || fill === '#ffffff' || fill === '#fff' || fill === 'white') {
+        if (isNearWhite || fill === '#ffffff' || fill === '#fff' || fill === 'white') {
           continue;
         }
         // Force fill to ensure stroked paths without fill are still processed as solid shapes

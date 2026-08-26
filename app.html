@@ -135,6 +135,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         </button>
         <div id="canvas-container"></div>
+        <div id="model-loading" class="model-loading hidden" role="status" aria-live="polite">
+          <span class="model-loading-spinner" aria-hidden="true"></span>
+          <span data-i18n="app.generating_model">Gerando modelo...</span>
+        </div>
         <div class="floating-actions">
           <button id="save-design-btn" class="secondary-btn" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 50px; padding: 14px 24px; font-size: 16px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 4px 14px rgba(0,0,0,0.1); transition: all 0.2s;">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
@@ -461,7 +465,7 @@
         <!-- Actions -->
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
           <button id="text-to-svg-cancel" class="secondary-btn" data-i18n="cropper.cancel">Cancelar</button>
-          <button id="text-to-svg-confirm" class="primary-btn" disabled data-i18n="app.use_this_text">Usar este Texto</button>
+          <button id="text-to-svg-confirm" class="primary-btn" disabled data-i18n="app.generate_3d">Gerar o 3D</button>
         </div>
       </div>
     </div>
