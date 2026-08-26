@@ -3,293 +3,706 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Master3D - Gerador de Cortadores de Biscoito 3D</title>
-  <link rel="stylesheet" href="./style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Master3D — Crie Modelos 3D Personalizados em Segundos</title>
+  <meta name="description" content="Plataforma de geração de modelos 3D para impressão. Cortadores de biscoito, chaveiros, carimbos e muito mais. Rápido, fácil e direto no navegador.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: var(--bg-color);
-      color: var(--text-primary);
-      overflow-y: auto !important;
-      height: auto !important;
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #13131a;
+      --bg-card-hover: #1a1a24;
+      --surface: #1e1e2a;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(217,119,6,0.4);
+      --text: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #d97706;
+      --accent-glow: rgba(217,119,6,0.25);
+      --accent-hover: #f59e0b;
+      --gradient-hero: linear-gradient(135deg, #0f0c29 0%, #1a1040 40%, #24243e 100%);
+      --radius: 16px;
+      --radius-sm: 10px;
     }
-    
-    header {
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAVBAR ───────────────────────────────────── */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 40px;
-      background: var(--panel-bg);
-      border-bottom: 1px solid var(--border-color);
+      padding: 0 40px;
+      height: 64px;
+      background: rgba(10,10,15,0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
     }
-    
-    .logo {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--accent-color);
+
+    .nav-logo {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.5px;
     }
-    
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--accent) !important;
+      color: #fff !important;
+      padding: 8px 20px;
+      border-radius: 24px;
+      font-weight: 600 !important;
+      transition: all 0.2s !important;
+    }
+
+    .nav-cta:hover {
+      background: var(--accent-hover) !important;
+      transform: translateY(-1px);
+    }
+
+    .language-selector {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* ── HERO ─────────────────────────────────────── */
     .hero {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 100px 20px;
-      max-width: 800px;
+      padding: 140px 24px 80px;
+      background: var(--gradient-hero);
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 120px;
+      background: linear-gradient(to bottom, transparent, var(--bg-dark));
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(217,119,6,0.12);
+      border: 1px solid rgba(217,119,6,0.25);
+      color: var(--accent-hover);
+      padding: 6px 16px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.6s ease;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      line-height: 1.15;
+      max-width: 720px;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+      animation: fadeInUp 0.6s ease 0.1s both;
+    }
+
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--accent), #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin-bottom: 36px;
+      line-height: 1.6;
+      animation: fadeInUp 0.6s ease 0.2s both;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.3s;
+      box-shadow: 0 0 30px var(--accent-glow);
+      animation: fadeInUp 0.6s ease 0.3s both;
+    }
+
+    .hero-cta:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 0 40px var(--accent-glow), 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .hero-cta svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.3s;
+    }
+
+    .hero-cta:hover svg {
+      transform: translateX(3px);
+    }
+
+    /* ── SECTION COMMON ──────────────────────────── */
+    .section-title {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: clamp(28px, 3vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin: 0 auto 48px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* ── TOOLS GRID ───────────────────────────────── */
+    .tools-section {
+      padding: 80px 24px;
+      max-width: 1200px;
       margin: 0 auto;
     }
-    
-    .hero h1 {
-      font-size: 48px;
-      margin-bottom: 20px;
-      line-height: 1.2;
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
     }
-    
-    .hero p {
-      font-size: 20px;
-      color: var(--text-secondary);
-      margin-bottom: 40px;
-    }
-    
-    .cta-btn {
-      display: inline-block;
-      background: var(--accent-color);
-      color: white;
-      padding: 15px 30px;
-      font-size: 18px;
-      font-weight: 600;
-      border-radius: 30px;
+
+    .tool-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
       text-decoration: none;
-      transition: background 0.3s;
+      color: var(--text);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
     }
-    
-    .cta-btn:hover {
-      background: var(--accent-hover);
+
+    .tool-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--border-hover);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--border-hover);
     }
-    
-    .features {
+
+    .tool-card.disabled {
+      opacity: 0.55;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .tool-card.disabled:hover {
+      transform: none;
+      border-color: var(--border);
+      box-shadow: none;
+    }
+
+    .tool-card-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s;
+    }
+
+    .tool-card:hover .tool-card-img {
+      transform: scale(1.05);
+    }
+
+    .tool-card-body {
+      padding: 20px;
+    }
+
+    .tool-card-body h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .tool-card-body p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .tool-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(8px);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tool-badge.available {
+      background: rgba(16,185,129,0.15);
+      border-color: rgba(16,185,129,0.3);
+      color: #34d399;
+    }
+
+    /* ── HOW IT WORKS ────────────────────────────── */
+    .how-section {
+      padding: 80px 24px;
+      background: var(--surface);
+    }
+
+    .how-grid {
       display: flex;
       justify-content: center;
       gap: 40px;
-      padding: 60px 20px;
-      background: var(--panel-bg);
-      flex-wrap: wrap;
+      max-width: 900px;
+      margin: 0 auto;
     }
-    
-    .feature-card {
-      background: var(--bg-color);
-      padding: 30px;
-      border-radius: 12px;
-      width: 300px;
+
+    .how-step {
       text-align: center;
-      border: 1px solid var(--border-color);
+      flex: 1;
     }
-    
-    .feature-card h3 {
-      color: var(--accent-color);
-      margin-bottom: 15px;
-    }
-    
-    .pricing {
-      padding: 80px 20px;
-      text-align: center;
-    }
-    
-    .pricing-cards {
+
+    .how-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #fbbf24);
       display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 30px;
-      margin-top: 40px;
-      flex-wrap: wrap;
+      margin: 0 auto 16px;
+      font-size: 28px;
     }
-    
-    .price-card {
-      background: var(--panel-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 40px;
-      width: 300px;
-      text-align: left;
+
+    .how-step h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .how-step p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ── PRICING ──────────────────────────────────── */
+    .pricing-section {
+      padding: 80px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 24px;
       display: flex;
       flex-direction: column;
+      transition: all 0.3s;
     }
-    
-    .price-card.pro {
-      border: 2px solid var(--accent-color);
-      transform: scale(1.05);
+
+    .pricing-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
     }
-    
-    .price-card h3 {
-      font-size: 24px;
-      margin-top: 0;
+
+    .pricing-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 30px var(--accent-glow);
+      position: relative;
     }
-    
-    .price {
-      font-size: 36px;
+
+    .pricing-card.featured::before {
+      content: 'Mais Popular';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
       font-weight: 700;
-      margin: 20px 0;
+      padding: 4px 16px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    
-    .price span {
-      font-size: 16px;
-      color: var(--text-secondary);
+
+    .pricing-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .pricing-price {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 16px 0 8px;
+    }
+
+    .pricing-price .period {
+      font-size: 14px;
       font-weight: 400;
+      color: var(--text-muted);
     }
-    
-    .price-card ul {
+
+    .pricing-features {
       list-style: none;
-      padding: 0;
-      margin-bottom: 30px;
+      margin: 16px 0 24px;
+      flex: 1;
     }
-    
-    .price-card ul li {
-      margin-bottom: 10px;
+
+    .pricing-features li {
+      font-size: 14px;
       color: var(--text-secondary);
+      margin-bottom: 10px;
+      padding-left: 20px;
+      position: relative;
     }
-    
-    .price-card ul li::before {
+
+    .pricing-features li::before {
       content: '✓';
-      color: var(--accent-color);
-      font-weight: bold;
-      margin-right: 10px;
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
     }
-    
-    .price-btn {
+
+    .pricing-btn {
       display: block;
       text-align: center;
-      background: var(--bg-color);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
       padding: 12px;
-      border-radius: 8px;
-      text-decoration: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
       font-weight: 600;
-      transition: all 0.3s;
-      margin-top: auto;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: transparent;
     }
-    
-    .price-card.pro .price-btn {
-      background: var(--accent-color);
-      color: white;
-      border: none;
+
+    .pricing-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
-    
-    .price-btn:hover {
-      opacity: 0.9;
+
+    .pricing-card.featured .pricing-btn {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
     }
-    
-    footer {
+
+    .pricing-card.featured .pricing-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    .footer {
       text-align: center;
-      padding: 40px;
-      background: var(--panel-bg);
-      color: var(--text-secondary);
-      border-top: 1px solid var(--border-color);
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* ── ANIMATIONS ───────────────────────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 900px) {
+      .tools-grid { grid-template-columns: repeat(2, 1fr); }
+      .how-grid { flex-direction: column; gap: 32px; }
+      .navbar { padding: 0 20px; }
+      .nav-links { gap: 20px; }
+    }
+
+    @media (max-width: 600px) {
+      .tools-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .nav-links a:not(.nav-cta) { display: none; }
+      .hero { padding: 120px 16px 60px; }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo">CutterMaker3D</div>
-    <div style="display: flex; gap: 16px; align-items: center;">
-      <select class="language-selector" style="background: var(--panel-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 5px;">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="./" class="nav-logo">Master3D</a>
+    <div class="nav-links">
+      <a href="#ferramentas">Ferramentas</a>
+      <a href="#precos">Preços</a>
+      <select class="language-selector">
         <option value="en">EN</option>
-        <option value="pt">PT</option>
+        <option value="pt" selected>PT</option>
       </select>
-      <a href="./hub.html" class="cta-btn" style="padding: 10px 20px; font-size: 14px;" data-i18n="nav.go_to_app">Ir para o Hub</a>
+      <a href="./app.html" class="nav-cta">Começar Grátis</a>
     </div>
-  </header>
+  </nav>
 
+  <!-- HERO -->
   <section class="hero">
-    <h1>Crie Cortadores de Biscoito 3D em Segundos</h1>
-    <p>Transforme qualquer imagem 2D em um modelo 3D perfeito para impressão. Rápido, fácil e direto no navegador.</p>
-    <a href="./hub.html" class="cta-btn" data-i18n="hero.cta">Ir para o Hub</a>
+    <div class="hero-badge">
+      🚀 Plataforma de Modelagem 3D
+    </div>
+    <h1>Crie Modelos 3D <span class="highlight">Personalizados</span> em Segundos</h1>
+    <p>Transforme imagens em modelos 3D prontos para impressão. Cortadores, chaveiros, carimbos e muito mais — tudo direto no navegador.</p>
+    <a href="./app.html?tool=cookie_cutter" class="hero-cta">
+      Começar Grátis
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+    </a>
   </section>
 
-  <section class="features">
-    <div class="feature-card">
-      <h3 data-i18n="features.f1_title">1. Upload Fácil</h3>
-      <p data-i18n="features.f1_desc">Envie imagens PNG, JPG ou ficheiros SVG diretamente...</p>
-    </div>
-    <div class="feature-card">
-      <h3 data-i18n="features.f2_title">2. Geração Instantânea</h3>
-      <p data-i18n="features.f2_desc">Visualize o seu cortador de biscoito em 3D...</p>
-    </div>
-    <div class="feature-card">
-      <h3 data-i18n="features.f3_title">3. Exportação para STL</h3>
-      <p data-i18n="features.f3_desc">Faça o download do modelo otimizado...</p>
+  <!-- TOOLS -->
+  <section class="tools-section" id="ferramentas">
+    <h2 class="section-title">Ferramentas Disponíveis</h2>
+    <p class="section-subtitle">Escolha uma ferramenta e comece a criar. Novas ferramentas são adicionadas regularmente.</p>
+
+    <div class="tools-grid">
+      <!-- Cortador de Biscoito – AVAILABLE -->
+      <a href="./app.html?tool=cookie_cutter" class="tool-card">
+        <span class="tool-badge available">Disponível</span>
+        <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
+          <img src="/images/tools/cookie-cutter.jpg" alt="Cortador de Biscoito 3D" class="tool-card-img" loading="lazy">
+        </div>
+        <div class="tool-card-body">
+          <h3>🍪 Cortador de Biscoito</h3>
+          <p>Gerador paramétrico para cortadores, carimbos e moldes a partir de qualquer imagem ou texto.</p>
+        </div>
+      </a>
+
+      <!-- Chaveiro 3D – EM BREVE -->
+      <div class="tool-card disabled">
+        <span class="tool-badge">Em Breve</span>
+        <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
+          <img src="/images/tools/keychain.jpg" alt="Chaveiro 3D" class="tool-card-img" loading="lazy">
+        </div>
+        <div class="tool-card-body">
+          <h3>🔑 Chaveiro 3D</h3>
+          <p>Crie chaveiros personalizados com nomes, logótipos ou formas únicas.</p>
+        </div>
+      </div>
+
+      <!-- Colorir com Bordas – EM BREVE -->
+      <div class="tool-card disabled">
+        <span class="tool-badge">Em Breve</span>
+        <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
+          <img src="/images/tools/coloring.jpg" alt="Colorir com Bordas em Relevo" class="tool-card-img" loading="lazy">
+        </div>
+        <div class="tool-card-body">
+          <h3>🎨 Colorir com Bordas</h3>
+          <p>Páginas para colorir com bordas em alto relevo. Perfeito para crianças.</p>
+        </div>
+      </div>
+
+      <!-- Ejetor de Brigadeiro – EM BREVE -->
+      <div class="tool-card disabled">
+        <span class="tool-badge">Em Breve</span>
+        <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
+          <img src="/images/tools/candy-ejector.jpg" alt="Ejetor de Brigadeiro" class="tool-card-img" loading="lazy">
+        </div>
+        <div class="tool-card-body">
+          <h3>🍫 Ejetor de Brigadeiro</h3>
+          <p>Moldes com ejetor para brigadeiros e doces. Produza centenas em minutos.</p>
+        </div>
+      </div>
+
+      <!-- Carimbo 3D – EM BREVE -->
+      <div class="tool-card disabled">
+        <span class="tool-badge">Em Breve</span>
+        <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
+          <img src="/images/tools/stamp.jpg" alt="Carimbo 3D" class="tool-card-img" loading="lazy">
+        </div>
+        <div class="tool-card-body">
+          <h3>📌 Carimbo 3D</h3>
+          <p>Carimbos personalizados para brigadeiros, biscoitos e fondant.</p>
+        </div>
+      </div>
+
+      <!-- Letras Grandes – EM BREVE -->
+      <div class="tool-card disabled">
+        <span class="tool-badge">Em Breve</span>
+        <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
+          <img src="/images/tools/big-letters.jpg" alt="Letras Grandes 3D" class="tool-card-img" loading="lazy">
+        </div>
+        <div class="tool-card-body">
+          <h3>🔤 Letras Grandes</h3>
+          <p>Nomes e letras 3D decorativas para festas, casamentos e eventos.</p>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="pricing">
-    <h2 data-i18n="pricing.title">Planos e Preços</h2>
-    <p style="color: var(--text-secondary); margin-bottom: 40px;" data-i18n="hero.subtitle">Escolha o plano ideal para a sua produção.</p>
-    
-    <div class="pricing-cards">
+  <!-- HOW IT WORKS -->
+  <section class="how-section">
+    <h2 class="section-title">Como Funciona</h2>
+    <p class="section-subtitle">Três passos simples para criar o seu modelo 3D personalizado.</p>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-icon">🎯</div>
+        <h3>1. Escolha uma Ferramenta</h3>
+        <p>Selecione o tipo de modelo 3D que deseja criar no catálogo acima.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-icon">✏️</div>
+        <h3>2. Personalize</h3>
+        <p>Faça upload de imagens, ajuste parâmetros e visualize em tempo real no editor 3D.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-icon">🖨️</div>
+        <h3>3. Exporte e Imprima</h3>
+        <p>Baixe o ficheiro STL otimizado e envie direto para a sua impressora 3D.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section" id="precos">
+    <h2 class="section-title">Planos e Preços</h2>
+    <p class="section-subtitle">Créditos para exportar modelos STL. Gerador visual é sempre gratuito e ilimitado.</p>
+
+    <div class="pricing-grid">
       <!-- Starter -->
-      <div class="price-card">
-        <h3 data-i18n="pricing.starter_title">Starter</h3>
-        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.starter_price">€0</span></div>
-        <ul>
-          <li data-i18n="pricing.starter_f1">3 Créditos Grátis (STLs)</li>
-          <li data-i18n="pricing.starter_f2">Gerador visual Ilimitado</li>
-          <li data-i18n="pricing.starter_f3">Uso Pessoal</li>
+      <div class="pricing-card">
+        <h3>Starter</h3>
+        <div class="pricing-price">€0<span class="period"></span></div>
+        <ul class="pricing-features">
+          <li>3 Créditos Grátis</li>
+          <li>Gerador Visual Ilimitado</li>
+          <li>Uso Pessoal</li>
         </ul>
-        <a href="./app.html" class="price-btn" data-i18n="pricing.starter_btn">Testar Grátis</a>
+        <a href="./app.html" class="pricing-btn">Testar Grátis</a>
       </div>
 
-      <!-- Pacote Mini -->
-      <div class="price-card pro">
-        <h3 data-i18n="pricing.mini_title">Pacote Mini</h3>
-        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.mini_price">€5.00</span><span data-i18n="pricing.mini_price_desc"> / 10 STLs</span></div>
-        <ul>
-          <li data-i18n="pricing.mini_f1">10 Créditos (€0.50/STL)</li>
-          <li data-i18n="pricing.pack_f2">Os créditos não expiram</li>
-          <li data-i18n="pricing.commercial_license">Licença Comercial de Venda</li>
+      <!-- Mini -->
+      <div class="pricing-card">
+        <h3>Mini</h3>
+        <div class="pricing-price">€5<span class="period"> /mês</span></div>
+        <ul class="pricing-features">
+          <li>10 Créditos (€0.50/STL)</li>
+          <li>Licença Comercial</li>
+          <li>Salvar na Nuvem</li>
         </ul>
-        <a href="./app.html?buy=mini" class="price-btn" data-i18n="pricing.mini_btn">Comprar Mini</a>
-      </div>
-      
-      <!-- Pacote 50 -->
-      <div class="price-card pro">
-        <h3 data-i18n="pricing.pack_title">Pacote Popular</h3>
-        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.pack_price">€15.00</span><span data-i18n="pricing.pack_price_desc"> / 50 STLs</span></div>
-        <ul>
-          <li data-i18n="pricing.pack_f1">50 Créditos (€0.30/STL)</li>
-          <li data-i18n="pricing.pack_f2">Os créditos não expiram</li>
-          <li data-i18n="pricing.commercial_license">Licença Comercial de Venda</li>
-        </ul>
-        <a href="./app.html?buy=popular" class="price-btn" data-i18n="pricing.popular_btn">Comprar Popular</a>
+        <a href="./app.html?buy=mini" class="pricing-btn">Assinar Mini</a>
       </div>
 
-      <!-- Pacote 200 -->
-      <div class="price-card pro" style="border-color: #f59e0b;">
-        <h3 data-i18n="pricing.adv_title">Pacote Avançado</h3>
-        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.adv_price">€50.00</span><span data-i18n="pricing.adv_price_desc"> / 200 STLs</span></div>
-        <ul>
-          <li data-i18n="pricing.adv_f1">200 Créditos (€0.25/STL)</li>
-          <li data-i18n="pricing.adv_f2">Salvar Designs na Nuvem</li>
-          <li data-i18n="pricing.commercial_license">Licença Comercial de Venda</li>
+      <!-- Popular -->
+      <div class="pricing-card featured">
+        <h3>Popular</h3>
+        <div class="pricing-price">€15<span class="period"> /mês</span></div>
+        <ul class="pricing-features">
+          <li>50 Créditos (€0.30/STL)</li>
+          <li>Licença Comercial</li>
+          <li>Salvar na Nuvem</li>
         </ul>
-        <a href="./app.html?buy=advanced" class="price-btn" style="background: #f59e0b;" data-i18n="pricing.adv_btn">Comprar Avançado</a>
+        <a href="./app.html?buy=popular" class="pricing-btn">Assinar Popular</a>
       </div>
 
-      <!-- Pacote 500 -->
-      <div class="price-card pro" style="border-color: #8b5cf6;">
-        <h3 data-i18n="pricing.studio_title">Pacote Studio</h3>
-        <div class="price"><span style="color: inherit; font-size: inherit; font-weight: inherit;" data-i18n="pricing.studio_price">€99.00</span><span data-i18n="pricing.studio_price_desc"> / 500 STLs</span></div>
-        <ul>
-          <li data-i18n="pricing.studio_f1">500 Créditos (~€0.20/STL)</li>
-          <li data-i18n="pricing.studio_f2">Suporte Prioritário</li>
-          <li data-i18n="pricing.commercial_license">Licença Comercial de Venda</li>
+      <!-- Avançado -->
+      <div class="pricing-card">
+        <h3>Avançado</h3>
+        <div class="pricing-price">€50<span class="period"> /mês</span></div>
+        <ul class="pricing-features">
+          <li>200 Créditos (€0.25/STL)</li>
+          <li>Licença Comercial</li>
+          <li>Designs na Nuvem</li>
         </ul>
-        <a href="./app.html?buy=studio" class="price-btn" style="background: #8b5cf6;" data-i18n="pricing.studio_btn">Comprar Studio</a>
+        <a href="./app.html?buy=advanced" class="pricing-btn">Assinar Avançado</a>
+      </div>
+
+      <!-- Studio -->
+      <div class="pricing-card">
+        <h3>Studio</h3>
+        <div class="pricing-price">€99<span class="period"> /mês</span></div>
+        <ul class="pricing-features">
+          <li>500 Créditos (~€0.20/STL)</li>
+          <li>Suporte Prioritário</li>
+          <li>Licença Comercial</li>
+        </ul>
+        <a href="./app.html?buy=studio" class="pricing-btn">Assinar Studio</a>
       </div>
     </div>
   </section>
 
-  <footer>
-    <p data-i18n="footer.rights">&copy; 2026 CutterMaker3D. Todos os direitos reservados.</p>
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>&copy; 2026 Master3D. Todos os direitos reservados.</p>
   </footer>
 
   <script type="module" src="./i18n.js"></script>

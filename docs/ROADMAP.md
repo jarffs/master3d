@@ -28,9 +28,11 @@ Este roadmap define as etapas para evoluir a aplicação estática (Vanilla HTML
 - [x] **Nova Estrutura de Preços (Créditos):** Reformular o `index.html` para exibir a venda de Pacotes de Créditos avulsos (Pay-As-You-Go) e um Plano Anual.
 - [x] **Configuração de Build:** Configurar `vite.config.js` para múltiplas páginas (`index.html` e `app.html`).
 - [x] **Tabela Profiles (Créditos):** Adicionar coluna `credits` à tabela `profiles` no Supabase (com default 3 para novos usuários).
-- [ ] **Integração Stripe:** Configurar Stripe Checkout (Payment Links) para a venda dos pacotes de créditos e plano anual.
-- [ ] **Supabase Edge Function (Webhook do Stripe):** Criar e hospedar uma Edge Function (`stripe-webhook`) para escutar compras de créditos e usar o *Service Role* para somá-los de forma segura na tabela `profiles`.
+- [x] **Integração Stripe:** Configurar Stripe Checkout com Edge Functions para venda de assinaturas recorrentes.
+- [x] **Supabase Edge Function (create-checkout-session):** Criar Edge Function para gerar sessões de checkout do Stripe.
+- [x] **Supabase Edge Function (stripe-webhook):** Criar Edge Function para escutar eventos do Stripe e adicionar créditos ao perfil.
 - [x] **Débito Seguro de Créditos:** Criar uma RPC (Remote Procedure Call) no Supabase para deduzir 1 crédito de forma segura sempre que um utilizador solicitar um download de STL.
+- [x] **Auto-Checkout da Landing Page:** Implementar redirecionamento automático com `?buy=` param e fluxo login → checkout.
 
 ## FASE 5: Integração Principal (Salvar Designs)
 - [x] Adicionar botão "Salvar Design".
@@ -40,12 +42,30 @@ Este roadmap define as etapas para evoluir a aplicação estática (Vanilla HTML
 - [x] Programar a função de carregar, excluir e sobrescrever designs.
 - [x] **Melhorias de UX:** Adicionar ViewCube e botão "Home" para melhorar a navegação 3D no editor.
 
-## FASE 6: Plataforma Reutilizável (Multi-ferramentas)
-A aplicação evoluirá de um "Gerador de Cortadores de Biscoito" para uma plataforma hub de modelagem paramétrica 3D com diversas ferramentas integradas.
+## FASE 6: Redesign da Landing Page (Marketplace Style)
+- [x] **Redesign completo:** Reescrever `index.html` com design dark mode, marketplace style inspirado no MakerWorld.
+- [x] **Unificação Hub + Landing:** Eliminar `hub.html` e absorver funcionalidade na nova landing page.
+- [x] **Grid de Ferramentas:** Cards fotorealistas para cada ferramenta (disponível e "Em Breve").
+- [x] **Rebranding:** Migrar de "CutterMaker3D" para "Master3D" como marca oficial.
+- [x] **Imagens de ferramentas:** Gerar thumbnails fotorealistas para os cards das ferramentas.
+
+## FASE 7: Plataforma Multi-Ferramentas (Roadmap Futuro)
+A aplicação evolui para uma plataforma hub de modelagem paramétrica 3D com diversas ferramentas.
+
+### 7.1 Arquitetura Base
 - [ ] **Desacoplamento do Motor (Engine):** Refatorar o `CookieCutterEngine.js` para uma estrutura genérica de `ToolEngine`, permitindo plugar novos geradores.
-- [ ] **Novas Ferramentas:** Implementar suporte para carimbos independentes, chaveiros litofânicos, caixas paramétricas, moldes de silicone, etc.
-- [ ] **Hub/Dashboard:** Atualizar a interface (`app.html` ou criar um `dashboard.html`) para um menu onde o usuário escolhe a ferramenta desejada antes de entrar no modo de edição.
-- [ ] **Revisão de Estado e UI:** Adotar um padrão de gerenciamento de estado mais robusto (ou migração para React/Vue via Vite) para facilitar a criação de novos painéis de controle dinâmicos para cada ferramenta.
-- [ ] **Extensão do Banco de Dados:** Adicionar coluna `tool_type` na tabela `saved_designs` para identificar qual motor deve ser carregado ao abrir um projeto.
+- [ ] **Extensão do Banco de Dados:** Garantir que a coluna `tool_type` na tabela `saved_designs` identifica qual motor carregar.
+
+### 7.2 Novas Ferramentas (por ordem de prioridade)
+- [ ] **🔑 Chaveiro 3D:** Gerador de chaveiros personalizados a partir de imagens e texto. Engine: `KeychainEngine`.
+- [ ] **📌 Carimbo de Brigadeiro:** Gerador de carimbos circulares a partir de imagens vetorizadas. Engine: `StampEngine`.
+- [ ] **🍫 Ejetor de Brigadeiro:** Moldes paramétricos com sistema de ejeção para doces. Engine: `CandyMoldEngine`.
+- [ ] **🎨 Colorir com Bordas em Relevo:** Conversor de imagens para placas com bordas elevadas para colorir. Engine: `ColoringEngine`.
+- [ ] **🔤 Letras Grandes / Nomes 3D:** Gerador de letras decorativas 3D para festas e eventos. Engine: `BigLetterEngine`.
+
+### 7.3 Infraestrutura Futura
+- [ ] **Sistema de plugins:** Arquitetura que permite adicionar novas ferramentas sem alterar o core.
+- [ ] **Galeria comunitária:** Permitir que utilizadores partilhem designs públicos.
+- [ ] **Revisão de Estado e UI:** Considerar migração para React/Vue para escalabilidade.
 
 
