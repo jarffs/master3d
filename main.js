@@ -1218,6 +1218,7 @@ function loadDesignIntoEngine(design) {
 window.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const planToBuy = urlParams.get('buy');
+  const action = urlParams.get('action');
   
   if (planToBuy) {
     // Clean URL
@@ -1239,5 +1240,33 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     setTimeout(tryCheckout, 800);
+  } else if (action === 'profile' || action === 'designs') {
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    const openRequestedModal = async () => {
+      if (action === 'profile') {
+        const { openProfileModal } = await import('./profile.js');
+        openProfileModal();
+      } else if (action === 'designs') {
+        window.dispatchEvent(new Event('open-designs-modal'));
+      }
+    };
+
+    const tryOpen = () => {
+      if (currentUser) {
+        openRequestedModal();
+      } else {
+        let opened = false;
+        onAuthChange((user) => {
+          if (user && !opened) {
+            opened = true;
+            openRequestedModal();
+          }
+        });
+      }
+    };
+    
+    setTimeout(tryOpen, 800);
   }
 });
