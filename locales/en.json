@@ -162,7 +162,18 @@
     "color_yellow": "Yellow",
     "color_green": "Green",
     "color_orange": "Orange",
-    "export_3mf": "Export 3MF"
+    "export_3mf": "Export 3MF",
+    "tool_coloring": "Coloring with Borders",
+    "tool_coloring_reference": "Example of a coloring page with raised borders",
+    "base_thickness": "Base Thickness",
+    "base_thickness_desc": "Thickness of the base layer (plate)",
+    "top_thickness": "Top Thickness",
+    "top_thickness_desc": "Height of the raised borders above the base",
+    "border_width": "Border Width",
+    "border_width_desc": "Width of the raised contour lines",
+    "base_margin": "Base Margin",
+    "base_margin_desc": "Extra margin around the design on the base plate",
+    "category_borders": "Borders"
   },
   "cropper": {
     "title": "Crop Image",

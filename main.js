@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
+import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
@@ -36,6 +37,12 @@ function getControlBuilderOptions() {
     return {
       collapsible: true,
       categoryOrder: ['cut', 'base', 'contour']
+    };
+  }
+  if (engine?.name === 'coloring') {
+    return {
+      collapsible: true,
+      categoryOrder: ['base', 'borders']
     };
   }
   return {};
@@ -133,6 +140,8 @@ function initThree() {
     engine = new CookieCutterEngine(scene);
   } else if (tool === 'keychain') {
     engine = new KeychainEngine(scene);
+  } else if (tool === 'coloring') {
+    engine = new ColoringEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -153,6 +162,11 @@ function initThree() {
       image: '/images/tools/keychain.jpg',
       title: t('app.tool_keychain'),
       alt: t('app.tool_keychain_reference')
+    },
+    coloring: {
+      image: '/images/tools/coloring.jpg',
+      title: t('app.tool_coloring'),
+      alt: t('app.tool_coloring_reference')
     }
   };
   const toolReference = toolReferences[tool];
@@ -163,7 +177,7 @@ function initThree() {
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain') {
+  if (tool === 'keychain' || tool === 'coloring') {
     const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
@@ -179,14 +193,21 @@ function initThree() {
       exportBtnText.textContent = 'Exportar 3MF';
     }
     
-    // Hide image upload for keychain, only allow text
-    const uploadGroup = document.querySelector('.upload-group');
-    const orSeparator = document.querySelector('.or-separator');
-    if (uploadGroup) uploadGroup.style.display = 'none';
-    if (orSeparator) orSeparator.style.display = 'none';
-    const textCreateBtn = document.getElementById('create-from-text-btn');
-    if (textCreateBtn) textCreateBtn.style.display = 'none';
-    if (orSeparator) orSeparator.style.display = 'none';
+    if (tool === 'keychain') {
+      // Hide image upload for keychain, only allow text
+      const uploadGroup = document.querySelector('.upload-group');
+      const orSeparator = document.querySelector('.or-separator');
+      if (uploadGroup) uploadGroup.style.display = 'none';
+      if (orSeparator) orSeparator.style.display = 'none';
+      const textCreateBtn = document.getElementById('create-from-text-btn');
+      if (textCreateBtn) textCreateBtn.style.display = 'none';
+      if (orSeparator) orSeparator.style.display = 'none';
+    } else if (tool === 'coloring') {
+      const orSeparator = document.querySelector('.or-separator');
+      const textCreateBtn = document.getElementById('create-from-text-btn');
+      if (orSeparator) orSeparator.style.display = 'none';
+      if (textCreateBtn) textCreateBtn.style.display = 'none';
+    }
   }
   
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
@@ -885,6 +906,8 @@ downloadBtn.addEventListener('click', async () => {
   
   if (engine.name === 'keychain') {
     await engine.export3MF('master3d_chaveiro.3mf');
+  } else if (engine.name === 'coloring') {
+    await engine.export3MF('master3d_colorir.3mf');
   } else {
     engine.exportSTL();
   }
@@ -1118,6 +1141,8 @@ function loadDesignIntoEngine(design) {
   
   if (toolType === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
+  } else if (toolType === 'coloring') {
+    engine = new ColoringEngine(scene);
   } else {
     // Fallback for future engines
     engine = new CookieCutterEngine(scene);
