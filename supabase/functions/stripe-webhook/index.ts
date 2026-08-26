@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@12.4.0?target=deno";
+import Stripe from "https://esm.sh/stripe@16.12.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 serve(async (req) => {
@@ -21,7 +21,7 @@ serve(async (req) => {
       throw new Error("STRIPE_SECRET_KEY is not set in environment variables");
     }
     const stripe = new Stripe(stripeSecret, {
-      apiVersion: "2022-11-15",
+      apiVersion: "2025-03-31.basil",
       httpClient: Stripe.createFetchHttpClient(),
     });
 
