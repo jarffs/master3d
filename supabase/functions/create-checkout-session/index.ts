@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@12.4.0?target=deno";
+import Stripe from "https://esm.sh/stripe@16.12.0?target=deno";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +20,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeSecret, {
-      apiVersion: "2022-11-15",
+      apiVersion: "2025-03-31.basil",
       httpClient: Stripe.createFetchHttpClient(),
     });
 
@@ -41,7 +41,7 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      mode: "payment",
+      mode: "subscription",
       success_url: successUrl || "https://master3d.com/app", // Replace with your actual domain later
       cancel_url: cancelUrl || "https://master3d.com/app",
       client_reference_id: userId, // This is how we map the payment back to the user
