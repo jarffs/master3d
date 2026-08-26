@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { exportTo3MF } from 'three-3mf-exporter';
 
 /**
  * Classe base para todos os motores de geração 3D.
@@ -47,15 +48,18 @@ export class BaseEngine {
     }
   }
 
-  /**
-   * Carrega e converte um SVG em formas 2D (THREE.Shape).
-   * A extração de pontos e triangulação deve ser feita no generate3DModel.
-   */
   loadSVG(svgText) {
+    this.currentSvgShapes = this.parseSVG(svgText);
+  }
+
+  /**
+   * Parseia um texto SVG e retorna as formas 2D extraídas (THREE.Shape).
+   */
+  parseSVG(svgText) {
+    if (!svgText) return [];
     const loader = new SVGLoader();
     const svgData = loader.parse(svgText);
-    
-    this.currentSvgShapes = [];
+    const shapes = [];
     
     // Parse paths into Three.js shapes
     for (const path of svgData.paths) {
@@ -71,9 +75,10 @@ export class BaseEngine {
         style.fill = '#000';
       }
       
-      const shapes = path.toShapes(true); // true = generates holes automatically
-      this.currentSvgShapes.push(...shapes);
+      const pathShapes = path.toShapes(true);
+      shapes.push(...pathShapes);
     }
+    return shapes;
   }
 
   /**
@@ -101,6 +106,28 @@ export class BaseEngine {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  /**
+   * Exporta o grupo atual como 3MF preservando cores.
+   */
+  async export3MF(filename = 'model.3mf') {
+    try {
+      const blob = await exportTo3MF(this.group);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.style.display = 'none';
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      return true;
+    } catch (e) {
+      console.error("Erro ao exportar 3MF:", e);
+      return false;
+    }
   }
 
   /**

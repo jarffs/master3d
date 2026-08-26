@@ -110,12 +110,17 @@ function initThree() {
   if (tool === 'keychain') {
     const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
+    const exportBtnText = document.querySelector('#download-btn span');
     
     if (titleEl) {
       titleEl.setAttribute('data-i18n', 'app.upload_image_title_keychain');
     }
     if (uploadDescEl) {
       uploadDescEl.setAttribute('data-i18n', 'app.upload_desc_keychain');
+    }
+    if (exportBtnText) {
+      exportBtnText.setAttribute('data-i18n', 'app.export_3mf');
+      exportBtnText.textContent = 'Exportar 3MF';
     }
   }
   
@@ -131,7 +136,14 @@ function initThree() {
         if (typeof result === 'string') {
           // Direct SVG from opentype.js — perfect vector
           currentSvgText = result;
-          engine.loadSVG(currentSvgText);
+          if (engine.name === 'keychain') {
+            engine.loadTextSVG(currentSvgText);
+            const oldValues = controlBuilder.getValues();
+            controlBuilder.build(engine.getControlSchema(), t);
+            controlBuilder.setValues(oldValues);
+          } else {
+            engine.loadSVG(currentSvgText);
+          }
           fileNameDisplay.textContent = '✏️ Texto';
           fileNameDisplay.style.display = 'block';
           initDimensionsFromSVG();
@@ -175,7 +187,14 @@ function initThree() {
                 }
               });
               currentSvgText = new XMLSerializer().serializeToString(doc);
-              engine.loadSVG(currentSvgText);
+              if (engine.name === 'keychain') {
+                engine.loadTextSVG(currentSvgText);
+                const oldValues = controlBuilder.getValues();
+                controlBuilder.build(engine.getControlSchema(), t);
+                controlBuilder.setValues(oldValues);
+              } else {
+                engine.loadSVG(currentSvgText);
+              }
               fileNameDisplay.textContent = '✏️ Texto';
               fileNameDisplay.style.display = 'block';
               initDimensionsFromSVG();
@@ -650,7 +669,11 @@ uploadInput.addEventListener('change', (e) => {
       const svgText = event.target.result;
       svgEditor.open(svgText, (editedSvg) => {
         currentSvgText = editedSvg;
-        engine.loadSVG(currentSvgText);
+        if (engine.name === 'keychain') {
+          engine.loadImageSVG(currentSvgText);
+        } else {
+          engine.loadSVG(currentSvgText);
+        }
         initDimensionsFromSVG();
         updateModel();
       });
@@ -721,7 +744,11 @@ uploadInput.addEventListener('change', (e) => {
           // Open editor for cleanup
           svgEditor.open(initialSvg, (editedSvg) => {
             currentSvgText = editedSvg;
-            engine.loadSVG(currentSvgText);
+            if (engine.name === 'keychain') {
+              engine.loadImageSVG(currentSvgText);
+            } else {
+              engine.loadSVG(currentSvgText);
+            }
             initDimensionsFromSVG();
             updateModel();
           });
@@ -785,7 +812,11 @@ downloadBtn.addEventListener('click', async () => {
   if(saveDesignBtn) saveDesignBtn.disabled = false;
   downloadBtn.innerHTML = originalText;
   
-  engine.exportSTL();
+  if (engine.name === 'keychain') {
+    await engine.export3MF('master3d_chaveiro.3mf');
+  } else {
+    engine.exportSTL();
+  }
 });
 
 // Initialize

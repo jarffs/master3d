@@ -114,12 +114,38 @@ export class ControlBuilder {
       `;
 
       setTimeout(() => {
-        const checkbox = document.getElementById(item.id);
-        this.controls[item.id] = { checkbox, type: 'toggle' };
-
+        const checkbox = document.getElementById(`${item.id}-toggle`);
+        this.controls[item.id] = { checkbox, type: 'toggle', dependsOn: item.dependsOn };
         checkbox.addEventListener('change', (e) => {
-          this._updateDependencies();
           if (this.onChangeCallback) this.onChangeCallback(item.id, e.target.checked);
+          this._updateDependencies([{ ...item, value: e.target.checked }]);
+        });
+      }, 0);
+    } else if (item.type === 'select') {
+      let optionsHtml = '';
+      if (item.options) {
+        item.options.forEach(opt => {
+          optionsHtml += `<option value="${opt.value}" ${opt.value === item.default ? 'selected' : ''}>${t ? t(opt.label) : opt.label}</option>`;
+        });
+      }
+      
+      wrapper.innerHTML = `
+        <div class="slider-header" style="align-items: center;">
+          <div class="label-container" style="display: flex; flex-direction: column;">
+            <label for="${item.id}-select" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${t ? t(item.label) : item.label}</label>
+            <div class="label-desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${t ? t(item.desc) : item.desc}</div>
+          </div>
+          <select id="${item.id}-select" class="language-selector" style="width: auto; min-width: 100px;">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const select = document.getElementById(`${item.id}-select`);
+        this.controls[item.id] = { select, type: 'select', dependsOn: item.dependsOn };
+        select.addEventListener('change', (e) => {
+          if (this.onChangeCallback) this.onChangeCallback(item.id, e.target.value);
         });
       }, 0);
     }
@@ -141,16 +167,17 @@ export class ControlBuilder {
   }
 
   getValues() {
-    const values = {};
-    Object.keys(this.controls).forEach(key => {
-      const ctrl = this.controls[key];
+    const vals = {};
+    for (const [id, ctrl] of Object.entries(this.controls)) {
       if (ctrl.type === 'slider') {
-        values[key] = parseFloat(ctrl.slider.value);
+        vals[id] = parseFloat(ctrl.slider.value);
       } else if (ctrl.type === 'toggle') {
-        values[key] = ctrl.checkbox.checked;
+        vals[id] = ctrl.checkbox.checked;
+      } else if (ctrl.type === 'select') {
+        vals[id] = ctrl.select.value;
       }
-    });
-    return values;
+    }
+    return vals;
   }
 
   setValues(values) {
