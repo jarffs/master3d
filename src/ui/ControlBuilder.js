@@ -114,7 +114,7 @@ export class ControlBuilder {
       `;
 
       setTimeout(() => {
-        const checkbox = document.getElementById(`${item.id}-toggle`);
+        const checkbox = document.getElementById(item.id);
         this.controls[item.id] = { checkbox, type: 'toggle', dependsOn: item.dependsOn };
         checkbox.addEventListener('change', (e) => {
           if (this.onChangeCallback) this.onChangeCallback(item.id, e.target.checked);
@@ -148,6 +148,33 @@ export class ControlBuilder {
           if (this.onChangeCallback) this.onChangeCallback(item.id, e.target.value);
         });
       }, 0);
+    } else if (item.type === 'text') {
+      const textField = item.multiline
+        ? `<textarea id="${item.id}-text" placeholder="${item.placeholder ? (t ? t(item.placeholder) : item.placeholder) : ''}" rows="3" style="width: 100%; padding: 8px 12px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box; resize: vertical;">${item.default || ''}</textarea>`
+        : `<input type="text" id="${item.id}-text" value="${item.default || ''}" placeholder="${item.placeholder ? (t ? t(item.placeholder) : item.placeholder) : ''}" style="width: 100%; padding: 8px 12px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box;">`;
+
+      wrapper.innerHTML = `
+        <div class="slider-header" style="align-items: flex-start; flex-direction: column;">
+          <div class="label-container" style="display: flex; flex-direction: column; margin-bottom: 8px;">
+            <label for="${item.id}-text" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${t ? t(item.label) : item.label}</label>
+            <div class="label-desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${t ? t(item.desc) : item.desc}</div>
+          </div>
+          ${textField}
+        </div>
+      `;
+
+      setTimeout(() => {
+        const textInput = document.getElementById(`${item.id}-text`);
+        this.controls[item.id] = { textInput, type: 'text', dependsOn: item.dependsOn };
+
+        let debounceTimer;
+        textInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            if (this.onChangeCallback) this.onChangeCallback(item.id, e.target.value);
+          }, 300); // 300ms debounce for typing
+        });
+      }, 0);
     }
 
     return wrapper;
@@ -169,12 +196,14 @@ export class ControlBuilder {
   getValues() {
     const vals = {};
     for (const [id, ctrl] of Object.entries(this.controls)) {
-      if (ctrl.type === 'slider') {
+      if (ctrl.type === 'slider' && ctrl.slider) {
         vals[id] = parseFloat(ctrl.slider.value);
-      } else if (ctrl.type === 'toggle') {
+      } else if (ctrl.type === 'toggle' && ctrl.checkbox) {
         vals[id] = ctrl.checkbox.checked;
-      } else if (ctrl.type === 'select') {
+      } else if (ctrl.type === 'select' && ctrl.select) {
         vals[id] = ctrl.select.value;
+      } else if (ctrl.type === 'text' && ctrl.textInput) {
+        vals[id] = ctrl.textInput.value;
       }
     }
     return vals;
@@ -184,11 +213,15 @@ export class ControlBuilder {
     Object.keys(values).forEach(key => {
       const ctrl = this.controls[key];
       if (ctrl) {
-        if (ctrl.type === 'slider') {
+        if (ctrl.type === 'slider' && ctrl.slider) {
           ctrl.slider.value = values[key];
           ctrl.input.value = values[key];
-        } else if (ctrl.type === 'toggle') {
+        } else if (ctrl.type === 'toggle' && ctrl.checkbox) {
           ctrl.checkbox.checked = values[key] === true || values[key] === 'true';
+        } else if (ctrl.type === 'select' && ctrl.select) {
+          ctrl.select.value = values[key];
+        } else if (ctrl.type === 'text' && ctrl.textInput) {
+          ctrl.textInput.value = values[key];
         }
       }
     });
