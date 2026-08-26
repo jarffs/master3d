@@ -21,6 +21,26 @@ export function openAuthModal(message) {
   }
   authModal.classList.remove('hidden');
 }
+
+function setLoginMode(loginMode) {
+  isLoginMode = loginMode;
+  authError.classList.add('hidden');
+  authTitle.textContent = t(isLoginMode ? 'auth.login_title' : 'auth.register_title');
+  if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Personalize seus modelos 3D';
+  authSubmitBtn.textContent = t(isLoginMode ? 'auth.login_btn' : 'auth.register_btn');
+  authSwitchText.textContent = t(isLoginMode ? 'auth.no_account' : 'auth.has_account');
+  authSwitchAction.textContent = t(isLoginMode ? 'auth.register' : 'auth.login');
+}
+
+export function openLoginModal(message) {
+  setLoginMode(true);
+  openAuthModal(message);
+}
+
+export function openRegistrationModal(message) {
+  setLoginMode(false);
+  openAuthModal(message);
+}
 const forgotPasswordBtn = document.getElementById('forgot-password-btn');
 
 let isLoginMode = true;
@@ -133,14 +153,14 @@ function updateAuthUI() {
   } else {
     authSection.innerHTML = `<button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">${t('nav.login')}</button>`;
     document.getElementById('login-btn')?.addEventListener('click', () => {
-      openAuthModal();
+      openLoginModal();
     });
   }
 }
 
 // Eventos do Modal
 loginBtn?.addEventListener('click', () => {
-  openAuthModal();
+  openLoginModal();
 });
 
 closeModalBtn?.addEventListener('click', () => {
@@ -148,21 +168,7 @@ closeModalBtn?.addEventListener('click', () => {
 });
 
 authSwitchAction?.addEventListener('click', () => {
-  isLoginMode = !isLoginMode;
-  authError.classList.add('hidden');
-  if (isLoginMode) {
-    authTitle.textContent = t('auth.login_title');
-    if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Personalize seus modelos 3D';
-    authSubmitBtn.textContent = t('auth.login_btn');
-    authSwitchText.textContent = t('auth.no_account');
-    authSwitchAction.textContent = t('auth.register');
-  } else {
-    authTitle.textContent = t('auth.register_title');
-    if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Personalize seus modelos 3D';
-    authSubmitBtn.textContent = t('auth.register_btn');
-    authSwitchText.textContent = t('auth.has_account');
-    authSwitchAction.textContent = t('auth.login');
-  }
+  setLoginMode(!isLoginMode);
 });
 
 document.getElementById('google-auth-btn')?.addEventListener('click', async () => {
