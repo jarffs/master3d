@@ -3,7 +3,7 @@ export class Dialog {
     if (document.getElementById('custom-dialog-overlay')) return;
     const html = `
       <div id="custom-dialog-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
-        <div id="custom-dialog-box" style="background:var(--panel-bg); border:1px solid var(--border-color); border-radius:12px; padding:24px; max-width:400px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:16px; transform:translateY(-20px); opacity:0; transition:all 0.2s ease;">
+        <div id="custom-dialog-box" style="background:var(--bg-main, #ffffff); border:1px solid var(--border-color); border-radius:12px; padding:24px; max-width:400px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:16px; transform:translateY(-20px); opacity:0; transition:all 0.2s ease;">
           <h3 id="custom-dialog-title" style="margin:0; font-size:18px; color:var(--text-primary);">Aviso</h3>
           <p id="custom-dialog-msg" style="margin:0; font-size:14px; color:var(--text-secondary); line-height:1.5;"></p>
           <input type="text" id="custom-dialog-input" style="display:none; width:100%; padding:10px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-input); color:var(--text-primary); box-sizing:border-box;">
