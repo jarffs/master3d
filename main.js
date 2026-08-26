@@ -135,6 +135,7 @@ function initThree() {
   // Load tool from URL
   const params = new URLSearchParams(window.location.search);
   const tool = params.get('tool') || 'cookie_cutter';
+  const loadDesignId = params.get('load_design');
 
   if (tool === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
@@ -291,9 +292,27 @@ function initThree() {
     });
   }
   
-  onAuthChange((user, profile) => {
+  let initialDesignLoaded = false;
+  onAuthChange(async (user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth
     if (engine?.group?.children.length > 0) refreshExportButtons();
+    
+    if (user && loadDesignId && !initialDesignLoaded) {
+      initialDesignLoaded = true;
+      try {
+        const { data, error } = await supabase
+          .from('saved_designs')
+          .select('*')
+          .eq('id', loadDesignId)
+          .single();
+        
+        if (data && !error) {
+          loadDesignIntoEngine(data);
+        }
+      } catch (err) {
+        console.error("Failed to load design from URL:", err);
+      }
+    }
   });
   
   // Ouve atualizações de perfil vindas do profile.js
@@ -1089,8 +1108,19 @@ async function loadDesigns() {
       `;
 
       card.addEventListener('click', () => {
-        loadDesignIntoEngine(design);
-        if (designsModal) designsModal.classList.add('hidden');
+        if (!confirm('Deseja sair do projeto atual? Alterações não salvas serão perdidas.')) {
+          return;
+        }
+        
+        const currentTool = engine ? engine.name : 'cookie_cutter';
+        const targetTool = design.tool_type || 'cookie_cutter';
+        
+        if (currentTool !== targetTool) {
+          window.location.href = `app.html?tool=${targetTool}&load_design=${design.id}`;
+        } else {
+          loadDesignIntoEngine(design);
+          if (designsModal) designsModal.classList.add('hidden');
+        }
       });
       
       const delBtn = card.querySelector('.delete-design-btn');
@@ -1134,6 +1164,10 @@ function loadDesignIntoEngine(design) {
   // Identify engine based on tool_type
   const toolType = design.tool_type || 'cookie_cutter';
   
+  if (engine && engine.group) {
+    scene.remove(engine.group);
+  }
+
   if (toolType === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
   } else if (toolType === 'keychain') {
