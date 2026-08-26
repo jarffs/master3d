@@ -11,9 +11,14 @@ const authSubmitBtn = document.getElementById('auth-submit-btn');
 const authSwitchAction = document.getElementById('auth-switch-action');
 const authSwitchText = document.getElementById('auth-switch-text');
 const authError = document.getElementById('auth-error');
+const authNotice = document.getElementById('auth-notice');
 const authSuccess = document.getElementById('auth-success');
 
-export function openAuthModal() {
+export function openAuthModal(message) {
+  if (authNotice) {
+    authNotice.textContent = message || '';
+    authNotice.classList.toggle('hidden', !message);
+  }
   authModal.classList.remove('hidden');
 }
 const forgotPasswordBtn = document.getElementById('forgot-password-btn');
@@ -85,6 +90,10 @@ function updateAuthUI() {
 
     authSection.innerHTML = `
       <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+        <div id="topbar-credits" class="topbar-credits" title="${t('profile.credits')}">
+          <span class="topbar-credits-label">${t('profile.credits')}</span>
+          <strong>${userProfile?.credits ?? 0}</strong>
+        </div>
         <div id="topbar-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--text-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; cursor: pointer;" title="${t('profile.title')}">
           ${avatarContent}
         </div>
@@ -124,14 +133,14 @@ function updateAuthUI() {
   } else {
     authSection.innerHTML = `<button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">${t('nav.login')}</button>`;
     document.getElementById('login-btn')?.addEventListener('click', () => {
-      authModal.classList.remove('hidden');
+      openAuthModal();
     });
   }
 }
 
 // Eventos do Modal
 loginBtn?.addEventListener('click', () => {
-  authModal.classList.remove('hidden');
+  openAuthModal();
 });
 
 closeModalBtn?.addEventListener('click', () => {
