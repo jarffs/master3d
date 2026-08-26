@@ -162,7 +162,18 @@
     "color_yellow": "Amarelo",
     "color_green": "Verde",
     "color_orange": "Laranja",
-    "export_3mf": "Exportar 3MF"
+    "export_3mf": "Exportar 3MF",
+    "tool_coloring": "Colorir com Bordas",
+    "tool_coloring_reference": "Exemplo de página para colorir com bordas em relevo",
+    "base_thickness": "Espessura da Base",
+    "base_thickness_desc": "Espessura da camada de base (placa)",
+    "top_thickness": "Espessura do Topo",
+    "top_thickness_desc": "Altura das bordas elevadas acima da base",
+    "border_width": "Largura da Borda",
+    "border_width_desc": "Largura das linhas de contorno elevadas",
+    "base_margin": "Margem da Base",
+    "base_margin_desc": "Margem extra ao redor do desenho na placa base",
+    "category_borders": "Bordas"
   },
   "cropper": {
     "title": "Recortar Imagem",
