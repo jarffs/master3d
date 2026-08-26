@@ -64,10 +64,16 @@ export class TextToSvg {
 
   async fetchGoogleFonts() {
     try {
+      // Tenta obter a chave do ambiente (se existir)
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY_FONT_LIBRARY;
+      
+      if (!apiKey) {
+        throw new Error('Chave da API não encontrada. Usando fallback.');
+      }
+
       // Fetch popular fonts from Google Fonts API
-      // Using the public webfonts endpoint
       const response = await fetch(
-        'https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key=AIzaSyBwIX97bVWr3-6AIUvGkcNnmFgirefZ-5Q'
+        `https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key=${apiKey}`
       );
 
       if (response.ok) {
