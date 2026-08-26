@@ -52,7 +52,15 @@ export class KeychainEngine extends BaseEngine {
   }
 
   getControlSchema() {
-    return [
+    const schema = [
+      {
+        id: 'enableBase',
+        type: 'toggle',
+        label: 'app.enable_base',
+        desc: 'app.enable_base_desc',
+        default: true,
+        category: 'settings'
+      },
       {
         id: 'baseHeight',
         type: 'slider',
@@ -154,6 +162,46 @@ export class KeychainEngine extends BaseEngine {
       }
     ];
 
+    if (this.textSvgShapes.length > 0) {
+      schema.push(
+        {
+          id: 'textPosX',
+          type: 'slider',
+          label: 'app.text_pos_x',
+          desc: 'app.text_pos_x',
+          min: -100,
+          max: 100,
+          step: 1,
+          default: 0,
+          suffix: 'mm',
+          category: 'settings'
+        },
+        {
+          id: 'textPosY',
+          type: 'slider',
+          label: 'app.text_pos_y',
+          desc: 'app.text_pos_y',
+          min: -100,
+          max: 100,
+          step: 1,
+          default: 0,
+          suffix: 'mm',
+          category: 'settings'
+        },
+        {
+          id: 'textScale',
+          type: 'slider',
+          label: 'app.text_scale',
+          desc: 'app.text_scale',
+          min: 0.1,
+          max: 5,
+          step: 0.1,
+          default: 1,
+          category: 'settings'
+        }
+      );
+    }
+
     // Add color pickers for each text letter
     this.textSvgShapes.forEach((shape, index) => {
       schema.push({
@@ -194,6 +242,11 @@ export class KeychainEngine extends BaseEngine {
     const ringRadius = parseFloat(params.ringRadius) || 5;
     const ringThickness = parseFloat(params.ringThickness) || 2;
 
+    const enableBase = params.enableBase !== false;
+    const textPosX = parseFloat(params.textPosX) || 0;
+    const textPosY = parseFloat(params.textPosY) || 0;
+    const textScale = parseFloat(params.textScale) || 1;
+
     const tw = parseFloat(params.targetWidth) || 50;
     const td = parseFloat(params.targetDepth) || 50;
     const scale = 1000;
@@ -202,8 +255,26 @@ export class KeychainEngine extends BaseEngine {
     let maxX = -Infinity, maxY = -Infinity;
     const extractedShapes = [];
 
-    this.currentSvgShapes.forEach(svgShape => {
+    const imageShapesCount = this.imageSvgShapes.length;
+
+    this.currentSvgShapes.forEach((svgShape, index) => {
+      const isText = index >= imageShapesCount;
       const points = svgShape.extractPoints(10);
+      
+      // Apply text transformation before calculating bounds
+      if (isText) {
+        points.shape.forEach(p => {
+          p.x = p.x * textScale + textPosX;
+          p.y = p.y * textScale + textPosY;
+        });
+        points.holes.forEach(hole => {
+          hole.forEach(p => {
+            p.x = p.x * textScale + textPosX;
+            p.y = p.y * textScale + textPosY;
+          });
+        });
+      }
+      
       extractedShapes.push(points);
       
       points.shape.forEach(p => {
@@ -273,12 +344,14 @@ export class KeychainEngine extends BaseEngine {
       }
     });
     
-    outerShapes.forEach(os => {
-      const baseGeom = new THREE.ExtrudeGeometry(os.shape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
-      const baseMesh = new THREE.Mesh(baseGeom, this.partMaterials.base);
-      baseMesh.name = 'Base';
-      this.group.add(baseMesh);
-    });
+    if (enableBase) {
+      outerShapes.forEach(os => {
+        const baseGeom = new THREE.ExtrudeGeometry(os.shape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
+        const baseMesh = new THREE.Mesh(baseGeom, this.partMaterials.base);
+        baseMesh.name = 'Base';
+        this.group.add(baseMesh);
+      });
+    }
 
     // 2. Criar o Desenho/Texto em Relevo (Stamp)
     // First, process image SVG shapes
