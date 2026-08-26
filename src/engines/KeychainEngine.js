@@ -3,6 +3,8 @@ import ClipperLib from 'clipper-lib';
 import { BaseEngine } from './BaseEngine.js';
 
 export class KeychainEngine extends BaseEngine {
+  static MAX_BATCH_ITEMS = 9;
+
   constructor(scene) {
     super(scene);
     this.name = 'keychain';
@@ -42,26 +44,6 @@ export class KeychainEngine extends BaseEngine {
   }
 
   getControlSchema() {
-    const fontFamilies = [
-      'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald',
-      'Raleway', 'Poppins', 'Nunito', 'Playfair Display', 'Merriweather',
-      'Ubuntu', 'Lobster', 'Pacifico', 'Bebas Neue', 'Dancing Script',
-      'Permanent Marker', 'Righteous', 'Alfa Slab One', 'Bangers', 'Bungee',
-      'Fredoka', 'Press Start 2P', 'Anton', 'Archivo Black', 'Black Ops One',
-      'Carter One', 'Chewy', 'Courgette', 'Creepster', 'Fugaz One',
-      'Gloria Hallelujah', 'Indie Flower', 'Kablammo', 'Luckiest Guy', 'Monoton',
-      'Orbitron', 'Passion One', 'Patua One', 'Russo One', 'Satisfy',
-      'Shadows Into Light', 'Special Elite', 'Titan One', 'Ultra', 'Zilla Slab',
-      'Abril Fatface', 'Bungee Shade', 'Concert One', 'Frijole', 'Gravitas One',
-      'Inter', 'Josefin Sans', 'Kaushan Script', 'Libre Baskerville', 'Noto Sans',
-      'Outfit', 'PT Sans', 'Quicksand', 'Source Sans 3', 'Work Sans',
-      'Caveat', 'Comfortaa', 'DM Sans', 'Exo 2', 'Fira Sans',
-      'Great Vibes', 'Hind', 'IBM Plex Sans', 'Jost', 'Kanit',
-      'League Spartan', 'Manrope', 'Nunito Sans', 'Overpass', 'Philosopher'
-    ].sort();
-
-    const fontOptions = fontFamilies.map(f => ({ value: f, label: f }));
-
     const schema = [
       {
         id: 'textContent',
@@ -71,24 +53,27 @@ export class KeychainEngine extends BaseEngine {
         placeholder: 'app.text_input_placeholder',
         default: 'Master3D',
         multiline: true,
-        category: 'settings'
+        category: 'primary'
       },
       {
         id: 'textFont',
-        type: 'select',
+        type: 'font',
         label: 'app.text_font',
         desc: 'app.text_font_desc',
-        options: fontOptions,
         default: 'Roboto',
-        category: 'settings'
+        category: 'primary'
       },
       {
-        id: 'enableBase',
-        type: 'toggle',
-        label: 'app.enable_base',
-        desc: 'app.enable_base_desc',
-        default: true,
-        category: 'settings'
+        id: 'keychainWidth',
+        type: 'slider',
+        label: 'app.keychain_width',
+        desc: 'app.keychain_width_desc',
+        min: 10,
+        max: 40,
+        step: 1,
+        default: 25,
+        suffix: 'mm',
+        category: 'base'
       },
       {
         id: 'baseHeight',
@@ -100,7 +85,7 @@ export class KeychainEngine extends BaseEngine {
         step: 0.5,
         default: 2.5,
         suffix: 'mm',
-        category: 'settings'
+        category: 'base'
       },
       {
         id: 'stampHeight',
@@ -112,7 +97,7 @@ export class KeychainEngine extends BaseEngine {
         step: 0.5,
         default: 2,
         suffix: 'mm',
-        category: 'settings'
+        category: 'text'
       },
       {
         id: 'baseOffset',
@@ -124,7 +109,7 @@ export class KeychainEngine extends BaseEngine {
         step: 0.5,
         default: 3,
         suffix: 'mm',
-        category: 'settings'
+        category: 'base'
       },
       {
         id: 'letterSpacing',
@@ -136,7 +121,7 @@ export class KeychainEngine extends BaseEngine {
         step: 1,
         default: 0,
         suffix: '%',
-        category: 'settings'
+        category: 'text'
       },
       {
         id: 'lineSpacing',
@@ -148,7 +133,7 @@ export class KeychainEngine extends BaseEngine {
         step: 1,
         default: 0,
         suffix: '%',
-        category: 'settings'
+        category: 'text'
       },
       {
         id: 'ringAngle',
@@ -158,7 +143,7 @@ export class KeychainEngine extends BaseEngine {
         min: 0,
         max: 360,
         step: 5,
-        default: 90,
+        default: 180,
         suffix: '°',
         category: 'keyring'
       },
@@ -193,7 +178,7 @@ export class KeychainEngine extends BaseEngine {
         desc: 'app.color_base_desc',
         options: this.plaColors,
         default: '#1a1a1a',
-        category: 'colors'
+        category: 'base'
       },
       {
         id: 'colorTop',
@@ -202,7 +187,7 @@ export class KeychainEngine extends BaseEngine {
         desc: 'app.color_top_desc',
         options: this.plaColors,
         default: '#ffffff',
-        category: 'colors'
+        category: 'text'
       }
     ];
 
@@ -233,15 +218,17 @@ export class KeychainEngine extends BaseEngine {
   }
 
   async generateSvgFromTextCanvas(text, family, letterSpacing, lineSpacing) {
-    await this.loadFontCSS(family);
+    await Promise.all([this.loadFontCSS(family), this.loadFontCSS('Noto Emoji')]);
 
     const fontSize = 150;
     const letterSpacingPx = fontSize * ((letterSpacing || 0) / 100);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    const lines = text.split('\n');
-    ctx.font = `bold ${fontSize}px '${family}'`;
+    // Noto Emoji garante emojis monocromáticos, vetorizáveis junto com o texto
+    const fontStack = `bold ${fontSize}px '${family}', 'Noto Emoji', sans-serif`;
+    const lines = this.splitLines(text);
+    ctx.font = fontStack;
     
     ctx.letterSpacing = `${letterSpacingPx}px`;
 
@@ -262,7 +249,7 @@ export class KeychainEngine extends BaseEngine {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = 'black';
-    ctx.font = `bold ${fontSize}px '${family}'`;
+    ctx.font = fontStack;
     ctx.letterSpacing = `${letterSpacingPx}px`;
     ctx.textBaseline = 'top';
 
@@ -273,12 +260,22 @@ export class KeychainEngine extends BaseEngine {
     return canvas.toDataURL('image/png');
   }
 
+  // "+" cria uma segunda linha dentro do mesmo chaveiro
+  splitLines(text) {
+    const lines = text
+      .split(/\n|\s*\+\s*/)
+      .map(line => line.trim())
+      .filter(Boolean);
+    return lines.length > 0 ? lines : [text];
+  }
+
   async generate3DModel(params) {
     const generationId = ++this.generationId;
     const textItems = (params.textContent || 'Master3D')
       .split(',')
       .map(text => text.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .slice(0, KeychainEngine.MAX_BATCH_ITEMS);
     const textFont = params.textFont || 'Roboto';
     const letterSpacing = parseFloat(params.letterSpacing) || 0;
     const lineSpacing = parseFloat(params.lineSpacing) || 0;
@@ -312,27 +309,37 @@ export class KeychainEngine extends BaseEngine {
     if (params.colorBase) this.partMaterials.ring.color.set(params.colorBase);
     if (params.colorTop) this.partMaterials.top.color.set(params.colorTop);
 
-    const targetWidth = parseFloat(params.targetWidth) || 50;
-    const ringRadius = parseFloat(params.ringRadius) || 5;
-    const itemStep = targetWidth + (ringRadius * 2) + 10;
-    const firstItemX = -((shapesByItem.length - 1) * itemStep) / 2;
+    const groups = shapesByItem.map((shapes, index) =>
+      this.buildKeychain(params, shapes, index, this.splitLines(textItems[index]).length)
+    );
 
-    shapesByItem.forEach((shapes, index) => {
-      this.buildKeychain(params, shapes, firstItemX + (index * itemStep), index);
+    // Distribui lado a lado usando a largura real de cada chaveiro
+    const itemGap = 10;
+    const bounds = new THREE.Box3();
+    let cursorX = 0;
+    let maxHeight = 0;
+    const placements = groups.map(group => {
+      bounds.setFromObject(group);
+      const width = bounds.max.x - bounds.min.x;
+      const offsetX = cursorX - bounds.min.x;
+      cursorX += width + itemGap;
+      maxHeight = Math.max(maxHeight, bounds.max.y - bounds.min.y);
+      return { group, offsetX };
     });
 
-    if (shapesByItem.length > 1) {
-      const targetDepth = parseFloat(params.targetDepth) || 50;
-      this.svgAspectRatio = ((shapesByItem.length - 1) * itemStep + targetWidth) / targetDepth;
-    }
+    const totalWidth = Math.max(0, cursorX - itemGap);
+    placements.forEach(({ group, offsetX }) => {
+      group.position.x = offsetX - (totalWidth / 2);
+    });
+
+    if (maxHeight > 0) this.svgAspectRatio = totalWidth / maxHeight;
 
     return true;
   }
 
-  buildKeychain(params, svgShapes, positionX, itemIndex) {
+  buildKeychain(params, svgShapes, itemIndex, lineCount = 1) {
     const keychainGroup = new THREE.Group();
     keychainGroup.name = `Keychain_${itemIndex + 1}`;
-    keychainGroup.position.x = positionX;
     this.group.add(keychainGroup);
 
     const baseHeight = parseFloat(params.baseHeight) || 2.5;
@@ -344,13 +351,13 @@ export class KeychainEngine extends BaseEngine {
     const ringRadius = parseFloat(params.ringRadius) || 5;
     const ringThickness = parseFloat(params.ringThickness) || 2;
 
-    const enableBase = params.enableBase !== false;
     const textPosX = parseFloat(params.textPosX) || 0;
     const textPosY = parseFloat(params.textPosY) || 0;
     const textScale = parseFloat(params.textScale) || 1;
 
-    const tw = parseFloat(params.targetWidth) || 50;
-    const td = parseFloat(params.targetDepth) || 50;
+    // A largura escolhida é a da placa final, então o texto desconta as margens
+    const keychainWidth = parseFloat(params.keychainWidth) || 25;
+    const td = Math.max(2, keychainWidth - (baseOffset * 2));
     const scale = 1000;
 
     let minX = Infinity, minY = Infinity;
@@ -379,8 +386,8 @@ export class KeychainEngine extends BaseEngine {
     this.svgNaturalWidth = svgWidth;
     this.svgNaturalHeight = svgHeight;
     
-    const scaleX = svgWidth > 0 ? tw / svgWidth : 1;
     const scaleY = svgHeight > 0 ? td / svgHeight : 1;
+    const scaleX = scaleY;
     
     const toClipperPath = (pts) => pts.map(p => ({ 
       X: Math.round((p.x - centerX) * scaleX * scale), 
@@ -394,7 +401,7 @@ export class KeychainEngine extends BaseEngine {
     });
 
     // 1. Criar a base sólida (Backing Plate)
-    const fullBasePaths = new ClipperLib.Paths();
+    let fullBasePaths = new ClipperLib.Paths();
     if (baseOffset > 0) {
       const coBase = new ClipperLib.ClipperOffset(2, 0.25);
       coBase.AddPaths(allOriginalPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
@@ -406,37 +413,34 @@ export class KeychainEngine extends BaseEngine {
       cl.Execute(ClipperLib.ClipType.ctUnion, fullBasePaths, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
     }
 
-    const outerShapes = [];
-    fullBasePaths.forEach(path => {
-      if (ClipperLib.Clipper.Orientation(path)) {
-        outerShapes.push({
-          shape: new THREE.Shape(toThreeVec2(path)),
-          holes: [],
-          rawPath: path
-        });
-      }
-    });
-    
-    fullBasePaths.forEach(path => {
-      if (!ClipperLib.Clipper.Orientation(path)) {
-        const pt = path[0];
-        for (let i = 0; i < outerShapes.length; i++) {
-           if (ClipperLib.Clipper.PointInPolygon(pt, outerShapes[i].rawPath) !== 0) {
-             outerShapes[i].shape.holes.push(new THREE.Path(toThreeVec2(path)));
-             break;
-           }
-        }
-      }
-    });
-    
-    if (enableBase) {
-      outerShapes.forEach(os => {
-        const baseGeom = new THREE.ExtrudeGeometry(os.shape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
+    // Dilata e erode de volta para unir linhas e emojis num corpo único, preservando o contorno
+    if (fullBasePaths.length > 0) {
+      const closeRadius = (td / Math.max(1, lineCount)) * 0.25 * scale;
+      const arcTolerance = 0.05 * scale;
+
+      const dilatedPaths = new ClipperLib.Paths();
+      const coDilate = new ClipperLib.ClipperOffset(2, arcTolerance);
+      coDilate.AddPaths(fullBasePaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+      coDilate.Execute(dilatedPaths, closeRadius);
+
+      const closedPaths = new ClipperLib.Paths();
+      const coErode = new ClipperLib.ClipperOffset(2, arcTolerance);
+      coErode.AddPaths(dilatedPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+      coErode.Execute(closedPaths, -closeRadius);
+
+      if (closedPaths.length > 0) fullBasePaths = closedPaths;
+    }
+
+    // Apenas contornos externos: a base fica sempre sólida, sem os vazios das letras
+    fullBasePaths
+      .filter(path => ClipperLib.Clipper.Orientation(path))
+      .forEach(path => {
+        const baseShape = new THREE.Shape(toThreeVec2(path));
+        const baseGeom = new THREE.ExtrudeGeometry(baseShape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
         const baseMesh = new THREE.Mesh(baseGeom, this.partMaterials.base);
         baseMesh.name = 'Base';
         keychainGroup.add(baseMesh);
       });
-    }
 
     // 2. Criar o Desenho/Texto em Relevo (Stamp)
     extractedShapes.forEach((points, index) => {
@@ -498,5 +502,7 @@ export class KeychainEngine extends BaseEngine {
       ringMesh.name = 'Ring';
       keychainGroup.add(ringMesh);
     }
+
+    return keychainGroup;
   }
 }
