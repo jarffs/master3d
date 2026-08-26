@@ -122,6 +122,12 @@ function initThree() {
       exportBtnText.setAttribute('data-i18n', 'app.export_3mf');
       exportBtnText.textContent = 'Exportar 3MF';
     }
+    
+    // Hide image upload for keychain, only allow text
+    const uploadGroup = document.querySelector('.upload-group');
+    const orSeparator = document.querySelector('.or-separator');
+    if (uploadGroup) uploadGroup.style.display = 'none';
+    if (orSeparator) orSeparator.style.display = 'none';
   }
   
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');

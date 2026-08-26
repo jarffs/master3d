@@ -7,7 +7,6 @@ export class KeychainEngine extends BaseEngine {
     super(scene);
     this.name = 'keychain';
     
-    this.imageSvgShapes = [];
     this.textSvgShapes = [];
     
     // Default PLA colors for the simplified palette
@@ -23,25 +22,22 @@ export class KeychainEngine extends BaseEngine {
     
     this.partMaterials = {
       base: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide }),
-      ring: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide }),
-      image: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
+      ring: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
     };
-    this.textMaterials = []; // One per letter
+    this.textMaterials = []; // One per shape/letter
   }
 
   loadSVG(svgText) {
-    // Default behavior is to load as image
-    this.loadImageSVG(svgText);
+    this.loadTextSVG(svgText);
   }
 
   loadImageSVG(svgText) {
-    this.imageSvgShapes = this.parseSVG(svgText);
-    this.currentSvgShapes = [...this.imageSvgShapes, ...this.textSvgShapes];
+    this.loadTextSVG(svgText);
   }
 
   loadTextSVG(svgText) {
     this.textSvgShapes = this.parseSVG(svgText);
-    this.currentSvgShapes = [...this.imageSvgShapes, ...this.textSvgShapes];
+    this.currentSvgShapes = this.textSvgShapes;
     
     // Ensure we have enough materials for each letter
     while (this.textMaterials.length < this.textSvgShapes.length) {
@@ -143,15 +139,6 @@ export class KeychainEngine extends BaseEngine {
         category: 'colors'
       },
       {
-        id: 'colorImage',
-        type: 'select',
-        label: 'Cor da Imagem',
-        desc: 'Cor do desenho base',
-        options: this.plaColors,
-        default: '#ffffff',
-        category: 'colors'
-      },
-      {
         id: 'colorRing',
         type: 'select',
         label: 'Cor da Argola',
@@ -161,46 +148,6 @@ export class KeychainEngine extends BaseEngine {
         category: 'colors'
       }
     ];
-
-    if (this.textSvgShapes.length > 0) {
-      schema.push(
-        {
-          id: 'textPosX',
-          type: 'slider',
-          label: 'app.text_pos_x',
-          desc: 'app.text_pos_x',
-          min: -100,
-          max: 100,
-          step: 1,
-          default: 0,
-          suffix: 'mm',
-          category: 'settings'
-        },
-        {
-          id: 'textPosY',
-          type: 'slider',
-          label: 'app.text_pos_y',
-          desc: 'app.text_pos_y',
-          min: -100,
-          max: 100,
-          step: 1,
-          default: 0,
-          suffix: 'mm',
-          category: 'settings'
-        },
-        {
-          id: 'textScale',
-          type: 'slider',
-          label: 'app.text_scale',
-          desc: 'app.text_scale',
-          min: 0.1,
-          max: 5,
-          step: 0.1,
-          default: 1,
-          category: 'settings'
-        }
-      );
-    }
 
     // Add color pickers for each text letter
     this.textSvgShapes.forEach((shape, index) => {
@@ -226,7 +173,6 @@ export class KeychainEngine extends BaseEngine {
     // Update material colors from params
     if (params.colorBase) this.partMaterials.base.color.set(params.colorBase);
     if (params.colorRing) this.partMaterials.ring.color.set(params.colorRing);
-    if (params.colorImage) this.partMaterials.image.color.set(params.colorImage);
     
     this.textMaterials.forEach((mat, index) => {
       const colorParam = params[`colorText${index}`];
@@ -255,25 +201,8 @@ export class KeychainEngine extends BaseEngine {
     let maxX = -Infinity, maxY = -Infinity;
     const extractedShapes = [];
 
-    const imageShapesCount = this.imageSvgShapes.length;
-
-    this.currentSvgShapes.forEach((svgShape, index) => {
-      const isText = index >= imageShapesCount;
+    this.currentSvgShapes.forEach((svgShape) => {
       const points = svgShape.extractPoints(10);
-      
-      // Apply text transformation before calculating bounds
-      if (isText) {
-        points.shape.forEach(p => {
-          p.x = p.x * textScale + textPosX;
-          p.y = p.y * textScale + textPosY;
-        });
-        points.holes.forEach(hole => {
-          hole.forEach(p => {
-            p.x = p.x * textScale + textPosX;
-            p.y = p.y * textScale + textPosY;
-          });
-        });
-      }
       
       extractedShapes.push(points);
       
@@ -354,8 +283,6 @@ export class KeychainEngine extends BaseEngine {
     }
 
     // 2. Criar o Desenho/Texto em Relevo (Stamp)
-    // First, process image SVG shapes
-    const imageShapesCount = this.imageSvgShapes.length;
     extractedShapes.forEach((points, index) => {
       const shapePts = toThreeVec2(points.shape);
       const stampShape = new THREE.Shape(shapePts);
@@ -366,16 +293,8 @@ export class KeychainEngine extends BaseEngine {
 
       const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: totalHeight, bevelEnabled: false, curveSegments: 12 });
       
-      let material;
-      let meshName;
-      if (index < imageShapesCount) {
-        material = this.partMaterials.image;
-        meshName = `Image_${index}`;
-      } else {
-        const textIndex = index - imageShapesCount;
-        material = this.textMaterials[textIndex];
-        meshName = `Text_${textIndex}`;
-      }
+      const material = this.textMaterials[index];
+      const meshName = `Text_${index}`;
       
       const stampMesh = new THREE.Mesh(stampGeom, material);
       stampMesh.name = meshName;
