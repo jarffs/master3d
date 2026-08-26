@@ -5,11 +5,11 @@ import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
 import { supabase } from './supabaseClient.js';
-import { currentUser, userProfile, onAuthChange } from './auth.js';
+import { currentUser, userProfile, onAuthChange, openAuthModal } from './auth.js';
 import { t } from './i18n.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { TextToSvg } from './src/ui/TextToSvg.js';
-import { initStripeCheckout } from './src/ui/stripe.js';
+import { initStripeCheckout, processStripeCheckout } from './src/ui/stripe.js';
 
 let scene, camera, renderer, controls;
 let engine;
@@ -1037,3 +1037,32 @@ function loadDesignIntoEngine(design) {
   
   updateModel();
 }
+
+
+// Handle automatic checkout redirection from landing page
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const planToBuy = urlParams.get('buy');
+  
+  if (planToBuy) {
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    const tryCheckout = () => {
+      if (currentUser) {
+        processStripeCheckout(planToBuy);
+      } else {
+        openAuthModal();
+        let checkoutStarted = false;
+        onAuthChange((user) => {
+          if (user && !checkoutStarted) {
+            checkoutStarted = true;
+            processStripeCheckout(planToBuy);
+          }
+        });
+      }
+    };
+
+    setTimeout(tryCheckout, 800);
+  }
+});
