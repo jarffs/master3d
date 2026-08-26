@@ -24,6 +24,38 @@ let buildPlateGroup = null;
 let printersData = [];
 let modelUpdateId = 0;
 
+function getControlBuilderOptions() {
+  if (engine?.name === 'keychain') {
+    return {
+      collapsible: true,
+      categoryOrder: ['primary', 'base', 'text', 'keyring'],
+      plainCategories: ['primary']
+    };
+  }
+  if (engine?.name === 'cookie_cutter') {
+    return {
+      collapsible: true,
+      categoryOrder: ['cut', 'base', 'contour']
+    };
+  }
+  return {};
+}
+
+async function handleControlChange(id, value, meta) {
+  if (meta?.action === 'pickFont' && textToSvg) {
+    await textToSvg.openFontPicker({
+      text: controlBuilder.getValues().textContent,
+      selectedFamily: value,
+      onSelect: family => {
+        controlBuilder.setValue(id, family);
+        updateModel();
+      }
+    });
+    return;
+  }
+  updateModel();
+}
+
 // UI Elements
 const uploadInput = document.getElementById('svg-upload');
 const fileNameDisplay = document.getElementById('file-name');
@@ -106,8 +138,29 @@ function initThree() {
     engine = new CookieCutterEngine(scene);
   }
 
-  controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
-  controlBuilder.build(engine.getControlSchema(), t);
+  controlBuilder = new ControlBuilder('dynamic-controls', handleControlChange);
+  controlBuilder.build(engine.getControlSchema(), t, getControlBuilderOptions());
+
+  const toolReferenceImage = document.getElementById('tool-reference-image');
+  const toolReferenceTitle = document.getElementById('tool-reference-title');
+  const toolReferences = {
+    cookie_cutter: {
+      image: '/images/tools/cookie-cutter.jpg',
+      title: t('app.tool_cookie_cutter'),
+      alt: t('app.tool_cookie_cutter_reference')
+    },
+    keychain: {
+      image: '/images/tools/keychain.jpg',
+      title: t('app.tool_keychain'),
+      alt: t('app.tool_keychain_reference')
+    }
+  };
+  const toolReference = toolReferences[tool];
+  if (toolReference && toolReferenceImage && toolReferenceTitle) {
+    toolReferenceImage.src = toolReference.image;
+    toolReferenceImage.alt = toolReference.alt;
+    toolReferenceTitle.textContent = toolReference.title;
+  }
   
   // Dynamic UI texts based on tool
   if (tool === 'keychain') {
@@ -137,10 +190,10 @@ function initThree() {
   }
   
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
+  textToSvg = new TextToSvg('text-to-svg-modal');
 
   const createFromTextBtn = document.getElementById('create-from-text-btn');
   if (createFromTextBtn && tool !== 'keychain') {
-    textToSvg = new TextToSvg('text-to-svg-modal');
     createFromTextBtn.addEventListener('click', () => {
       textToSvg.open((result) => {
         if (typeof result === 'string') {
@@ -149,7 +202,7 @@ function initThree() {
           if (engine.name === 'keychain') {
             engine.loadTextSVG(currentSvgText);
             const oldValues = controlBuilder.getValues();
-            controlBuilder.build(engine.getControlSchema(), t);
+            controlBuilder.build(engine.getControlSchema(), t, getControlBuilderOptions());
             controlBuilder.setValues(oldValues);
           } else {
             engine.loadSVG(currentSvgText);
@@ -200,7 +253,7 @@ function initThree() {
               if (engine.name === 'keychain') {
                 engine.loadTextSVG(currentSvgText);
                 const oldValues = controlBuilder.getValues();
-                controlBuilder.build(engine.getControlSchema(), t);
+                controlBuilder.build(engine.getControlSchema(), t, getControlBuilderOptions());
                 controlBuilder.setValues(oldValues);
               } else {
                 engine.loadSVG(currentSvgText);
@@ -519,7 +572,7 @@ function updateBuildPlate() {
 }
 
 function checkBuildPlateLimits() {
-  if (!engine || !engine.cookieGroup || engine.cookieGroup.children.length === 0) {
+  if (!engine || !engine.group || engine.group.children.length === 0) {
     bpWarning.classList.add('hidden');
     if (buildPlateGroup && buildPlateGroup.children[0]) {
       buildPlateGroup.children[0].material.color.setHex(0x1f2224);
@@ -527,7 +580,7 @@ function checkBuildPlateLimits() {
     return;
   }
   
-  const box = new THREE.Box3().setFromObject(engine.cookieGroup);
+  const box = new THREE.Box3().setFromObject(engine.group);
   const size = new THREE.Vector3();
   box.getSize(size);
   
@@ -1073,8 +1126,8 @@ function loadDesignIntoEngine(design) {
   }
 
   // Rebuild dynamic controls
-  controlBuilder = new ControlBuilder('dynamic-controls', () => updateModel());
-  controlBuilder.build(engine.getControlSchema(), t);
+  controlBuilder = new ControlBuilder('dynamic-controls', handleControlChange);
+  controlBuilder.build(engine.getControlSchema(), t, getControlBuilderOptions());
 
   // Load SVG
   currentSvgText = design.svg_data;

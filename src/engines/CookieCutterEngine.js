@@ -20,7 +20,7 @@ export class CookieCutterEngine extends BaseEngine {
         step: 1,
         default: 15,
         suffix: 'mm',
-        category: 'settings'
+        category: 'cut'
       },
       {
         id: 'wallThickness',
@@ -32,7 +32,7 @@ export class CookieCutterEngine extends BaseEngine {
         step: 0.1,
         default: 1.2,
         suffix: 'mm',
-        category: 'settings'
+        category: 'cut'
       },
       {
         id: 'baseWidth',
@@ -44,7 +44,7 @@ export class CookieCutterEngine extends BaseEngine {
         step: 0.5,
         default: 4,
         suffix: 'mm',
-        category: 'settings'
+        category: 'base'
       },
       {
         id: 'baseHeight',
@@ -56,7 +56,7 @@ export class CookieCutterEngine extends BaseEngine {
         step: 0.5,
         default: 1.5,
         suffix: 'mm',
-        category: 'settings'
+        category: 'base'
       },
       {
         id: 'enableContour',
