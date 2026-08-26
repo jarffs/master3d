@@ -1,5 +1,6 @@
 import { userProfile, currentUser } from '../../auth.js';
 import { supabase } from '../../supabaseClient.js';
+import { Dialog } from './Dialog.js';
 
 // Configuration mapping plans to Stripe Price IDs and Credit amounts
 // The user needs to replace the price_XXX with their actual Stripe Price IDs
@@ -24,7 +25,7 @@ export const STRIPE_CONFIG = {
 
 export async function processStripeCheckout(planKey, btnElement = null) {
   if (!currentUser) {
-    alert('Por favor, inicie sessão para comprar créditos.');
+    await Dialog.alert('Por favor, inicie sessão para comprar créditos.');
     return;
   }
 
@@ -65,9 +66,9 @@ export async function processStripeCheckout(planKey, btnElement = null) {
     } else {
       throw new Error('Erro ao iniciar checkout: URL não retornada.');
     }
-  } catch (err) {
-    console.error('Erro ao iniciar checkout:', err);
-    alert('Erro ao iniciar checkout. Por favor, tente novamente mais tarde.');
+  } catch (error) {
+    console.error('Checkout error:', error);
+    await Dialog.alert('Erro ao iniciar checkout. Por favor, tente novamente mais tarde.');
     if (btnElement) {
       btnElement.innerHTML = originalText;
       btnElement.disabled = false;
