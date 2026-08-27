@@ -143,6 +143,107 @@ export class BigLettersEngine extends BaseEngine {
     }
   }
 
+  async generateFromEditorData(params) {
+    this.clear();
+    const myGenId = ++this.generationId;
+
+    try {
+      // 1. Generate Big Letter Mesh
+      const letterMesh = await this.generateMeshFromText(params.bigLetter, params.bigLetterFont, params.thickness);
+      if (!letterMesh || myGenId !== this.generationId) return false;
+
+      // Ensure the letter is centered (the generation centers it at 0,0,0)
+      letterMesh.position.set(0, 0, 0);
+      letterMesh.updateMatrixWorld();
+
+      // Get dimensions of the letter to position the name relative to it
+      letterMesh.geometry.computeBoundingBox();
+      const letterBBox = letterMesh.geometry.boundingBox;
+      const letterWidth = letterBBox.max.x - letterBBox.min.x;
+      const letterHeight = letterBBox.max.y - letterBBox.min.y;
+
+      let resultBrush = letterMesh;
+
+      // 2. Generate Sunken Name Mesh
+      if (params.nameText) {
+        // Name thickness depends on hollowName
+        const nameThickness = params.hollowName ? params.thickness : params.thickness + 5; 
+        let nameMesh = await this.generateMeshFromText(params.nameText, params.nameFont, nameThickness);
+        
+        if (nameMesh && myGenId === this.generationId) {
+          nameMesh.geometry.computeBoundingBox();
+          
+          // Apply scale from editor
+          const scale = params.nameScale * (letterWidth / 150); // relative scaling
+          nameMesh.scale.set(scale, scale, 1);
+          
+          // Apply position from editor (normalized coordinates relative to canvas center)
+          // Editor coords: 0,0 is top-left, 0.5,0.5 is center
+          const relX = (params.nameX - 0.5) * letterWidth * 1.5;
+          const relY = -(params.nameY - 0.5) * letterHeight * 1.5; // Invert Y for 3D
+
+          const zPos = params.hollowName ? 0 : (params.thickness - params.cutoutDepth);
+          
+          nameMesh.position.set(relX, relY, zPos);
+          nameMesh.updateMatrixWorld();
+
+          if (params.nameBorder) {
+            // Subtract bordered name
+            let borderMesh = await this.generateMeshFromText(params.nameText, params.nameFont, params.thickness);
+            borderMesh.scale.set(scale * 1.05, scale * 1.05, 1); // rough border expansion
+            borderMesh.position.set(relX, relY, params.thickness - params.cutoutDepth);
+            borderMesh.updateMatrixWorld();
+            
+            resultBrush = this.evaluator.evaluate(resultBrush, borderMesh, SUBTRACTION);
+            resultBrush = this.evaluator.evaluate(resultBrush, nameMesh, ADDITION);
+          } else {
+            // Just subtract the name
+            resultBrush = this.evaluator.evaluate(resultBrush, nameMesh, SUBTRACTION);
+          }
+        }
+      }
+
+      // 3. Base Cut (Corte da Base)
+      if (params.bottomCutEnabled && params.bottomCutHeight > 0) {
+        resultBrush.geometry.computeBoundingBox();
+        const bbox = resultBrush.geometry.boundingBox;
+        
+        // Calculate cut height in mm based on normalized ratio
+        const totalHeight = bbox.max.y - bbox.min.y;
+        const cutHeightMm = params.bottomCutHeight * totalHeight * 1.2; 
+        
+        const cutGeom = new THREE.BoxGeometry(
+          (bbox.max.x - bbox.min.x) * 2,
+          cutHeightMm,
+          params.thickness * 2
+        );
+        const cutBrush = new Brush(cutGeom, this.material);
+        
+        // Position at the bottom
+        cutBrush.position.set(0, bbox.min.y + (cutHeightMm / 2), 0);
+        cutBrush.updateMatrixWorld();
+
+        resultBrush = this.evaluator.evaluate(resultBrush, cutBrush, SUBTRACTION);
+      }
+
+      if (myGenId !== this.generationId) return false;
+
+      // Finalize
+      resultBrush.geometry.computeBoundingBox();
+      const finalBbox = resultBrush.geometry.boundingBox;
+      const width = finalBbox.max.x - finalBbox.min.x;
+      const height = finalBbox.max.y - finalBbox.min.y;
+      this.svgAspectRatio = width / height;
+
+      this.group.add(resultBrush);
+      
+      return true;
+    } catch (e) {
+      console.error("BigLettersEngine generation failed:", e);
+      return false;
+    }
+  }
+
   async generateSvgFromText(text, family) {
     await this.loadFontCSS(family);
     await this.loadFontCSS('Noto Emoji');

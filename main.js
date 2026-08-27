@@ -4,6 +4,7 @@ import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
+import { BigLettersEditor } from './src/ui/BigLettersEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
@@ -15,6 +16,8 @@ import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { TextToSvg } from './src/ui/TextToSvg.js';
 import { initStripeCheckout, processStripeCheckout } from './src/ui/stripe.js';
 import { Dialog } from './src/ui/Dialog.js';
+
+let bigLettersEditor = null; // lazy loaded
 
 let scene, camera, renderer, controls;
 let engine;
@@ -240,17 +243,31 @@ function initThree() {
       const textCreateBtn = document.getElementById('create-from-text-btn');
       if (textCreateBtn) textCreateBtn.style.display = 'none';
       
-      // Show explicit "Generate 3D" button
+      // Hide the old generate button
       const generateBtn = document.getElementById('generate-3d-btn');
-      if (generateBtn) {
-        generateBtn.style.display = 'flex';
-        generateBtn.addEventListener('click', () => {
-          updateModel();
-        });
-      }
+      if (generateBtn) generateBtn.style.display = 'none';
       
-      // Trigger initial build
-      setTimeout(() => { updateModel(); }, 500);
+      // Hide dynamic controls (replaced by bl-panel)
+      const dynamicControls = document.getElementById('dynamic-controls');
+      if (dynamicControls) dynamicControls.style.display = 'none';
+
+      // Hide tool reference image
+      const toolRef = document.getElementById('tool-reference');
+      if (toolRef) toolRef.style.display = 'none';
+
+      // Show the simplified Big Letters panel
+      const blPanel = document.getElementById('bl-panel');
+      if (blPanel) blPanel.style.display = 'block';
+
+      // Hide 3D viewer, show Polotno editor
+      const canvasContainer = document.getElementById('canvas-container');
+      if (canvasContainer) canvasContainer.style.display = 'none';
+      
+      const editorContainer = document.getElementById('big-letters-editor-container');
+      if (editorContainer) editorContainer.style.display = 'block';
+
+      // Initialize Polotno editor
+      initBigLettersEditor();
     }
   }
   
@@ -363,6 +380,96 @@ function initThree() {
   
   animate();
 }
+
+async function initBigLettersEditor() {
+  if (!bigLettersEditor) {
+    bigLettersEditor = new BigLettersEditor('big-letters-editor-container');
+    await bigLettersEditor.init();
+    
+    bigLettersEditor.onReady(() => {
+      // Setup simplified panel event listeners
+      
+      const setupSync = (inputId, sliderId) => {
+        const input = document.getElementById(inputId);
+        const slider = document.getElementById(sliderId);
+        if(input && slider) {
+          input.addEventListener('input', (e) => slider.value = e.target.value);
+          slider.addEventListener('input', (e) => input.value = e.target.value);
+        }
+      };
+
+      setupSync('bl-thickness', 'bl-thickness-slider');
+      setupSync('bl-cutout-depth', 'bl-cutout-depth-slider');
+      setupSync('bl-border-thickness', 'bl-border-thickness-slider');
+      setupSync('bl-tolerance', 'bl-tolerance-slider');
+
+      // Generate preview logic
+      const genBtn = document.getElementById('bl-generate-preview');
+      const backBtn = document.getElementById('bl-back-to-editor');
+      
+      if(genBtn) {
+        genBtn.addEventListener('click', async () => {
+          const editorData = bigLettersEditor.getDesignData();
+          if(!editorData) return;
+          
+          // Generate thumbnail
+          const thumbUrl = await bigLettersEditor.getSnapshot();
+          const thumbContainer = document.getElementById('bl-thumbnail');
+          if(thumbUrl && thumbContainer) {
+            thumbContainer.innerHTML = `<img src="${thumbUrl}" alt="Preview" />`;
+          }
+
+          // Gather 3D params
+          const params3D = {
+            thickness: parseFloat(document.getElementById('bl-thickness')?.value || 22),
+            cutoutDepth: parseFloat(document.getElementById('bl-cutout-depth')?.value || 4),
+            borderThickness: parseFloat(document.getElementById('bl-border-thickness')?.value || 1.2),
+            tolerance: parseFloat(document.getElementById('bl-tolerance')?.value || 0.2),
+            nameBorder: document.getElementById('bl-name-border-toggle')?.checked || false,
+            hollowName: document.getElementById('bl-hollow-name-toggle')?.checked || false
+          };
+
+          // Combine data and trigger generation
+          const fullParams = { ...editorData, ...params3D };
+          
+          // Switch view
+          bigLettersEditor.hide();
+          document.getElementById('canvas-container').style.display = 'block';
+          if(backBtn) backBtn.style.display = 'flex';
+          
+          modelLoading?.classList.remove('hidden');
+          
+          // Generate 3D Model
+          if(engine && engine.name === 'big_letters') {
+            await engine.generateFromEditorData(fullParams);
+            refreshExportButtons();
+            checkBuildPlateLimits();
+          }
+          
+          modelLoading?.classList.add('hidden');
+        });
+      }
+
+      if(backBtn) {
+        backBtn.addEventListener('click', () => {
+          document.getElementById('canvas-container').style.display = 'none';
+          bigLettersEditor.show();
+          backBtn.style.display = 'none';
+        });
+      }
+
+      const editBtn = document.getElementById('bl-edit-design-btn');
+      if(editBtn) {
+        editBtn.addEventListener('click', () => {
+          document.getElementById('canvas-container').style.display = 'none';
+          bigLettersEditor.show();
+          if(backBtn) backBtn.style.display = 'none';
+        });
+      }
+    });
+  }
+}
+
 
 async function loadPrinters() {
   try {
