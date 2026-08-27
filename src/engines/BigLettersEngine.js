@@ -273,19 +273,7 @@ export class BigLettersEngine extends BaseEngine {
     return canvas.toDataURL('image/png');
   }
 
-  parseSVG(svgString) {
-    const loader = new SVGLoader();
-    const svgData = loader.parse(svgString);
-    const extractedShapes = [];
 
-    for (const path of svgData.paths) {
-      const shapes = path.toShapes(true);
-      for (const shape of shapes) {
-        extractedShapes.push(shape);
-      }
-    }
-    return extractedShapes;
-  }
 
   async generateMeshFromText(text, font, depth) {
     const dataUrl = await this.generateSvgFromText(text, font);
