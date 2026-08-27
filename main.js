@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
+import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
@@ -46,19 +47,36 @@ function getControlBuilderOptions() {
       categoryOrder: ['base', 'borders']
     };
   }
+  if (engine?.name === 'big_letters') {
+    return {
+      collapsible: true,
+      categoryOrder: ['primary', 'secondary', 'dimensions'],
+      plainCategories: ['primary', 'secondary']
+    };
+  }
   return {};
 }
 
 async function handleControlChange(id, value, meta) {
   if (meta?.action === 'pickFont' && textToSvg) {
+    let currentText = controlBuilder.getValues().textContent || 'A';
+    if (engine?.name === 'big_letters') {
+      currentText = id === 'bigLetterFont' ? controlBuilder.getValues().bigLetter : controlBuilder.getValues().nameText;
+    }
     await textToSvg.openFontPicker({
-      text: controlBuilder.getValues().textContent,
+      text: currentText,
       selectedFamily: value,
       onSelect: family => {
         controlBuilder.setValue(id, family);
-        updateModel();
+        if (engine?.name !== 'big_letters') {
+          updateModel();
+        }
       }
     });
+    return;
+  }
+  if (engine?.name === 'big_letters') {
+    // Wait for explicit "Generate 3D" click
     return;
   }
   updateModel();
@@ -144,6 +162,8 @@ function initThree() {
     engine = new KeychainEngine(scene);
   } else if (tool === 'coloring') {
     engine = new ColoringEngine(scene);
+  } else if (tool === 'big_letters') {
+    engine = new BigLettersEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -179,15 +199,15 @@ function initThree() {
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'coloring') {
+  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters') {
     const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
     
-    if (titleEl) {
+    if (titleEl && tool !== 'big_letters') {
       titleEl.setAttribute('data-i18n', 'app.upload_image_title_keychain');
     }
-    if (uploadDescEl) {
+    if (uploadDescEl && tool !== 'big_letters') {
       uploadDescEl.setAttribute('data-i18n', 'app.upload_desc_keychain');
     }
     if (exportBtnText) {
@@ -209,6 +229,28 @@ function initThree() {
       const textCreateBtn = document.getElementById('create-from-text-btn');
       if (orSeparator) orSeparator.style.display = 'none';
       if (textCreateBtn) textCreateBtn.style.display = 'none';
+    } else if (tool === 'big_letters') {
+      // Hide everything related to upload/svg generation
+      const uploadGroups = document.querySelectorAll('.upload-group');
+      uploadGroups.forEach(el => el.style.display = 'none');
+      
+      const orSeparator = document.querySelector('.or-separator');
+      if (orSeparator) orSeparator.style.display = 'none';
+      
+      const textCreateBtn = document.getElementById('create-from-text-btn');
+      if (textCreateBtn) textCreateBtn.style.display = 'none';
+      
+      // Show explicit "Generate 3D" button
+      const generateBtn = document.getElementById('generate-3d-btn');
+      if (generateBtn) {
+        generateBtn.style.display = 'flex';
+        generateBtn.addEventListener('click', () => {
+          updateModel();
+        });
+      }
+      
+      // Trigger initial build
+      setTimeout(() => { updateModel(); }, 500);
     }
   }
   
