@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <path fill="#000000" d="M50 0L65.45 35.45L100 50L65.45 64.55L50 100L34.55 64.55L0 50L34.55 35.45Z" />
+  <path fill="#000000" d="M20 20L25 35L40 40L25 45L20 60L15 45L0 40L15 35Z" transform="scale(0.5) translate(30, 30)" />
+  <path fill="#000000" d="M80 80L85 95L100 100L85 105L80 120L75 105L60 100L75 95Z" transform="scale(0.5) translate(100, 10)" />
+</svg>
