@@ -1,7 +1,18 @@
 import * as THREE from 'three';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
-import { Evaluator, Brush, SUBTRACTION, ADDITION } from 'three-bvh-csg';
+import { Evaluator, Brush, SUBTRACTION, ADDITION, INTERSECTION } from 'three-bvh-csg';
+import ClipperLib from 'clipper-lib';
+import opentype from 'opentype.js';
 import { BaseEngine } from './BaseEngine.js';
+
+const FONT_URLS = {
+  'Montserrat': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/Montserrat%5Bwght%5D.ttf',
+  'Playfair Display': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf',
+  'Roboto': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/roboto/Roboto%5Bwdth,wght%5D.ttf',
+  'Chewy': 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/chewy/Chewy-Regular.ttf',
+  'Fredoka One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/fredokaone/FredokaOne-Regular.ttf',
+  'Bebas Neue': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bebasneue/BebasNeue-Regular.ttf'
+};
 
 export class BigLettersEngine extends BaseEngine {
   constructor(scene) {
@@ -12,6 +23,13 @@ export class BigLettersEngine extends BaseEngine {
     // Core material for the output
     this.material = new THREE.MeshStandardMaterial({ 
       color: 0xff4081, 
+      roughness: 0.3, 
+      metalness: 0.2, 
+      side: THREE.DoubleSide 
+    });
+
+    this.nameMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xffffff, 
       roughness: 0.3, 
       metalness: 0.2, 
       side: THREE.DoubleSide 
@@ -143,67 +161,232 @@ export class BigLettersEngine extends BaseEngine {
     }
   }
 
-  async generateSvgFromText(text, family) {
-    await this.loadFontCSS(family);
-    await this.loadFontCSS('Noto Emoji');
+  async generateFromEditorData(params) {
+    this.clear();
+    const myGenId = ++this.generationId;
 
-    const fontSize = 150;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    try {
+      // 1. Generate Big Letter Mesh
+      const letterMesh = await this.generateMeshFromText(params.bigLetter, params.bigLetterFont, params.thickness, this.material);
+      if (!letterMesh || myGenId !== this.generationId) return false;
 
-    const fontStack = `bold ${fontSize}px '${family}', 'Noto Emoji', sans-serif`;
-    ctx.font = fontStack;
+      // Ensure the letter is centered (the generation centers it at 0,0,0)
+      letterMesh.position.set(0, 0, 0);
+      letterMesh.updateMatrixWorld();
 
-    const metrics = ctx.measureText(text);
-    const textWidth = Math.max(10, Math.ceil(metrics.width) + 60);
-    const textHeight = Math.max(10, Math.ceil(fontSize * 1.5) + 60);
+      // Get dimensions of the letter to position the name relative to it
+      letterMesh.geometry.computeBoundingBox();
+      const letterBBox = letterMesh.geometry.boundingBox;
+      const letterWidth = letterBBox.max.x - letterBBox.min.x;
+      const letterHeight = letterBBox.max.y - letterBBox.min.y;
 
-    canvas.width = textWidth;
-    canvas.height = textHeight;
+      let resultBrush = letterMesh;
 
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 2. Generate Sunken Name Mesh
+      if (params.nameText) {
+        // Name thickness depends on hollowName
+        const nameThickness = params.hollowName ? params.thickness : params.thickness + 5; 
+        let nameMesh = await this.generateMeshFromText(params.nameText, params.nameFont, nameThickness, this.nameMaterial);
+        
+        if (nameMesh && myGenId === this.generationId) {
+          nameMesh.geometry.computeBoundingBox();
+          
+          // Apply scale from editor
+          const scale = params.nameScale * (letterWidth / 150); // relative scaling
+          nameMesh.scale.set(scale, scale, 1);
+          
+          // Apply position from editor (normalized coordinates relative to canvas center)
+          // Editor coords: 0,0 is top-left, 0.5,0.5 is center
+          const relX = (params.nameX - 0.5) * letterWidth * 1.5;
+          const relY = -(params.nameY - 0.5) * letterHeight * 1.5; // Invert Y for 3D
 
-    ctx.fillStyle = 'black';
-    ctx.font = fontStack;
-    ctx.textBaseline = 'top';
-    ctx.fillText(text, 30, 30);
+          const zPos = params.hollowName ? 0 : (params.thickness - params.cutoutDepth);
+          
+          nameMesh.position.set(relX, relY, zPos);
+          nameMesh.updateMatrixWorld();
 
-    return canvas.toDataURL('image/png');
+          if (params.nameBorder) {
+            // Subtract bordered name
+            let borderMesh = await this.generateMeshFromText(params.nameText, params.nameFont, params.thickness, this.material);
+            borderMesh.scale.set(scale * 1.05, scale * 1.05, 1); // rough border expansion
+            borderMesh.position.set(relX, relY, params.thickness - params.cutoutDepth);
+            borderMesh.updateMatrixWorld();
+            
+            resultBrush = this.evaluator.evaluate(resultBrush, borderMesh, SUBTRACTION);
+            resultBrush = this.evaluator.evaluate(resultBrush, nameMesh, ADDITION);
+          } else {
+            // Just subtract the name
+            resultBrush = this.evaluator.evaluate(resultBrush, nameMesh, SUBTRACTION);
+          }
+        }
+      }
+
+      // 3. Base Cut (Corte da Base)
+      if (params.bottomCutEnabled && params.bottomCutHeight > 0) {
+        resultBrush.geometry.computeBoundingBox();
+        const bbox = resultBrush.geometry.boundingBox;
+        
+        // Calculate cut height in mm based on normalized ratio
+        const totalHeight = bbox.max.y - bbox.min.y;
+        const cutHeightMm = params.bottomCutHeight * totalHeight * 1.2; 
+        
+        const cutGeom = new THREE.BoxGeometry(
+          (bbox.max.x - bbox.min.x) * 2,
+          cutHeightMm,
+          params.thickness * 2
+        );
+        cutGeom.clearGroups();
+        const cutBrush = new Brush(cutGeom, this.material);
+        
+        // Position at the bottom
+        cutBrush.position.set(0, bbox.min.y + (cutHeightMm / 2), 0);
+        cutBrush.updateMatrixWorld();
+
+        resultBrush = this.evaluator.evaluate(resultBrush, cutBrush, SUBTRACTION);
+      }
+
+      // 4. Multi-color Pattern (Option B)
+      let patternResultBrush = null;
+      if (params.bigLetterPattern) {
+        try {
+          const patternUrl = `/assets/patterns/${params.bigLetterPattern}.svg`;
+          const response = await fetch(patternUrl);
+          const svgString = await response.text();
+          
+          const loader = new SVGLoader();
+          const svgData = loader.parse(svgString);
+          
+          let patternShapes = [];
+          for (const path of svgData.paths) {
+            patternShapes.push(...path.toShapes(true));
+          }
+          
+          if (patternShapes.length > 0) {
+            // Create a tile group of the pattern
+            const patternGeom = new THREE.ExtrudeGeometry(patternShapes, { depth: params.thickness + 0.5, bevelEnabled: false, curveSegments: 4 });
+            patternGeom.center();
+            patternGeom.clearGroups();
+            
+            // We scale the pattern down and repeat it across the letter's bounding box
+            const tileScale = 0.5; // Scale of the SVG
+            patternGeom.scale(tileScale, -tileScale, 1);
+            
+            const patternBrush = new Brush(patternGeom, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            
+            // Intersect with the letter's shape so it doesn't spill out
+            // We use a clone of the letter's current shape for intersection
+            const letterClone = resultBrush.clone();
+            letterClone.updateMatrixWorld();
+            patternBrush.updateMatrixWorld();
+            
+            patternResultBrush = this.evaluator.evaluate(patternBrush, letterClone, INTERSECTION);
+            
+            // To make it distinct for multi-color, we subtract it slightly from the main letter or leave it exactly on the surface
+            // For true multi-color (like AMS), they can share the exact same volume, but it's better to subtract the pattern from the main letter
+            resultBrush = this.evaluator.evaluate(resultBrush, patternResultBrush, SUBTRACTION);
+          }
+        } catch(e) {
+          console.warn("Could not generate pattern mesh", e);
+        }
+      }
+
+      if (myGenId !== this.generationId) return false;
+
+      // Rotate to lay flat on the print bed
+      this.group.rotation.x = 0;
+
+      // Finalize
+      resultBrush.geometry.computeBoundingBox();
+      const finalBbox = resultBrush.geometry.boundingBox;
+      const width = finalBbox.max.x - finalBbox.min.x;
+      const height = finalBbox.max.y - finalBbox.min.y;
+      this.svgAspectRatio = width / height;
+
+      this.group.add(resultBrush);
+      if (patternResultBrush) {
+        this.group.add(patternResultBrush);
+      }
+      
+      return true;
+    } catch (e) {
+      console.error("BigLettersEngine generation failed:", e);
+      return false;
+    }
   }
 
-  parseSVG(svgString) {
+  async getOpentypeFont(family) {
+    if (this.cachedFonts && this.cachedFonts[family]) {
+      return this.cachedFonts[family];
+    }
+    const url = FONT_URLS[family] || FONT_URLS['Montserrat'];
+    const buffer = await fetch(url).then(r => r.arrayBuffer());
+    const font = opentype.parse(buffer);
+    
+    if (!this.cachedFonts) this.cachedFonts = {};
+    this.cachedFonts[family] = font;
+    return font;
+  }
+
+  async generateMeshFromText(text, font, depth, targetMaterial = this.material) {
+    const otFont = await this.getOpentypeFont(font);
+    const path = otFont.getPath(text, 0, 0, 100);
+    const svgPathData = path.toPathData(2);
+    
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg"><path d="${svgPathData}"/></svg>`;
     const loader = new SVGLoader();
     const svgData = loader.parse(svgString);
-    const extractedShapes = [];
 
-    for (const path of svgData.paths) {
-      const shapes = path.toShapes(true);
-      for (const shape of shapes) {
-        extractedShapes.push(shape);
+    // Bypass toShapes completely to avoid Three.js winding issues.
+    // Extract pure math curves directly from the SVG subpaths!
+    const scale = 1000;
+    const clipper = new ClipperLib.Clipper();
+    clipper.StrictlySimple = true;
+
+    for (const p of svgData.paths) {
+      for (const subPath of p.subPaths) {
+        // 8 subdivisions for ultra-smooth curves
+        const points = subPath.getPoints(8);
+        const clipperPath = points.map(pt => ({ X: Math.round(pt.x * scale), Y: Math.round(pt.y * scale) }));
+        clipper.AddPath(clipperPath, ClipperLib.PolyType.ptSubject, true);
       }
     }
-    return extractedShapes;
-  }
 
-  async generateMeshFromText(text, font, depth) {
-    const dataUrl = await this.generateSvgFromText(text, font);
-    const svgString = await new Promise(resolve => {
-      window.ImageTracer.imageToSVG(dataUrl, resolve, {
-        ltres: 1,
-        qtres: 1,
-        pathomit: 8,
-        rightangleenhance: true,
-        colorsampling: 0,
-        numberofcolors: 2,
-        mincolorratio: 0,
-        colorquantcycles: 3,
-        pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
-      });
+    const solution = new ClipperLib.Paths();
+    // pftEvenOdd completely ignores winding direction errors and mathematically resolves all overlaps!
+    clipper.Execute(ClipperLib.ClipType.ctUnion, solution, ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftEvenOdd);
+
+    if (solution.length === 0) return null;
+
+    const toThreeVec2 = (pts) => pts.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
+    const cleanShapes = [];
+
+    // Separate outer boundaries from holes
+    solution.forEach(path => {
+      if (ClipperLib.Clipper.Orientation(path)) {
+        const shape = new THREE.Shape(toThreeVec2(path));
+        shape.closePath(); // CRITICAL: Explicitly close the path to prevent Earcut triangulation shattering
+        cleanShapes.push({
+          shape: shape,
+          rawPath: path
+        });
+      }
     });
 
-    const shapes = this.parseSVG(svgString);
-    if (shapes.length === 0) return null;
+    solution.forEach(path => {
+      if (!ClipperLib.Clipper.Orientation(path)) {
+        const pt = path[0];
+        for (let i = 0; i < cleanShapes.length; i++) {
+          if (ClipperLib.Clipper.PointInPolygon(pt, cleanShapes[i].rawPath) !== 0) {
+            const holePath = new THREE.Path(toThreeVec2(path));
+            holePath.closePath(); // CRITICAL
+            cleanShapes[i].shape.holes.push(holePath);
+            break;
+          }
+        }
+      }
+    });
+
+    const shapes = cleanShapes.map(cs => cs.shape);
 
     // Center and scale the shapes
     let minX = Infinity, minY = Infinity;
@@ -221,7 +404,7 @@ export class BigLettersEngine extends BaseEngine {
 
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
-    // Base scale to normalize 150px font to roughly 100mm height
+    // Base scale to normalize roughly 100mm height
     const baseScale = 100 / (maxY - minY);
 
     const group = new THREE.Group();
@@ -230,13 +413,14 @@ export class BigLettersEngine extends BaseEngine {
       const geom = new THREE.ExtrudeGeometry(shape, {
         depth: depth,
         bevelEnabled: false,
-        curveSegments: 12
+        curveSegments: 1 // Clipper shapes are already dense polygons
       });
+      geom.clearGroups(); // CRITICAL: Prevents three-bvh-csg crash when using a single material
       geom.computeBoundingBox();
       geom.translate(-centerX, -centerY, 0);
       geom.scale(baseScale, -baseScale, 1);
       
-      const mesh = new THREE.Mesh(geom, this.material);
+      const mesh = new THREE.Mesh(geom, targetMaterial);
       group.add(mesh);
     });
 
@@ -244,7 +428,7 @@ export class BigLettersEngine extends BaseEngine {
     group.updateMatrixWorld();
     group.traverse(child => {
       if (child.isMesh) {
-        const brush = new Brush(child.geometry, this.material);
+        const brush = new Brush(child.geometry, targetMaterial);
         brush.matrix.copy(child.matrixWorld);
         brush.matrixWorldNeedsUpdate = true;
         brush.updateMatrixWorld();

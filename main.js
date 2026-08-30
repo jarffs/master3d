@@ -4,6 +4,7 @@ import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
+import { FabricEditor } from './src/ui/FabricEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
@@ -21,6 +22,7 @@ let engine;
 let controlBuilder;
 let svgEditor;
 let textToSvg;
+let bigLettersEditor;
 let viewHelper;
 let currentSvgText = null;
 let buildPlateGroup = null;
@@ -104,6 +106,196 @@ const lockRatioBtn = document.getElementById('lock-ratio-btn');
 const dimensionsSection = document.getElementById('model-dimensions-section');
 let lockRatio = true;
 let svgAspectRatio = 1;
+
+async function initBigLettersEditor() {
+  if (!bigLettersEditor) {
+    bigLettersEditor = new FabricEditor('big-letters-editor-container');
+    
+    // Add default layers for Big Letters
+    await bigLettersEditor.addText('M', { 
+      fontSize: 300, 
+      fontFamily: 'Montserrat', 
+      fill: '#e91e7b',
+      fontWeight: 'bold',
+      layerName: 'Letra Grande',
+      id: 'BigLetter'
+    });
+
+    await bigLettersEditor.addText('Master3D', { 
+      fontSize: 80, 
+      fontFamily: 'Playfair Display', 
+      fill: '#ffffff',
+      fontStyle: 'italic',
+      layerName: 'Nome',
+      id: 'NameText'
+    });
+
+    bigLettersEditor.addRect({
+      top: bigLettersEditor.options.height - 100,
+      width: 600,
+      height: 30,
+      fill: 'rgba(255, 152, 0, 0.5)',
+      originX: 'center',
+      originY: 'top',
+      id: 'BaseCut'
+    });
+
+    // Force an initial render with the classic preset
+    await bigLettersEditor.applyPreset('classic');
+
+    // Setup preset listeners
+    const presetBtns = document.querySelectorAll('.bl-preset-btn');
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        presetBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const presetId = btn.getAttribute('data-preset');
+        await bigLettersEditor.applyPreset(presetId);
+      });
+    });
+
+    // Setup simplified panel event listeners
+    const setupSync = (inputId, sliderId) => {
+      const input = document.getElementById(inputId);
+      const slider = document.getElementById(sliderId);
+      if(input && slider) {
+        input.addEventListener('input', (e) => slider.value = e.target.value);
+        slider.addEventListener('input', (e) => input.value = e.target.value);
+      }
+    };
+
+    setupSync('bl-thickness', 'bl-thickness-slider');
+    setupSync('bl-cutout-depth', 'bl-cutout-depth-slider');
+    setupSync('bl-border-thickness', 'bl-border-thickness-slider');
+    setupSync('bl-tolerance', 'bl-tolerance-slider');
+
+    // Fine line detection logic
+    const analyzeBtn = document.getElementById('bl-analyze-lines-btn');
+    const analyzeResult = document.getElementById('bl-analysis-result');
+    if (analyzeBtn && analyzeResult) {
+      analyzeBtn.addEventListener('click', () => {
+        const canvas = bigLettersEditor.getCanvas();
+        const nameObj = canvas.getObjects().find(o => o.id === 'NameText');
+        const bigLetterObj = canvas.getObjects().find(o => o.id === 'BigLetter');
+        
+        analyzeResult.style.display = 'block';
+        
+        if (!nameObj || !bigLetterObj) {
+          analyzeResult.textContent = 'Elementos insuficientes para análise.';
+          analyzeResult.style.backgroundColor = '#f1f5f9';
+          analyzeResult.style.borderColor = '#cbd5e1';
+          analyzeResult.style.color = '#64748b';
+          return;
+        }
+
+        const effectiveFontSize = nameObj.fontSize * nameObj.scaleX;
+        const fontName = nameObj.fontFamily.toLowerCase();
+        
+        let minSafeSize = 25; // Standard fonts
+        if (fontName.includes('playfair') || fontName.includes('script') || fontName.includes('brush')) {
+          minSafeSize = 45; // Script fonts need to be much bigger
+        }
+
+        if (effectiveFontSize < minSafeSize) {
+          analyzeResult.innerHTML = `<strong>Aviso!</strong> O texto do nome está demasiado pequeno (Tamanho Efetivo: ${Math.round(effectiveFontSize)}).<br/>Paredes podem ficar inferiores a 1.2mm e quebrar na impressão 3D.<br/><em>Dica: Aumente o nome ou use uma fonte mais robusta.</em>`;
+          analyzeResult.style.backgroundColor = '#fef2f2';
+          analyzeResult.style.borderColor = '#fca5a5';
+          analyzeResult.style.color = '#b91c1c';
+        } else {
+          analyzeResult.innerHTML = `<strong>Tudo OK!</strong> O design parece robusto e seguro para impressão 3D com bicos até 0.6mm.`;
+          analyzeResult.style.backgroundColor = '#f0fdf4';
+          analyzeResult.style.borderColor = '#bbf7d0';
+          analyzeResult.style.color = '#15803d';
+        }
+      });
+    }
+
+    // Generate preview logic
+    const genBtn = document.getElementById('bl-generate-preview');
+    const backBtn = document.getElementById('bl-back-to-editor');
+    
+    if(genBtn) {
+      genBtn.addEventListener('click', async () => {
+        // Find objects by ID
+        const canvas = bigLettersEditor.getCanvas();
+        let bigLetterObj, nameObj, baseCutObj;
+        
+        canvas.getObjects().forEach(obj => {
+          if(obj.id === 'BigLetter') bigLetterObj = obj;
+          if(obj.id === 'NameText') nameObj = obj;
+          if(obj.id === 'BaseCut') baseCutObj = obj;
+        });
+
+        if(!bigLetterObj || !nameObj) return;
+
+        // Generate thumbnail
+        const thumbUrl = bigLettersEditor.exportDataURL({ format: 'png', multiplier: 0.5 });
+        const thumbContainer = document.getElementById('bl-thumbnail');
+        if(thumbUrl && thumbContainer) {
+          thumbContainer.innerHTML = `<img src="${thumbUrl}" alt="Preview" />`;
+        }
+
+        const editorData = {
+          bigLetter: bigLetterObj.text,
+          bigLetterFont: bigLetterObj.fontFamily,
+          bigLetterPattern: bigLetterObj.patternName || null,
+          nameText: nameObj.text,
+          nameFont: nameObj.fontFamily,
+          nameScale: nameObj.scaleX,
+          nameX: bigLetterObj.left === nameObj.left ? 0.5 : (nameObj.left / canvas.width), // Approximate normalized 0..1
+          nameY: bigLetterObj.top === nameObj.top ? 0.5 : (nameObj.top / canvas.height),
+          bottomCutEnabled: true,
+          bottomCutHeight: baseCutObj ? (baseCutObj.height * baseCutObj.scaleY) / canvas.height : 0
+        };
+
+        // Gather 3D params
+        const params3D = {
+          thickness: parseFloat(document.getElementById('bl-thickness')?.value || 22),
+          cutoutDepth: parseFloat(document.getElementById('bl-cutout-depth')?.value || 4),
+          borderThickness: parseFloat(document.getElementById('bl-border-thickness')?.value || 1.2),
+          tolerance: parseFloat(document.getElementById('bl-tolerance')?.value || 0.2),
+          nameBorder: document.getElementById('bl-name-border-toggle')?.checked || false,
+          hollowName: document.getElementById('bl-hollow-name-toggle')?.checked || false
+        };
+        
+        const fullParams = { ...editorData, ...params3D };
+
+        // Switch view
+        bigLettersEditor.hide();
+        document.getElementById('canvas-container').style.display = 'block';
+        if(backBtn) backBtn.style.display = 'flex';
+        
+        modelLoading?.classList.remove('hidden');
+        
+        // Generate 3D Model
+        if(engine && engine.name === 'big_letters') {
+          await engine.generateFromEditorData(fullParams);
+          refreshExportButtons();
+          checkBuildPlateLimits();
+        }
+        
+        modelLoading?.classList.add('hidden');
+      });
+    }
+
+    if(backBtn) {
+      backBtn.addEventListener('click', () => {
+        document.getElementById('canvas-container').style.display = 'none';
+        bigLettersEditor.show();
+        backBtn.style.display = 'none';
+      });
+    }
+
+    const editBtn = document.getElementById('bl-edit-design-btn');
+    if(editBtn) {
+      editBtn.addEventListener('click', () => {
+        document.getElementById('canvas-container').style.display = 'none';
+        bigLettersEditor.show();
+        if(backBtn) backBtn.style.display = 'none';
+      });
+    }
+  }
+}
 
 function initThree() {
   const container = document.getElementById('canvas-container');
@@ -240,17 +432,30 @@ function initThree() {
       const textCreateBtn = document.getElementById('create-from-text-btn');
       if (textCreateBtn) textCreateBtn.style.display = 'none';
       
-      // Show explicit "Generate 3D" button
+      // Hide the old generate button
       const generateBtn = document.getElementById('generate-3d-btn');
-      if (generateBtn) {
-        generateBtn.style.display = 'flex';
-        generateBtn.addEventListener('click', () => {
-          updateModel();
-        });
-      }
+      if (generateBtn) generateBtn.style.display = 'none';
       
-      // Trigger initial build
-      setTimeout(() => { updateModel(); }, 500);
+      // Hide dynamic controls (replaced by bl-panel)
+      const dynamicControls = document.getElementById('dynamic-controls');
+      if (dynamicControls) dynamicControls.style.display = 'none';
+
+      // Hide tool reference block entirely
+      const toolRefBlock = document.querySelector('.tool-reference');
+      if (toolRefBlock) toolRefBlock.style.display = 'none';
+
+      // Show the simplified Big Letters panel
+      const blPanel = document.getElementById('bl-panel');
+      if (blPanel) blPanel.style.display = 'block';
+
+      // Hide 3D viewer, show Fabric editor
+      const canvasContainer = document.getElementById('canvas-container');
+      if (canvasContainer) canvasContainer.style.display = 'none';
+      
+      const editorContainer = document.getElementById('big-letters-editor-container');
+      if (editorContainer) editorContainer.style.display = 'block';
+
+      initBigLettersEditor();
     }
   }
   

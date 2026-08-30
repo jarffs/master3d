@@ -3,12 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Master3D</title>
+    <title>CutterMaker3D</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
-    <script src="./assets/fabric.min.js"></script>
   </head>
   <body>
     <div class="app-container">
@@ -19,7 +18,7 @@
         <div class="topbar-left">
           <a href="./index.html" style="color: inherit; text-decoration: none; display: flex; align-items: center; cursor: pointer;">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            <h1>Master3D</h1>
+            <h1>CutterMaker3D</h1>
           </a>
         </div>
         <div class="topbar-right" style="display: flex; gap: 16px; align-items: center;">
@@ -36,10 +35,6 @@
       <!-- Main Content Area -->
       <div class="content-wrapper">
         <aside class="sidebar">
-          <figure id="tool-reference" class="tool-reference">
-            <img id="tool-reference-image" src="" alt="" />
-            <figcaption id="tool-reference-title"></figcaption>
-          </figure>
           <div class="control-group upload-group" style="margin-bottom: 24px;">
   <div class="label-container" style="margin-bottom: 8px;">
     <label for="svg-upload" style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-primary);">
@@ -56,23 +51,6 @@
   <input type="file" id="svg-upload" accept=".svg,.png,.jpg,.jpeg,image/svg+xml,image/png,image/jpeg" hidden />
   <div id="file-name" class="file-name" data-i18n="app.no_file" style="display: none;">Nenhum arquivo selecionado</div>
 </div>
-
-          <!-- OR Separator -->
-          <div class="or-separator">
-            <span data-i18n="app.or_separator">OU</span>
-          </div>
-
-          <!-- Create from Text Button -->
-          <button id="create-from-text-btn" class="text-create-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
-            <span data-i18n="app.create_from_text">Criar com Texto</span>
-          </button>
-
-          <!-- Generate 3D Button (For Big Letters) -->
-          <button id="generate-3d-btn" class="primary-btn" style="display: none; width: 100%; margin-bottom: 24px; border-radius: 8px; padding: 12px; font-weight: 600; font-size: 14px; align-items: center; justify-content: center; gap: 8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            <span data-i18n="app.generate_3d">Gerar 3D</span>
-          </button>
 
         <div class="settings" id="model-dimensions-section" style="display: none;">
   <div class="settings-header" style="margin-bottom: 20px;">
@@ -102,127 +80,6 @@
 
         
         <div id="dynamic-controls" style="margin-bottom: 24px;"></div>
-
-        <!-- Big Letters Panel -->
-        <div id="bl-panel" style="display: none;">
-          <div class="bl-section-title">Parâmetros</div>
-
-          <div class="bl-param">
-            <div class="bl-param-header">
-              <span class="bl-param-label">Modelos (Presets)</span>
-            </div>
-            <div class="bl-presets-grid" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
-              <button class="bl-preset-btn active" data-preset="classic" style="flex: 0 0 70px; height: 70px; border-radius: 8px; border: 2px solid var(--accent-color); background: #f0f0f0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">
-                <div style="width: 32px; height: 32px; background: #e91e7b; border-radius: 4px; margin-bottom: 4px;"></div>
-                Clássico
-              </button>
-              <button class="bl-preset-btn" data-preset="clouds" style="flex: 0 0 70px; height: 70px; border-radius: 8px; border: 1px solid var(--border-color); background: #f0f0f0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">
-                <div style="width: 32px; height: 32px; background: url('/assets/patterns/clouds.svg') center/cover; border-radius: 4px; margin-bottom: 4px;"></div>
-                Nuvens
-              </button>
-              <button class="bl-preset-btn" data-preset="stars" style="flex: 0 0 70px; height: 70px; border-radius: 8px; border: 1px solid var(--border-color); background: #f0f0f0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">
-                <div style="width: 32px; height: 32px; background: url('/assets/patterns/stars.svg') center/cover; border-radius: 4px; margin-bottom: 4px; background-color: #2196F3;"></div>
-                Estrelas
-              </button>
-              <button class="bl-preset-btn" data-preset="stripes" style="flex: 0 0 70px; height: 70px; border-radius: 8px; border: 1px solid var(--border-color); background: #f0f0f0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">
-                <div style="width: 32px; height: 32px; background: url('/assets/patterns/stripes.svg') center/cover; border-radius: 4px; margin-bottom: 4px; background-color: #4CAF50;"></div>
-                Listras
-              </button>
-            </div>
-          </div>
-          
-          <div class="bl-preview-card">
-            <div class="bl-thumbnail" id="bl-thumbnail">
-              <div class="bl-thumbnail-placeholder">Sem pré-visualização</div>
-            </div>
-            <button class="bl-edit-btn" id="bl-edit-design-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-              Editar Design
-            </button>
-          </div>
-
-          <div class="bl-param">
-            <div class="bl-param-header">
-              <span class="bl-param-label">Espessura da Letra</span>
-              <input type="number" id="bl-thickness" class="bl-param-input" value="22" min="5" max="40">
-            </div>
-            <div class="bl-param-desc">Em mm</div>
-            <input type="range" id="bl-thickness-slider" class="bl-slider" min="5" max="40" value="22">
-            <div class="bl-slider-labels"><span>5</span><span>40</span></div>
-          </div>
-
-          <div class="bl-param">
-            <div class="bl-param-header">
-              <span class="bl-param-label">Bordas no Nome</span>
-              <label class="bl-toggle">
-                <input type="checkbox" id="bl-name-border-toggle">
-                <span class="bl-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="bl-param-desc">Borda de destaque ao redor do nome</div>
-          </div>
-
-          <div class="bl-param">
-            <div class="bl-param-header">
-              <span class="bl-param-label">Nome Vazado</span>
-              <label class="bl-toggle">
-                <input type="checkbox" id="bl-hollow-name-toggle">
-                <span class="bl-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="bl-param-desc">O nome não terá preenchimento (apenas paredes)</div>
-          </div>
-
-          <div class="bl-param">
-            <div class="bl-param-header">
-              <span class="bl-param-label">Profundidade do Encaixe</span>
-              <input type="number" id="bl-cutout-depth" class="bl-param-input" value="4" min="0" max="10">
-            </div>
-            <div class="bl-param-desc">Quão profundo é o nome (mm)</div>
-            <input type="range" id="bl-cutout-depth-slider" class="bl-slider" min="0" max="10" value="4">
-            <div class="bl-slider-labels"><span>0</span><span>10</span></div>
-          </div>
-
-          <div class="bl-param">
-            <div class="bl-param-header">
-              <span class="bl-param-label">Espessura da Borda</span>
-              <input type="number" id="bl-border-thickness" class="bl-param-input" value="1.2" min="0" max="10" step="0.1">
-            </div>
-            <div class="bl-param-desc">Para nome ou letra (mm)</div>
-            <input type="range" id="bl-border-thickness-slider" class="bl-slider" min="0" max="10" step="0.1" value="1.2">
-            <div class="bl-slider-labels"><span>0</span><span>10</span></div>
-          </div>
-          
-          <details class="bl-collapsible">
-            <summary class="bl-collapsible-header">
-              <span>Tolerância</span>
-            </summary>
-            <div class="bl-collapsible-body">
-              <div class="bl-param" style="border: none; padding-bottom: 0; margin-bottom: 0;">
-                <div class="bl-param-header">
-                  <span class="bl-param-label" style="font-size: 13px;">Ajuste (mm)</span>
-                  <input type="number" id="bl-tolerance" class="bl-param-input" value="0.2" min="0" max="1" step="0.05">
-                </div>
-                <div class="bl-param-desc" style="font-size: 11px;">Folga para encaixes de peças impressas</div>
-                <input type="range" id="bl-tolerance-slider" class="bl-slider" min="0" max="1" step="0.05" value="0.2">
-                <div class="bl-slider-labels"><span>0</span><span>1</span></div>
-              </div>
-            </div>
-          </details>
-
-          <button class="bl-analyze-btn" id="bl-analyze-lines-btn" style="background: transparent; border: 1px dashed var(--accent-color); color: var(--accent-color); padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            Analisar Linhas Finas
-          </button>
-          
-          <div id="bl-analysis-result" style="display: none; padding: 12px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; font-size: 12px; color: #b08d00; margin-top: 8px;">
-            As linhas estão seguras para impressão!
-          </div>
-
-          <button class="bl-generate-btn" id="bl-generate-preview">
-            Gerar Pré-visualização
-          </button>
-        </div>
 
         <div class="settings">
           <div class="settings-header" style="margin-bottom: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
@@ -267,17 +124,6 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         </button>
         <div id="canvas-container"></div>
-        <div id="big-letters-editor-container" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10;"></div>
-        
-        <button id="bl-back-to-editor" style="display: none; position: absolute; top: 16px; left: 16px; z-index: 10; background: var(--accent-color); border: none; border-radius: 4px; padding: 10px 16px; font-weight: 600; color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); align-items: center; gap: 8px;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          Voltar ao Editor
-        </button>
-
-        <div id="model-loading" class="model-loading hidden" role="status" aria-live="polite">
-          <span class="model-loading-spinner" aria-hidden="true"></span>
-          <span data-i18n="app.generating_model">Gerando modelo...</span>
-        </div>
         <div class="floating-actions">
           <button id="save-design-btn" class="secondary-btn" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 50px; padding: 14px 24px; font-size: 16px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 4px 14px rgba(0,0,0,0.1); transition: all 0.2s;">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
@@ -299,8 +145,6 @@
           <h2 id="auth-title" style="margin: 0 0 8px 0; font-size: 28px; font-weight: 700; color: var(--text-primary);" data-i18n="auth.login_title">Bem-vindo de Volta</h2>
           <p id="auth-subtitle" style="margin: 0; color: var(--text-secondary); font-size: 14px;" data-i18n="auth.login_subtitle">Personalize seus modelos 3D</p>
         </div>
-
-        <p id="auth-notice" class="auth-notice hidden" role="status"></p>
 
         <button id="google-auth-btn" type="button" style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: #ffffff; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; font-weight: 500; font-size: 14px; cursor: pointer; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: background 0.3s;">
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -362,142 +206,108 @@
     
     <!-- Profile Modal -->
     <div id="profile-modal" class="modal hidden">
-      <div class="modal-content" style="max-width: 1100px; padding: 40px;">
+      <div class="modal-content" style="max-width: 500px;">
         <button id="close-profile-btn" class="close-btn">&times;</button>
-        <h2 style="margin-top: 0; margin-bottom: 32px; font-size: 24px;" data-i18n="profile.title">Meu Perfil</h2>
+        <h2 style="margin-top: 0; margin-bottom: 24px;" data-i18n="profile.title">Meu Perfil</h2>
         
-        <div class="profile-dashboard-grid">
-          <!-- Coluna Esquerda: Conta e Impressoras -->
-          <div class="profile-left-col">
-            <h3 class="profile-section-title" data-i18n="profile.tab_account">A minha Conta</h3>
-            
-            <div style="display: flex; gap: 24px; align-items: flex-start; margin-bottom: 24px;">
-              <div class="avatar-upload-container">
-                <div id="profile-avatar-preview" class="avatar-large" style="margin-bottom: 8px;">
-                  <!-- Renderizado via JS -->
-                </div>
-                <label for="avatar-upload" class="text-btn" style="cursor: pointer; font-size: 13px; color: var(--accent-color); font-weight: 600; text-align: center; display: block;" data-i18n="profile.change_photo">Alterar Foto</label>
-                <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/webp" hidden />
-              </div>
-              
-              <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
-                <div class="input-group" style="margin-bottom: 0;">
-                  <label for="profile-name" style="font-size: 13px; margin-bottom: 4px;" data-i18n="profile.display_name">Nome</label>
-                  <div style="display: flex; gap: 8px;">
-                    <input type="text" id="profile-name" data-i18n="profile.display_name_placeholder" placeholder="Como quer ser chamado?" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
-                    <button id="save-name-btn" class="secondary-btn" style="padding: 8px 16px;" data-i18n="profile.save">Salvar</button>
-                  </div>
-                </div>
-                <div class="input-group" style="margin-bottom: 0;">
-                  <label for="profile-email" style="font-size: 13px; margin-bottom: 4px;" data-i18n="profile.email">E-mail</label>
-                  <input type="email" id="profile-email" readonly style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px; border-radius: 6px; cursor: not-allowed; width: 100%; box-sizing: border-box;" />
-                </div>
-              </div>
+        <div class="profile-tabs">
+          <button class="tab-btn active" data-tab="avatar-tab" data-i18n="profile.tab_account">A minha Conta</button>
+          <button class="tab-btn" data-tab="printers-tab" data-i18n="profile.tab_printers">Minhas Impressoras</button>
+        </div>
+
+        <div id="avatar-tab" class="tab-content active">
+          <div class="avatar-upload-container" style="margin-bottom: 24px;">
+            <div id="profile-avatar-preview" class="avatar-large">
+              <!-- Renderizado via JS -->
             </div>
+            <label for="avatar-upload" class="secondary-btn" style="cursor: pointer; margin-top: 16px;" data-i18n="profile.change_photo">Alterar Foto</label>
+            <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/webp" hidden />
+          </div>
 
-            <!-- Formulário de Senha (Escondido se for login Google) -->
-            <div id="password-section" style="margin-bottom: 32px;">
-              <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600;" data-i18n="profile.change_password">Alterar Senha</h4>
-              <form id="change-password-form" style="display: flex; flex-direction: column; gap: 12px;">
-                <input type="password" id="profile-current-password" required data-i18n="profile.current_password" placeholder="Senha atual" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
-                <input type="password" id="profile-new-password" required data-i18n="profile.new_password" placeholder="Nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
-                <input type="password" id="profile-confirm-password" required data-i18n="profile.confirm_password" placeholder="Repita a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
-                <p id="password-message" style="font-size: 13px; margin: 0; display: none;"></p>
-                <button type="submit" id="change-password-btn" class="secondary-btn" style="align-self: flex-start; font-size: 13px;" data-i18n="profile.update_password">Atualizar Senha</button>
-              </form>
+          <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+            <div class="input-group">
+              <label for="profile-email" data-i18n="profile.email">E-mail</label>
+              <input type="email" id="profile-email" readonly style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px; border-radius: 6px; cursor: not-allowed;" />
             </div>
-
-            <hr style="border: 0; height: 1px; background: var(--border-color); margin: 24px 0;">
-
-            <h3 class="profile-section-title" data-i18n="profile.tab_printers">Minhas Impressoras</h3>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;" data-i18n="profile.printers_desc">Selecione as impressoras que aparecem na lista do gerador.</p>
-            
-            <input type="text" id="printer-search" data-i18n="profile.search_printer" placeholder="Buscar impressora..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 12px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box;">
-            
-            <div class="printers-scroll-container">
-              <div id="printers-list" class="printers-list">
-                <!-- Renderizado via JS -->
-              </div>
-            </div>
-            <button id="save-printers-btn" class="primary-btn" style="width: 100%; margin-bottom: 24px;" data-i18n="profile.save_changes">Salvar Impressoras</button>
-
-            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600;" data-i18n="profile.add_custom">Adicionar Impressora Customizada</h4>
-            <form id="add-custom-printer-form" style="display: flex; flex-direction: column; gap: 8px;">
-              <input type="text" id="custom-printer-name" required placeholder="Nome (Ex: Voron)" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+            <div class="input-group">
+              <label for="profile-name" data-i18n="profile.display_name">Nome de Exibição</label>
               <div style="display: flex; gap: 8px;">
-                <input type="number" id="custom-printer-x" required min="50" max="1000" placeholder="X (mm)" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
-                <input type="number" id="custom-printer-y" required min="50" max="1000" placeholder="Y (mm)" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
-              </div>
-              <button type="submit" id="custom-printer-submit" class="secondary-btn" style="font-size: 13px;" data-i18n="profile.add_printer">Adicionar Impressora</button>
-            </form>
-          </div>
-
-          <!-- Coluna Direita: Loja / Planos -->
-          <div class="profile-right-col" style="background: var(--bg-main); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h3 class="profile-section-title" style="margin: 0;" data-i18n="pricing.title">Comprar Créditos</h3>
-              <div style="background: rgba(217, 119, 6, 0.1); color: var(--accent-color); padding: 4px 12px; border-radius: 50px; font-weight: 700; font-size: 14px;">
-                <span id="profile-current-credits-shop">0</span> Créditos
+                <input type="text" id="profile-name" data-i18n="profile.display_name_placeholder" placeholder="Como quer ser chamado?" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+                <button id="save-name-btn" class="secondary-btn" data-i18n="profile.save">Salvar</button>
               </div>
             </div>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px;">Os créditos permitem exportar STLs ilimitados no gerador visual.</p>
-            
-            <div class="compact-pricing-list">
-              <!-- Pacote Mini -->
-              <div class="compact-price-card">
-                <div class="compact-price-header">
-                  <div>
-                    <h4 class="compact-price-title" data-i18n="pricing.mini_title">Pacote Mini</h4>
-                    <p class="compact-price-desc">10 STLs</p>
-                  </div>
-                  <div class="compact-price-value">€5.00</div>
-                </div>
-                <button class="compact-price-btn" data-plan="mini" data-i18n="pricing.mini_btn">Comprar Mini</button>
-              </div>
-
-              <!-- Pacote Popular -->
-              <div class="compact-price-card pro">
-                <div class="compact-price-header">
-                  <div>
-                    <h4 class="compact-price-title" data-i18n="pricing.popular_title">Pacote Popular</h4>
-                    <p class="compact-price-desc">15 STLs</p>
-                  </div>
-                  <div class="compact-price-value">€9.90</div>
-                </div>
-                <button class="compact-price-btn" data-plan="popular" data-i18n="pricing.popular_btn">Comprar Popular</button>
-              </div>
-
-              <!-- Pacote Avançado -->
-              <div class="compact-price-card">
-                <div class="compact-price-header">
-                  <div>
-                    <h4 class="compact-price-title" data-i18n="pricing.advanced_title">Pacote Avançado</h4>
-                    <p class="compact-price-desc">50 STLs</p>
-                  </div>
-                  <div class="compact-price-value">€29.00</div>
-                </div>
-                <button class="compact-price-btn" data-plan="advanced" data-i18n="pricing.advanced_btn">Comprar Avançado</button>
-              </div>
-
-              <!-- Pacote Studio -->
-              <div class="compact-price-card">
-                <div class="compact-price-header">
-                  <div>
-                    <h4 class="compact-price-title" data-i18n="pricing.studio_title">Pacote Studio</h4>
-                    <p class="compact-price-desc">200 STLs</p>
-                  </div>
-                  <div class="compact-price-value">€99.00</div>
-                </div>
-                <button class="compact-price-btn" data-plan="studio" data-i18n="pricing.studio_btn">Comprar Studio</button>
-              </div>
-
-            </div>
           </div>
+
+          <hr style="border: 0; height: 1px; background: var(--border-color); margin-bottom: 16px;">
+
+          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;" data-i18n="profile.change_password">Alterar Senha</h3>
+          <form id="change-password-form" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="input-group">
+              <label for="profile-current-password" data-i18n="profile.current_password">Senha Atual</label>
+              <input type="password" id="profile-current-password" required data-i18n="profile.current_password" placeholder="Digite a senha atual" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+            </div>
+            <div class="input-group">
+              <label for="profile-new-password" data-i18n="profile.new_password">Nova Senha</label>
+              <input type="password" id="profile-new-password" required data-i18n="profile.new_password" placeholder="Digite a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+            </div>
+            <div class="input-group">
+              <label for="profile-confirm-password" data-i18n="profile.confirm_password">Confirmar Nova Senha</label>
+              <input type="password" id="profile-confirm-password" required data-i18n="profile.confirm_password" placeholder="Repita a nova senha" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px;" />
+            </div>
+            <p id="password-message" style="font-size: 13px; margin: 0; display: none;"></p>
+            <button type="submit" id="change-password-btn" class="primary-btn" style="align-self: flex-start;" data-i18n="profile.update_password">Atualizar Senha</button>
+          </form>
+        </div>
+
+        <div id="printers-tab" class="tab-content">
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;" data-i18n="profile.printers_desc">Selecione as impressoras que deseja que apareçam na lista principal do gerador.</p>
+          
+          <input type="text" id="printer-search" data-i18n="profile.search_printer" placeholder="Buscar impressora..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 12px; font-family: inherit; font-size: 14px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box;">
+          
+          <div id="printers-list" class="printers-list" style="margin-bottom: 16px;">
+            <!-- Renderizado via JS -->
+          </div>
+          
+          <button id="save-printers-btn" class="primary-btn" style="width: 100%; margin-bottom: 24px;" data-i18n="profile.save_changes">Salvar Alterações</button>
+
+          <hr style="border: 0; height: 1px; background: var(--border-color); margin-bottom: 16px;">
+          
+          <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;" data-i18n="profile.add_custom">Adicionar Impressora Customizada</h3>
+          <form id="add-custom-printer-form" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="input-group">
+              <label for="custom-printer-name" data-i18n="profile.printer_name">Nome</label>
+              <input type="text" id="custom-printer-name" required placeholder="Ex: Minha Voron 2.4" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <div class="input-group" style="flex: 1;">
+                <label for="custom-printer-x" data-i18n="profile.printer_x">X (mm)</label>
+                <input type="number" id="custom-printer-x" required min="50" max="1000" placeholder="300" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+              </div>
+              <div class="input-group" style="flex: 1;">
+                <label for="custom-printer-y" data-i18n="profile.printer_y">Y (mm)</label>
+                <input type="number" id="custom-printer-y" required min="50" max="1000" placeholder="300" style="background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px;" />
+              </div>
+            </div>
+            <button type="submit" id="custom-printer-submit" class="secondary-btn" data-i18n="profile.add_printer">Adicionar Impressora</button>
+          </form>
+        <button id="google-auth-btn" type="button" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--bg-surface); color: #333; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 16px; margin-bottom: 16px; transition: background 0.3s;">
+          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          <span data-i18n="auth.google_login">Continuar com o Google</span>
+        </button>
+        <div id="auth-divider" style="display: flex; align-items: center; margin-top: 16px; margin-bottom: 16px;">
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          <span style="padding: 0 10px; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">Ou</span>
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        </div>
         </div>
       </div>
     </div>
-    
-    
+
     <!-- Cropper Modal -->
     <div id="cropper-modal" class="modal hidden" style="z-index: 1050;">
       <div class="modal-content" style="max-width: 600px; display: flex; flex-direction: column; height: 80vh;">
@@ -568,45 +378,6 @@
           <button id="svg-editor-confirm" class="primary-btn">
             Confirmar e Gerar 3D
           </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Text to SVG Modal -->
-    <div id="text-to-svg-modal" class="modal hidden" style="z-index: 1050;">
-      <div class="modal-content" style="max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
-        <h2 style="margin-top: 0; margin-bottom: 16px;" data-i18n="app.text_modal_title">Criar Cortador com Texto</h2>
-        
-        <!-- Text Input -->
-        <div style="margin-bottom: 16px;">
-          <input type="text" id="text-to-svg-input" maxlength="20" 
-            placeholder="Digite seu texto..." data-i18n-placeholder="app.text_input_placeholder"
-            style="width: 100%; padding: 12px 16px; font-size: 18px; font-weight: 600; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-surface); color: var(--text-primary); box-sizing: border-box;"
-          />
-        </div>
-        
-        <!-- Font Search -->
-        <div style="margin-bottom: 12px;">
-          <input type="text" id="text-to-svg-search" 
-            placeholder="Buscar fonte..." data-i18n-placeholder="app.search_fonts"
-            style="width: 100%; padding: 10px 16px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); color: var(--text-primary); box-sizing: border-box;"
-          />
-        </div>
-
-        <!-- Loading Indicator -->
-        <div id="text-to-svg-loading" style="display: none; text-align: center; padding: 8px; color: var(--accent-color); font-size: 13px;">
-          A carregar fonte...
-        </div>
-
-        <!-- Font Grid -->
-        <div id="text-to-svg-font-grid" class="text-font-grid" style="flex: 1; min-height: 0; overflow-y: auto; margin-bottom: 16px;">
-          <!-- Font cards generated by JS -->
-        </div>
-
-        <!-- Actions -->
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="text-to-svg-cancel" class="secondary-btn" data-i18n="cropper.cancel">Cancelar</button>
-          <button id="text-to-svg-confirm" class="primary-btn" disabled data-i18n="app.generate_3d">Gerar o 3D</button>
         </div>
       </div>
     </div>
