@@ -4,6 +4,7 @@ import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
+import { StampEngine } from './src/engines/StampEngine.js';
 import { FabricEditor } from './src/ui/FabricEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
@@ -54,6 +55,13 @@ function getControlBuilderOptions() {
       collapsible: true,
       categoryOrder: ['primary', 'secondary', 'dimensions'],
       plainCategories: ['primary', 'secondary']
+    };
+  }
+  if (engine?.name === 'stamp') {
+    return {
+      collapsible: true,
+      categoryOrder: ['primary'],
+      plainCategories: ['primary']
     };
   }
   return {};
@@ -356,6 +364,8 @@ function initThree() {
     engine = new ColoringEngine(scene);
   } else if (tool === 'big_letters') {
     engine = new BigLettersEngine(scene);
+  } else if (tool === 'stamp') {
+    engine = new StampEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -381,6 +391,11 @@ function initThree() {
       image: '/images/tools/coloring.jpg',
       title: t('app.tool_coloring'),
       alt: t('app.tool_coloring_reference')
+    },
+    stamp: {
+      image: '/images/tools/cookie-cutter.jpg', // Placeholder temporário
+      title: t('app.tool_stamp'),
+      alt: t('app.tool_stamp_reference')
     }
   };
   const toolReference = toolReferences[tool];
@@ -440,9 +455,11 @@ function initThree() {
       const dynamicControls = document.getElementById('dynamic-controls');
       if (dynamicControls) dynamicControls.style.display = 'none';
 
-      // Hide tool reference block entirely
+    // Hide tool reference block entirely
+    if (tool === 'big_letters' || tool === 'stamp') {
       const toolRefBlock = document.querySelector('.tool-reference');
       if (toolRefBlock) toolRefBlock.style.display = 'none';
+    }
 
       // Show the simplified Big Letters panel
       const blPanel = document.getElementById('bl-panel');
@@ -1409,7 +1426,6 @@ async function loadDesigns() {
 }
 
 function loadDesignIntoEngine(design) {
-  // Identify engine based on tool_type
   const toolType = design.tool_type || 'cookie_cutter';
   
   if (engine && engine.group) {
@@ -1422,6 +1438,10 @@ function loadDesignIntoEngine(design) {
     engine = new KeychainEngine(scene);
   } else if (toolType === 'coloring') {
     engine = new ColoringEngine(scene);
+  } else if (toolType === 'big_letters') {
+    engine = new BigLettersEngine(scene);
+  } else if (toolType === 'stamp') {
+    engine = new StampEngine(scene);
   } else {
     // Fallback for future engines
     engine = new CookieCutterEngine(scene);
