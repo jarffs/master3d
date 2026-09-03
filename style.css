@@ -92,16 +92,13 @@ body {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-right: 1px solid var(--border-color);
-  padding-top: 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   z-index: 10;
   box-shadow: 4px 0 32px rgba(0,0,0,0.04);
-}
-
-.sidebar > * {
-  padding: 0 24px;
+  overflow-y: auto;
 }
 
 .tool-reference {

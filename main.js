@@ -60,8 +60,8 @@ function getControlBuilderOptions() {
   if (engine?.name === 'stamp') {
     return {
       collapsible: true,
-      categoryOrder: ['primary'],
-      plainCategories: ['primary']
+      categoryOrder: ['stamp_design', 'stamp_body'],
+      plainCategories: []
     };
   }
   return {};
