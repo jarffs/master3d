@@ -23,7 +23,7 @@ export class StampEngine extends BaseEngine {
         step: 1,
         default: 50,
         suffix: 'mm',
-        category: 'primary'
+        category: 'stamp_design'
       },
       {
         id: 'extrusion',
@@ -32,10 +32,65 @@ export class StampEngine extends BaseEngine {
         desc: 'app.stamp_extrusion_desc',
         min: 1,
         max: 10,
-        step: 0.5,
-        default: 3,
+        step: 0.1,
+        default: 6.1,
+        category: 'stamp_design'
+      },
+      {
+        id: 'mirror',
+        type: 'checkbox',
+        label: 'app.stamp_mirror',
+        desc: 'app.stamp_mirror_desc',
+        default: true,
+        category: 'stamp_design'
+      },
+      {
+        id: 'handleHeight',
+        type: 'slider',
+        label: 'app.stamp_handle_height',
+        desc: 'app.stamp_handle_height_desc',
+        min: 10,
+        max: 42,
+        step: 1,
+        default: 25,
         suffix: 'mm',
-        category: 'primary'
+        category: 'stamp_body'
+      },
+      {
+        id: 'topDiameter',
+        type: 'slider',
+        label: 'app.stamp_top_diameter',
+        desc: 'app.stamp_top_diameter_desc',
+        min: 10,
+        max: 60,
+        step: 0.5,
+        default: 30.5,
+        suffix: 'mm',
+        category: 'stamp_body'
+      },
+      {
+        id: 'handleDiameter',
+        type: 'slider',
+        label: 'app.stamp_handle_diameter',
+        desc: 'app.stamp_handle_diameter_desc',
+        min: 5,
+        max: 20,
+        step: 0.5,
+        default: 13.5,
+        suffix: 'mm',
+        category: 'stamp_body'
+      },
+      {
+        id: 'baseDiameter',
+        type: 'slider',
+        label: 'app.stamp_base_diameter',
+        desc: 'app.stamp_base_diameter_desc',
+        min: 10,
+        max: 60,
+        step: 0.5,
+        default: 38.5,
+        suffix: 'mm',
+        category: 'stamp_body'
       },
       {
         id: 'baseThickness',
@@ -47,7 +102,7 @@ export class StampEngine extends BaseEngine {
         step: 0.5,
         default: 4,
         suffix: 'mm',
-        category: 'primary'
+        category: 'stamp_body'
       }
     ];
   }
@@ -93,7 +148,9 @@ export class StampEngine extends BaseEngine {
         let cx = p.x - centerX;
         let cy = p.y - centerY;
         
-        cx = -cx; // Mirror X
+        if (params.mirror !== false) {
+          cx = -cx; // Mirror X
+        }
         
         cx *= targetScale;
         cy *= -targetScale; 
@@ -219,7 +276,11 @@ export class StampEngine extends BaseEngine {
     const stampMesh = new THREE.Mesh(finalStampBrush.geometry, this.material);
     
     // -- HANDLE MESH (Design Ergonómico) --
-    const handleHeight = 45;
+    const handleHeight = params.handleHeight !== undefined ? params.handleHeight : 25;
+    const baseR = (params.baseDiameter !== undefined ? params.baseDiameter : 38.5) / 2;
+    const handleR = (params.handleDiameter !== undefined ? params.handleDiameter : 13.5) / 2;
+    const topR = (params.topDiameter !== undefined ? params.topDiameter : 30.5) / 2;
+
     const smoothPoints = [];
     smoothPoints.push(new THREE.Vector2(0, 0));
     
@@ -228,23 +289,24 @@ export class StampEngine extends BaseEngine {
       const y = t * handleHeight;
       let r;
       if (t < 0.1) {
-        // Base flat edge & slight taper (16 to 14)
+        // Base flat edge & slight taper (baseR to baseR - 10%)
         const nt = t / 0.1;
-        r = 16 - 2 * nt;
+        r = baseR - (baseR * 0.1) * nt;
       } else if (t < 0.5) {
-        // Neck taper (14 to 8)
+        // Neck taper (base taper to handleR)
         const nt = (t - 0.1) / 0.4;
         const easeInOut = nt < 0.5 ? 2 * nt * nt : 1 - Math.pow(-2 * nt + 2, 2) / 2;
-        r = 14 - 6 * easeInOut;
+        const startR = baseR - (baseR * 0.1);
+        r = startR - (startR - handleR) * easeInOut;
       } else if (t < 0.8) {
-        // Bulb swell (8 to 18)
+        // Bulb swell (handleR to topR)
         const nt = (t - 0.5) / 0.3;
         const easeOut = Math.sin(nt * Math.PI / 2);
-        r = 8 + 10 * easeOut;
+        r = handleR + (topR - handleR) * easeOut;
       } else {
-        // Bulb top curve (18 to 0)
+        // Bulb top curve (topR to 0)
         const nt = (t - 0.8) / 0.2;
-        r = 18 * Math.cos(nt * Math.PI / 2);
+        r = topR * Math.cos(nt * Math.PI / 2);
       }
       smoothPoints.push(new THREE.Vector2(Math.max(0, r), y));
     }
