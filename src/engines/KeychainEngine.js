@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import ClipperLib from 'clipper-lib';
+import { Brush, Evaluator, SUBTRACTION, ADDITION } from 'three-bvh-csg';
 import { BaseEngine } from './BaseEngine.js';
 
 export class KeychainEngine extends BaseEngine {
@@ -8,6 +9,8 @@ export class KeychainEngine extends BaseEngine {
   constructor(scene) {
     super(scene);
     this.name = 'keychain';
+    this.evaluator = new Evaluator();
+    this.evaluator.useGroups = false;
 
     this.textSvgShapes = [];
     this.generationId = 0;
@@ -46,24 +49,6 @@ export class KeychainEngine extends BaseEngine {
   getControlSchema() {
     const schema = [
       {
-        id: 'textContent',
-        type: 'text',
-        label: 'app.text_content',
-        desc: 'app.text_content_desc',
-        placeholder: 'app.text_input_placeholder',
-        default: 'Master3D',
-        multiline: true,
-        category: 'primary'
-      },
-      {
-        id: 'textFont',
-        type: 'font',
-        label: 'app.text_font',
-        desc: 'app.text_font_desc',
-        default: 'Roboto',
-        category: 'primary'
-      },
-      {
         id: 'keychainWidth',
         type: 'slider',
         label: 'app.keychain_width',
@@ -100,6 +85,26 @@ export class KeychainEngine extends BaseEngine {
         category: 'text'
       },
       {
+        id: 'textThickness',
+        type: 'slider',
+        label: 'app.text_thickness',
+        desc: 'app.text_thickness_desc',
+        min: -2,
+        max: 3,
+        step: 0.1,
+        default: 0,
+        suffix: 'mm',
+        category: 'text'
+      },
+      {
+        id: 'engraved',
+        type: 'toggle',
+        label: 'app.engraved_text',
+        desc: 'app.engraved_text_desc',
+        default: false,
+        category: 'text'
+      },
+      {
         id: 'baseOffset',
         type: 'slider',
         label: 'app.base_offset',
@@ -110,30 +115,6 @@ export class KeychainEngine extends BaseEngine {
         default: 3,
         suffix: 'mm',
         category: 'base'
-      },
-      {
-        id: 'letterSpacing',
-        type: 'slider',
-        label: 'app.letter_spacing',
-        desc: 'app.letter_spacing_desc',
-        min: -50,
-        max: 200,
-        step: 1,
-        default: 0,
-        suffix: '%',
-        category: 'text'
-      },
-      {
-        id: 'lineSpacing',
-        type: 'slider',
-        label: 'app.line_spacing',
-        desc: 'app.line_spacing_desc',
-        min: -50,
-        max: 200,
-        step: 1,
-        default: 0,
-        suffix: '%',
-        category: 'text'
       },
       {
         id: 'ringAngle',
@@ -194,145 +175,21 @@ export class KeychainEngine extends BaseEngine {
     return schema;
   }
 
-  async loadFontCSS(family) {
-    const id = `gfont-${family.replace(/\s+/g, '-')}`;
-    if (document.getElementById(id)) {
-      try {
-        await document.fonts.load(`150px '${family}'`);
-      } catch(e) {}
-      return;
-    }
-
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/\s+/g, '+')}&display=swap`;
-    document.head.appendChild(link);
-
-    // Wait for browser to process the stylesheet and load the font
-    try {
-      await document.fonts.load(`150px '${family}'`);
-    } catch(e) {
-      console.warn("Font loading timeout or error", e);
-    }
-  }
-
-  async generateSvgFromTextCanvas(text, family, letterSpacing, lineSpacing) {
-    await Promise.all([this.loadFontCSS(family), this.loadFontCSS('Noto Emoji')]);
-
-    const fontSize = 150;
-    const letterSpacingPx = fontSize * ((letterSpacing || 0) / 100);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    // Noto Emoji garante emojis monocromáticos, vetorizáveis junto com o texto
-    const fontStack = `bold ${fontSize}px '${family}', 'Noto Emoji', sans-serif`;
-    const lines = this.splitLines(text);
-    ctx.font = fontStack;
-    
-    ctx.letterSpacing = `${letterSpacingPx}px`;
-
-    let maxWidth = 0;
-    for (const line of lines) {
-      const metrics = ctx.measureText(line);
-      if (metrics.width > maxWidth) maxWidth = metrics.width;
-    }
-    
-    const textWidth = Math.max(10, Math.ceil(maxWidth) + 60);
-    const lineHeight = fontSize * 1.2 + (fontSize * (lineSpacing / 100));
-    const textHeight = Math.max(10, Math.ceil(lines.length * lineHeight) + 60);
-
-    canvas.width = textWidth;
-    canvas.height = textHeight;
-
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = 'black';
-    ctx.font = fontStack;
-    ctx.letterSpacing = `${letterSpacingPx}px`;
-    ctx.textBaseline = 'top';
-
-    for (let i = 0; i < lines.length; i++) {
-      ctx.fillText(lines[i], 30, 30 + (i * lineHeight));
-    }
-
-    return canvas.toDataURL('image/png');
-  }
-
-  // "+" cria uma segunda linha dentro do mesmo chaveiro
-  splitLines(text) {
-    const lines = text
-      .split(/\n|\s*\+\s*/)
-      .map(line => line.trim())
-      .filter(Boolean);
-    return lines.length > 0 ? lines : [text];
-  }
-
   async generate3DModel(params) {
-    const generationId = ++this.generationId;
-    const textItems = (params.textContent || 'Master3D')
-      .split(',')
-      .map(text => text.trim())
-      .filter(Boolean)
-      .slice(0, KeychainEngine.MAX_BATCH_ITEMS);
-    const textFont = params.textFont || 'Roboto';
-    const letterSpacing = parseFloat(params.letterSpacing) || 0;
-    const lineSpacing = parseFloat(params.lineSpacing) || 0;
-
-    const shapesByItem = await Promise.all(textItems.map(async text => {
-      const dataUrl = await this.generateSvgFromTextCanvas(text, textFont, letterSpacing, lineSpacing);
-      const svgString = await new Promise(resolve => {
-        window.ImageTracer.imageToSVG(dataUrl, resolve, {
-          ltres: 1,
-          qtres: 1,
-          pathomit: 8,
-          rightangleenhance: true,
-          colorsampling: 0,
-          numberofcolors: 2,
-          mincolorratio: 0,
-          colorquantcycles: 3,
-          pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
-        });
-      });
-      return this.parseSVG(svgString);
-    }));
-
-    if (generationId !== this.generationId) return false;
-    if (shapesByItem.some(shapes => shapes.length === 0)) return false;
+    if (!this.currentSvgShapes || this.currentSvgShapes.length === 0) return false;
 
     this.clear();
-    this.textSvgShapes = shapesByItem.flat();
-    this.currentSvgShapes = this.textSvgShapes;
 
     if (params.colorBase) this.partMaterials.base.color.set(params.colorBase);
     if (params.colorBase) this.partMaterials.ring.color.set(params.colorBase);
     if (params.colorTop) this.partMaterials.top.color.set(params.colorTop);
 
-    const groups = shapesByItem.map((shapes, index) =>
-      this.buildKeychain(params, shapes, index, this.splitLines(textItems[index]).length)
-    );
-
-    // Distribui lado a lado usando a largura real de cada chaveiro
-    const itemGap = 10;
-    const bounds = new THREE.Box3();
-    let cursorX = 0;
-    let maxHeight = 0;
-    const placements = groups.map(group => {
-      bounds.setFromObject(group);
-      const width = bounds.max.x - bounds.min.x;
-      const offsetX = cursorX - bounds.min.x;
-      cursorX += width + itemGap;
-      maxHeight = Math.max(maxHeight, bounds.max.y - bounds.min.y);
-      return { group, offsetX };
-    });
-
-    const totalWidth = Math.max(0, cursorX - itemGap);
-    placements.forEach(({ group, offsetX }) => {
-      group.position.x = offsetX - (totalWidth / 2);
-    });
-
-    if (maxHeight > 0) this.svgAspectRatio = totalWidth / maxHeight;
+    const group = this.buildKeychain(params, this.currentSvgShapes, 0, 1);
+    
+    const bounds = new THREE.Box3().setFromObject(group);
+    const size = new THREE.Vector3();
+    bounds.getSize(size);
+    if (size.y > 0) this.svgAspectRatio = size.x / size.y;
 
     return true;
   }
@@ -343,19 +200,16 @@ export class KeychainEngine extends BaseEngine {
     this.group.add(keychainGroup);
 
     const baseHeight = parseFloat(params.baseHeight) || 2.5;
-    const stampHeight = parseFloat(params.stampHeight) || 2; // altura acima da base
+    const stampHeight = parseFloat(params.stampHeight) || 2; 
     const totalHeight = baseHeight + stampHeight;
     const baseOffset = parseFloat(params.baseOffset) ?? 3;
+    const textThickness = parseFloat(params.textThickness) || 0;
+    const isEngraved = params.engraved || false;
     
     const ringAngle = parseFloat(params.ringAngle) || 0;
     const ringRadius = parseFloat(params.ringRadius) || 5;
     const ringThickness = parseFloat(params.ringThickness) || 2;
 
-    const textPosX = parseFloat(params.textPosX) || 0;
-    const textPosY = parseFloat(params.textPosY) || 0;
-    const textScale = parseFloat(params.textScale) || 1;
-
-    // A largura escolhida é a da placa final, então o texto desconta as margens
     const keychainWidth = parseFloat(params.keychainWidth) || 25;
     const td = Math.max(2, keychainWidth - (baseOffset * 2));
     const scale = 1000;
@@ -366,7 +220,6 @@ export class KeychainEngine extends BaseEngine {
 
     svgShapes.forEach((svgShape) => {
       const points = svgShape.extractPoints(10);
-      
       extractedShapes.push(points);
       
       points.shape.forEach(p => {
@@ -395,29 +248,51 @@ export class KeychainEngine extends BaseEngine {
     }));
     const toThreeVec2 = (pts) => pts.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
 
+    const solutionToShapes = (solutionPaths) => {
+      const cleanShapes = [];
+      solutionPaths.forEach(path => {
+        if (ClipperLib.Clipper.Orientation(path)) {
+          const shape = new THREE.Shape(toThreeVec2(path));
+          shape.closePath();
+          cleanShapes.push({ shape: shape, rawPath: path });
+        }
+      });
+      solutionPaths.forEach(path => {
+        if (!ClipperLib.Clipper.Orientation(path)) {
+          const pt = path[0];
+          for (let i = 0; i < cleanShapes.length; i++) {
+            if (ClipperLib.Clipper.PointInPolygon(pt, cleanShapes[i].rawPath) !== 0) {
+              const holePath = new THREE.Path(toThreeVec2(path));
+              holePath.closePath();
+              cleanShapes[i].shape.holes.push(holePath);
+              break;
+            }
+          }
+        }
+      });
+      return cleanShapes.map(cs => cs.shape);
+    };
+
     const allOriginalPaths = [];
     extractedShapes.forEach(points => {
       allOriginalPaths.push(toClipperPath(points.shape));
     });
 
-    // 1. Criar a base sólida (Backing Plate)
+    // 1. Criar a base sólida (Backing Plate) usando ClipperOffset
     let fullBasePaths = new ClipperLib.Paths();
     if (baseOffset > 0) {
       const coBase = new ClipperLib.ClipperOffset(2, 0.25);
       coBase.AddPaths(allOriginalPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
       coBase.Execute(fullBasePaths, baseOffset * scale);
     } else {
-      // Se offset for 0, usamos os caminhos originais fundidos
       const cl = new ClipperLib.Clipper();
       cl.AddPaths(allOriginalPaths, ClipperLib.PolyType.ptSubject, true);
       cl.Execute(ClipperLib.ClipType.ctUnion, fullBasePaths, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
     }
 
-    // Dilata e erode de volta para unir linhas e emojis num corpo único, preservando o contorno
     if (fullBasePaths.length > 0) {
       const closeRadius = (td / Math.max(1, lineCount)) * 0.25 * scale;
       const arcTolerance = 0.05 * scale;
-
       const dilatedPaths = new ClipperLib.Paths();
       const coDilate = new ClipperLib.ClipperOffset(2, arcTolerance);
       coDilate.AddPaths(fullBasePaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
@@ -431,42 +306,99 @@ export class KeychainEngine extends BaseEngine {
       if (closedPaths.length > 0) fullBasePaths = closedPaths;
     }
 
-    // Apenas contornos externos: a base fica sempre sólida, sem os vazios das letras
+    // 2. Construir Shapes do Texto (com controlo de espessura)
+    let stampShapes = [];
+    if (textThickness !== 0) {
+      const textPathsForOffset = new ClipperLib.Paths();
+      extractedShapes.forEach(points => {
+        textPathsForOffset.push(toClipperPath(points.shape));
+        points.holes.forEach(hole => textPathsForOffset.push(toClipperPath(hole)));
+      });
+      
+      const coText = new ClipperLib.ClipperOffset(2, 0.25);
+      coText.AddPaths(textPathsForOffset, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+      
+      const offsetSolution = new ClipperLib.Paths();
+      coText.Execute(offsetSolution, textThickness * scale);
+      
+      stampShapes = solutionToShapes(offsetSolution);
+    } else {
+      extractedShapes.forEach((points) => {
+        const shapePts = toThreeVec2(toClipperPath(points.shape));
+        const stampShape = new THREE.Shape(shapePts);
+        points.holes.forEach(hole => {
+          stampShape.holes.push(new THREE.Path(toThreeVec2(toClipperPath(hole))));
+        });
+        stampShapes.push(stampShape);
+      });
+    }
+
+    // 3. CSG: Combinar Base e Texto
+    let baseBrush = null;
     fullBasePaths
       .filter(path => ClipperLib.Clipper.Orientation(path))
       .forEach(path => {
         const baseShape = new THREE.Shape(toThreeVec2(path));
         const baseGeom = new THREE.ExtrudeGeometry(baseShape, { depth: baseHeight, bevelEnabled: false, curveSegments: 12 });
-        const baseMesh = new THREE.Mesh(baseGeom, this.partMaterials.base);
+        baseGeom.clearGroups();
+        const brush = new Brush(baseGeom, this.partMaterials.base);
+        brush.updateMatrixWorld();
+        if (!baseBrush) baseBrush = brush;
+        else baseBrush = this.evaluator.evaluate(baseBrush, brush, ADDITION);
+      });
+
+    let textBrush = null;
+    if (stampShapes.length > 0) {
+      stampShapes.forEach(shape => {
+        const stampGeom = new THREE.ExtrudeGeometry(shape, { depth: stampHeight, bevelEnabled: false, curveSegments: 12 });
+        stampGeom.clearGroups();
+        
+        if (isEngraved) {
+          stampGeom.translate(0, 0, baseHeight - stampHeight);
+        } else {
+          stampGeom.translate(0, 0, baseHeight);
+        }
+        
+        const brush = new Brush(stampGeom, this.partMaterials.top);
+        brush.updateMatrixWorld();
+        if (!textBrush) textBrush = brush;
+        else textBrush = this.evaluator.evaluate(textBrush, brush, ADDITION);
+      });
+    }
+
+    if (baseBrush && textBrush) {
+      if (isEngraved) {
+        // Texto embutido (corta a base e adiciona o texto no buraco para multi-color inlay)
+        baseBrush = this.evaluator.evaluate(baseBrush, textBrush, SUBTRACTION);
+        const finalBaseMesh = new THREE.Mesh(baseBrush.geometry, this.partMaterials.base);
+        finalBaseMesh.name = 'Base';
+        keychainGroup.add(finalBaseMesh);
+        
+        // Adicionar o texto no mesmo sítio para preencher o buraco (flush with surface)
+        const textMesh = new THREE.Mesh(textBrush.geometry, this.partMaterials.top);
+        textMesh.name = 'Text';
+        keychainGroup.add(textMesh);
+      } else {
+        // Texto em alto relevo
+        const baseMesh = new THREE.Mesh(baseBrush.geometry, this.partMaterials.base);
         baseMesh.name = 'Base';
         keychainGroup.add(baseMesh);
-      });
+        
+        const textMesh = new THREE.Mesh(textBrush.geometry, this.partMaterials.top);
+        textMesh.name = 'Text';
+        keychainGroup.add(textMesh);
+      }
+    } else if (baseBrush) {
+      const baseMesh = new THREE.Mesh(baseBrush.geometry, this.partMaterials.base);
+      baseMesh.name = 'Base';
+      keychainGroup.add(baseMesh);
+    }
 
-    // 2. Criar o Desenho/Texto em Relevo (Stamp)
-    extractedShapes.forEach((points, index) => {
-      const shapePts = toThreeVec2(toClipperPath(points.shape));
-      const stampShape = new THREE.Shape(shapePts);
-      
-      points.holes.forEach(hole => {
-        stampShape.holes.push(new THREE.Path(toThreeVec2(toClipperPath(hole))));
-      });
-
-      const stampGeom = new THREE.ExtrudeGeometry(stampShape, { depth: totalHeight, bevelEnabled: false, curveSegments: 12 });
-      
-      const material = this.partMaterials.top;
-      const meshName = `Text_${index}`;
-      
-      const stampMesh = new THREE.Mesh(stampGeom, material);
-      stampMesh.name = meshName;
-      keychainGroup.add(stampMesh);
-    });
-
-    // 3. Adicionar a Argola (Keyring)
+    // 4. Adicionar a Argola (Keyring)
     if (fullBasePaths.length > 0) {
       let bestPt = { X: 0, Y: 0 };
       let maxDot = -Infinity;
 
-      // Converter ângulo para radianos (90 graus = topo no canvas Y para baixo, mas no three Y é para cima, vamos ajustar)
       const rad = ringAngle * (Math.PI / 180);
       const dx = Math.cos(rad);
       const dy = Math.sin(rad);
@@ -484,9 +416,6 @@ export class KeychainEngine extends BaseEngine {
       const attachX = bestPt.X / scale;
       const attachY = bestPt.Y / scale;
 
-      // Posicionar o centro da argola de forma a sobrepor a base pela espessura, mas sem invadir o furo
-      // O raio interno é ringRadius - ringThickness. 
-      // Deixamos um extra de 0.2mm de margem de segurança para garantir que o furo fica limpo.
       const overlapDistance = ringThickness - 0.2;
       const rcX = attachX + dx * (ringRadius - overlapDistance);
       const rcY = attachY + dy * (ringRadius - overlapDistance);

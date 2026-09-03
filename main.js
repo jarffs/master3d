@@ -422,16 +422,7 @@ function initThree() {
       exportBtnText.textContent = 'Exportar 3MF';
     }
     
-    if (tool === 'keychain') {
-      // Hide image upload for keychain, only allow text
-      const uploadGroup = document.querySelector('.upload-group');
-      const orSeparator = document.querySelector('.or-separator');
-      if (uploadGroup) uploadGroup.style.display = 'none';
-      if (orSeparator) orSeparator.style.display = 'none';
-      const textCreateBtn = document.getElementById('create-from-text-btn');
-      if (textCreateBtn) textCreateBtn.style.display = 'none';
-      if (orSeparator) orSeparator.style.display = 'none';
-    } else if (tool === 'coloring') {
+    if (tool === 'coloring') {
       const orSeparator = document.querySelector('.or-separator');
       const textCreateBtn = document.getElementById('create-from-text-btn');
       if (orSeparator) orSeparator.style.display = 'none';
@@ -480,7 +471,7 @@ function initThree() {
   textToSvg = new TextToSvg('text-to-svg-modal');
 
   const createFromTextBtn = document.getElementById('create-from-text-btn');
-  if (createFromTextBtn && tool !== 'keychain') {
+  if (createFromTextBtn) {
     createFromTextBtn.addEventListener('click', () => {
       textToSvg.open((result) => {
         if (typeof result === 'string') {
