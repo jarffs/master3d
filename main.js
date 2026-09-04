@@ -393,7 +393,7 @@ function initThree() {
       alt: t('app.tool_coloring_reference')
     },
     stamp: {
-      image: '/images/tools/cookie-cutter.jpg', // Placeholder temporário
+      image: '/images/tools/stamp-montage.jpg',
       title: t('app.tool_stamp'),
       alt: t('app.tool_stamp_reference')
     }
