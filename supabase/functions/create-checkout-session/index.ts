@@ -42,8 +42,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: successUrl || "https://master3d.com/app", // Replace with your actual domain later
-      cancel_url: cancelUrl || "https://master3d.com/app",
+      success_url: successUrl || "https://masterworld.eu/app", // Replace with your actual domain later
+      cancel_url: cancelUrl || "https://masterworld.eu/app",
       client_reference_id: userId, // This is how we map the payment back to the user
       metadata: {
         credits: credits.toString() // Pass credits in metadata so webhook knows how much to add

@@ -129,7 +129,7 @@ async function initBigLettersEditor() {
       id: 'BigLetter'
     });
 
-    await bigLettersEditor.addText('Master3D', { 
+    await bigLettersEditor.addText('MasterWorld', { 
       fontSize: 80, 
       fontFamily: 'Playfair Display', 
       fill: '#ffffff',
@@ -1180,9 +1180,9 @@ downloadBtn.addEventListener('click', async () => {
   downloadBtn.innerHTML = originalText;
   
   if (engine.name === 'keychain') {
-    await engine.export3MF('master3d_chaveiro.3mf');
+    await engine.export3MF('masterworld_chaveiro.3mf');
   } else if (engine.name === 'coloring') {
-    await engine.export3MF('master3d_colorir.3mf');
+    await engine.export3MF('masterworld_colorir.3mf');
   } else {
     engine.exportSTL();
   }
