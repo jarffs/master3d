@@ -406,15 +406,15 @@ function initThree() {
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters') {
+  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp') {
     const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
     
-    if (titleEl && tool !== 'big_letters') {
+    if (titleEl && tool !== 'big_letters' && tool !== 'stamp') {
       titleEl.setAttribute('data-i18n', 'app.upload_image_title_keychain');
     }
-    if (uploadDescEl && tool !== 'big_letters') {
+    if (uploadDescEl && tool !== 'big_letters' && tool !== 'stamp') {
       uploadDescEl.setAttribute('data-i18n', 'app.upload_desc_keychain');
     }
     if (exportBtnText) {
@@ -1183,6 +1183,8 @@ downloadBtn.addEventListener('click', async () => {
     await engine.export3MF('masterworld_chaveiro.3mf');
   } else if (engine.name === 'coloring') {
     await engine.export3MF('masterworld_colorir.3mf');
+  } else if (engine.name === 'stamp') {
+    await engine.export3MF('masterworld_carimbo.3mf');
   } else {
     engine.exportSTL();
   }

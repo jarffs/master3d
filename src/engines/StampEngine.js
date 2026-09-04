@@ -354,7 +354,10 @@ export class StampEngine extends BaseEngine {
     this.group.add(handleMesh);
     this.group.add(pinMesh);
     
-    this.centerGroup();
+    const box = new THREE.Box3().setFromObject(this.group);
+    const center = box.getCenter(new THREE.Vector3());
+    this.group.position.x = -center.x;
+    this.group.position.y = -center.y;
     return true;
   }
 }
