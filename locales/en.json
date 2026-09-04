@@ -4,7 +4,8 @@
     "faq": "FAQ",
     "login": "Login",
     "logout": "Logout",
-    "go_to_app": "Go to Hub"
+    "go_to_app": "Go to Hub",
+    "contact": "Contact"
   },
   "hero": {
     "title": "Turn any image into a Cookie Cutter in Seconds!",
