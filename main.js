@@ -60,8 +60,8 @@ function getControlBuilderOptions() {
   if (engine?.name === 'stamp') {
     return {
       collapsible: true,
-      categoryOrder: ['primary'],
-      plainCategories: ['primary']
+      categoryOrder: ['stamp_design', 'stamp_body'],
+      plainCategories: []
     };
   }
   return {};
@@ -129,7 +129,7 @@ async function initBigLettersEditor() {
       id: 'BigLetter'
     });
 
-    await bigLettersEditor.addText('Master3D', { 
+    await bigLettersEditor.addText('MasterWorld', { 
       fontSize: 80, 
       fontFamily: 'Playfair Display', 
       fill: '#ffffff',
@@ -393,7 +393,7 @@ function initThree() {
       alt: t('app.tool_coloring_reference')
     },
     stamp: {
-      image: '/images/tools/cookie-cutter.jpg', // Placeholder temporário
+      image: '/images/tools/stamp-montage.jpg',
       title: t('app.tool_stamp'),
       alt: t('app.tool_stamp_reference')
     }
@@ -422,16 +422,7 @@ function initThree() {
       exportBtnText.textContent = 'Exportar 3MF';
     }
     
-    if (tool === 'keychain') {
-      // Hide image upload for keychain, only allow text
-      const uploadGroup = document.querySelector('.upload-group');
-      const orSeparator = document.querySelector('.or-separator');
-      if (uploadGroup) uploadGroup.style.display = 'none';
-      if (orSeparator) orSeparator.style.display = 'none';
-      const textCreateBtn = document.getElementById('create-from-text-btn');
-      if (textCreateBtn) textCreateBtn.style.display = 'none';
-      if (orSeparator) orSeparator.style.display = 'none';
-    } else if (tool === 'coloring') {
+    if (tool === 'coloring') {
       const orSeparator = document.querySelector('.or-separator');
       const textCreateBtn = document.getElementById('create-from-text-btn');
       if (orSeparator) orSeparator.style.display = 'none';
@@ -480,7 +471,7 @@ function initThree() {
   textToSvg = new TextToSvg('text-to-svg-modal');
 
   const createFromTextBtn = document.getElementById('create-from-text-btn');
-  if (createFromTextBtn && tool !== 'keychain') {
+  if (createFromTextBtn) {
     createFromTextBtn.addEventListener('click', () => {
       textToSvg.open((result) => {
         if (typeof result === 'string') {
@@ -1189,9 +1180,9 @@ downloadBtn.addEventListener('click', async () => {
   downloadBtn.innerHTML = originalText;
   
   if (engine.name === 'keychain') {
-    await engine.export3MF('master3d_chaveiro.3mf');
+    await engine.export3MF('masterworld_chaveiro.3mf');
   } else if (engine.name === 'coloring') {
-    await engine.export3MF('master3d_colorir.3mf');
+    await engine.export3MF('masterworld_colorir.3mf');
   } else {
     engine.exportSTL();
   }

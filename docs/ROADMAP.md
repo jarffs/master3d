@@ -46,7 +46,7 @@ Este roadmap define as etapas para evoluir a aplicação estática (Vanilla HTML
 - [x] **Redesign completo:** Reescrever `index.html` com design dark mode, marketplace style inspirado no MakerWorld.
 - [x] **Unificação Hub + Landing:** Eliminar `hub.html` e absorver funcionalidade na nova landing page.
 - [x] **Grid de Ferramentas:** Cards fotorealistas para cada ferramenta (disponível e "Em Breve").
-- [x] **Rebranding:** Migrar de "CutterMaker3D" para "Master3D" como marca oficial.
+- [x] **Rebranding:** Migrar de "CutterMaker3D" para "MasterWorld" como marca oficial.
 - [x] **Imagens de ferramentas:** Gerar thumbnails fotorealistas para os cards das ferramentas.
 
 ## FASE 7: Plataforma Multi-Ferramentas (Roadmap Futuro)

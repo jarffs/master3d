@@ -63,8 +63,8 @@ export class BigLettersEngine extends BaseEngine {
         type: 'text',
         label: 'app.sunken_name',
         desc: 'app.sunken_name_desc',
-        placeholder: 'Master3D',
-        default: 'Master3D',
+        placeholder: 'MasterWorld',
+        default: 'MasterWorld',
         multiline: false,
         category: 'secondary'
       },
@@ -455,7 +455,7 @@ export class BigLettersEngine extends BaseEngine {
 
     const bigLetter = params.bigLetter || 'M';
     const bigLetterFont = params.bigLetterFont || 'Montserrat';
-    const nameText = params.nameText || 'Master3D';
+    const nameText = params.nameText || 'MasterWorld';
     const nameFont = params.nameFont || 'Playfair Display';
     const thickness = parseFloat(params.thickness) || 15;
     const cutoutDepth = parseFloat(params.cutoutDepth) || 2.5;
