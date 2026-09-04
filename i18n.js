@@ -57,7 +57,7 @@ export function translateDOM() {
        }
     } else {
       // Normal element
-      el.textContent = t(key);
+      el.innerHTML = t(key);
     }
   });
 }
