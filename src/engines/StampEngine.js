@@ -36,7 +36,7 @@ export class StampEngine extends BaseEngine {
         min: 20,
         max: 150,
         step: 1,
-        default: 35,
+        default: 20,
         suffix: 'mm',
         category: 'stamp_design'
       },
@@ -48,7 +48,7 @@ export class StampEngine extends BaseEngine {
         min: 1,
         max: 10,
         step: 0.1,
-        default: 6.1,
+        default: 2,
         category: 'stamp_design'
       },
       {
@@ -67,7 +67,7 @@ export class StampEngine extends BaseEngine {
         min: 20,
         max: 100,
         step: 1,
-        default: 60,
+        default: 40,
         suffix: 'mm',
         category: 'stamp_body'
       },
@@ -79,7 +79,7 @@ export class StampEngine extends BaseEngine {
         min: 10,
         max: 60,
         step: 0.5,
-        default: 34,
+        default: 25,
         suffix: 'mm',
         category: 'stamp_body'
       },
