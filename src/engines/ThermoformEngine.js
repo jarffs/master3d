@@ -243,9 +243,10 @@ export class ThermoformEngine extends BaseEngine {
     extracted.forEach(({ shape, holes }) => {
       if (shape.length < 3) return;
       rawPaths.push(orient(toPath(shape), true));
-      holes.forEach(hole => {
-        if (hole.length >= 3) rawPaths.push(orient(toPath(hole), false));
-      });
+      // Ignore holes entirely to automatically fill hollow shapes
+      // holes.forEach(hole => {
+      //   if (hole.length >= 3) rawPaths.push(orient(toPath(hole), false));
+      // });
     });
     if (rawPaths.length === 0) return null;
 
