@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import ClipperLib from 'clipper-lib';
 import { BaseEngine } from './BaseEngine.js';
-import { Brush, Evaluator, ADDITION, INTERSECTION } from 'three-bvh-csg';
+import { Brush, Evaluator, ADDITION, SUBTRACTION, INTERSECTION } from 'three-bvh-csg';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 
 const CLIPPER_SCALE = 1000;
 const MIN_AREA_MM2 = 0.05;
@@ -139,6 +140,39 @@ export class ThermoformEngine extends BaseEngine {
         default: 2.5,
         suffix: 'mm',
         category: 'thermoform_mesh'
+      },
+      // -- Hanger Controls --
+      {
+        id: 'enableHanger',
+        type: 'toggle',
+        label: 'app.thermoform_enable_hanger',
+        desc: 'app.thermoform_enable_hanger_desc',
+        default: true,
+        category: 'thermoform_hanger'
+      },
+      {
+        id: 'hangerAngle',
+        type: 'slider',
+        label: 'app.thermoform_hanger_angle',
+        desc: 'app.thermoform_hanger_angle_desc',
+        min: 0,
+        max: 360,
+        step: 5,
+        default: 90,
+        suffix: '°',
+        category: 'thermoform_hanger'
+      },
+      {
+        id: 'hangerScale',
+        type: 'slider',
+        label: 'app.thermoform_hanger_scale',
+        desc: 'app.thermoform_hanger_scale_desc',
+        min: 0.5,
+        max: 2.0,
+        step: 0.1,
+        default: 1.0,
+        suffix: 'x',
+        category: 'thermoform_hanger'
       }
     ];
   }
@@ -146,7 +180,7 @@ export class ThermoformEngine extends BaseEngine {
   /**
    * Gera o modelo 3D completo (molde + mesh frame).
    */
-  generate3DModel(params) {
+  async generate3DModel(params) {
     if (!this.currentSvgShapes || this.currentSvgShapes.length === 0) return false;
     this.clear();
 
@@ -160,6 +194,9 @@ export class ThermoformEngine extends BaseEngine {
     const meshDensity = this._num(params.meshDensity, 6);
     const meshWallThickness = this._num(params.meshWallThickness, 1.2);
     const meshOutlineThickness = this._num(params.meshOutlineThickness, 2.5);
+    const enableHanger = params.enableHanger === true || params.enableHanger === 'true';
+    const hangerAngle = this._num(params.hangerAngle, 90);
+    const hangerScale = this._num(params.hangerScale, 1.0);
 
     const silhouette = this._buildSilhouette(targetWidth, targetDepth);
     if (!silhouette || silhouette.length === 0) return false;
@@ -168,30 +205,113 @@ export class ThermoformEngine extends BaseEngine {
     if (!bounds) return false;
 
     const moldMesh = this._buildMold(silhouette, bounds, moldHeight, moldBaseThickness, moldShape);
-    const meshFrame = this._buildMeshFrame(
-      silhouette, bounds, meshHeight, meshPattern, meshDensity, meshWallThickness, meshOutlineThickness
-    );
-    if (!moldMesh && !meshFrame) return false;
 
-    const gap = 15;
+    const pieces = [];
+
+    if (enableHanger) {
+      // Find edge point for screw placement using angle (like keychain ring)
+      const outer = this._offsetPaths(silhouette, meshOutlineThickness);
+      const edgePaths = (outer && outer.length > 0) ? outer : silhouette;
+      const edgePoint = this._findEdgePoint(edgePaths, hangerAngle);
+
+      let screw1Geom, screw2Geom, capGeom;
+      try {
+        screw1Geom = await this._loadSTL('/assets/thermoform/M-A.stl');
+        screw2Geom = await this._loadSTL('/assets/thermoform/M-B.stl');
+        capGeom = await this._loadSTL('/assets/thermoform/FEMEA.stl');
+      } catch (err) {
+        console.error("Failed to load STL files:", err);
+        return false;
+      }
+
+      // --- Mesh Frame 1 ---
+      const meshFrame1 = this._buildMeshFrame(silhouette, bounds, meshHeight, meshPattern, meshDensity, meshWallThickness, meshOutlineThickness);
+      const screw1 = this._processLoadedScrew(screw1Geom, edgePoint, meshHeight, hangerAngle, 0, hangerScale);
+      meshFrame1.add(screw1);
+      meshFrame1.name = 'Thermoform_MeshFrame_1';
+      pieces.push(meshFrame1);
+
+      // --- Mesh Frame 2 ---
+      const meshFrame2 = this._buildMeshFrame(silhouette, bounds, meshHeight, meshPattern, meshDensity, meshWallThickness, meshOutlineThickness);
+      const screw2 = this._processLoadedScrew(screw2Geom, edgePoint, meshHeight, hangerAngle, 1, hangerScale);
+      meshFrame2.add(screw2);
+      meshFrame2.name = 'Thermoform_MeshFrame_2';
+      pieces.push(meshFrame2);
+
+      // --- Peça Fêmea (Tampa) ---
+      const femaleCap = new THREE.Mesh(capGeom, this.partMaterials.mesh);
+      if (hangerScale !== 1.0) {
+        femaleCap.geometry.scale(hangerScale, hangerScale, hangerScale);
+      }
+      // Ensure cap sits flat on bed
+      femaleCap.geometry.computeBoundingBox();
+      femaleCap.geometry.translate(0, 0, -femaleCap.geometry.boundingBox.min.z);
+      femaleCap.name = 'Thermoform_FemaleCap';
+      pieces.push(femaleCap);
+    } else {
+      // Standard mode: single mesh frame
+      const meshFrame = this._buildMeshFrame(
+        silhouette, bounds, meshHeight, meshPattern, meshDensity, meshWallThickness, meshOutlineThickness
+      );
+      if (meshFrame) {
+        meshFrame.name = 'Thermoform_MeshFrame';
+        pieces.push(meshFrame);
+      }
+    }
+
+    if (!moldMesh && pieces.length === 0) return false;
+
+    // Layout all pieces side by side
+    const allPieces = [];
     if (moldMesh) {
       moldMesh.name = 'Thermoform_Mold';
-      moldMesh.geometry.computeBoundingBox();
-      moldMesh.position.x = -gap / 2 - moldMesh.geometry.boundingBox.max.x;
-      this.group.add(moldMesh);
+      allPieces.push(moldMesh);
     }
-    if (meshFrame) {
-      meshFrame.name = 'Thermoform_MeshFrame';
-      meshFrame.geometry.computeBoundingBox();
-      meshFrame.position.x = gap / 2 - meshFrame.geometry.boundingBox.min.x;
-      this.group.add(meshFrame);
-    }
+    allPieces.push(...pieces);
 
-    // Center group
-    const box = new THREE.Box3().setFromObject(this.group);
-    const center = box.getCenter(new THREE.Vector3());
-    this.group.position.x = -center.x;
-    this.group.position.y = -center.y;
+    const gap = 20; // 20mm entre peças
+
+    // Descobrir a largura/altura máxima para alinhar a grelha
+    let maxWidth = 0;
+    let maxHeight = 0;
+    allPieces.forEach(piece => {
+      piece.geometry.computeBoundingBox();
+      const bb = piece.geometry.boundingBox;
+      const w = bb.max.x - bb.min.x;
+      const h = bb.max.y - bb.min.y;
+      if (w > maxWidth) maxWidth = w;
+      if (h > maxHeight) maxHeight = h;
+    });
+
+    // Definir número de colunas/linhas para formar um quadrado (ex: 4 peças = 2x2)
+    const cols = Math.ceil(Math.sqrt(allPieces.length));
+    const rows = Math.ceil(allPieces.length / cols);
+
+    // Calcular o tamanho total da grelha (distância do centro da primeira ao centro da última célula)
+    const gridWidth = (cols - 1) * (maxWidth + gap);
+    const gridHeight = (rows - 1) * (maxHeight + gap);
+
+    // Ponto de início para que o centro da grelha calhe exatamente no (0,0)
+    const startX = -gridWidth / 2;
+    const startY = gridHeight / 2; // Y positivo para a 1ª linha ficar em cima
+
+    allPieces.forEach((piece, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+
+      const cellCenterX = startX + col * (maxWidth + gap);
+      const cellCenterY = startY - row * (maxHeight + gap);
+
+      const bb = piece.geometry.boundingBox;
+      const localCx = (bb.max.x + bb.min.x) / 2;
+      const localCy = (bb.max.y + bb.min.y) / 2;
+
+      // Colocar a peça centrada na sua célula matemática
+      piece.position.x = cellCenterX - localCx;
+      piece.position.y = cellCenterY - localCy;
+
+      this.group.add(piece);
+    });
 
     return true;
   }
@@ -536,6 +656,94 @@ export class ThermoformEngine extends BaseEngine {
       x: cx + (v.x - cx) * factor,
       y: cy + (v.y - cy) * factor
     }));
+  }
+
+  // ==========================================
+  // SCREW & HANGER BUILDERS
+  // ==========================================
+
+  /**
+   * Find the edge point on the silhouette at a given angle (0-360°).
+   * Uses dot product like KeychainEngine ring positioning.
+   */
+  _findEdgePoint(paths, angleDeg) {
+    const rad = angleDeg * (Math.PI / 180);
+    const dx = Math.cos(rad);
+    const dy = Math.sin(rad);
+    let bestPt = null;
+    let maxDot = -Infinity;
+
+    paths.forEach(path => {
+      path.forEach(pt => {
+        const dot = pt.X * dx + pt.Y * dy;
+        if (dot > maxDot) {
+          maxDot = dot;
+          bestPt = { x: pt.X / CLIPPER_SCALE, y: pt.Y / CLIPPER_SCALE };
+        }
+      });
+    });
+    return bestPt;
+  }
+
+   async _loadSTL(url) {
+    if (!this.stlLoader) {
+      this.stlLoader = new STLLoader();
+    }
+    if (!this.loadedSTLs) {
+      this.loadedSTLs = {};
+    }
+    if (this.loadedSTLs[url]) {
+      return this.loadedSTLs[url].clone();
+    }
+    return new Promise((resolve, reject) => {
+      this.stlLoader.load(
+        url,
+        (geometry) => {
+          this.loadedSTLs[url] = geometry;
+          resolve(geometry.clone());
+        },
+        undefined,
+        reject
+      );
+    });
+  }
+
+  _processLoadedScrew(geometry, edgePoint, meshHeight, angleDeg, halfIndex, scale = 1.0) {
+    const rad = angleDeg * (Math.PI / 180);
+
+    if (scale !== 1.0) {
+      geometry.scale(scale, scale, scale);
+    }
+
+    geometry.computeBoundingBox();
+    let bb = geometry.boundingBox;
+    const center = new THREE.Vector3();
+    bb.getCenter(center);
+
+    // 1. Centralizar no XY e garantir que a face lisa (Z mínimo) fica no chão (Z=0)
+    geometry.translate(-center.x, -center.y, -bb.min.z);
+
+    // 2. Rodar a peça para apontar para o eixo +X (para fora)
+    if (halfIndex === 0) {
+      geometry.rotateZ(Math.PI / 2); // M-A estava a apontar para dentro, girar 180 graus! (-90 + 180 = +90)
+    } else {
+      geometry.rotateZ(Math.PI / 2);  // M-B está correta com +90
+    }
+
+    // 3. Empurrar a peça para que a base (parte lisa sem rosca) fique no 0.
+    // Assim, quando a colocarmos na borda, a base vai colar à parede da mesh.
+    geometry.computeBoundingBox();
+    bb = geometry.boundingBox;
+    const overlap = 2.0; // Entrar 2mm na parede para garantir que funde bem
+    geometry.translate(-bb.min.x - overlap, 0, 0);
+
+    const screwMesh = new THREE.Mesh(geometry, this.partMaterials.mesh);
+
+    // 4. Rodar para o ângulo escolhido no UI e colocar na borda
+    screwMesh.rotation.z = rad;
+    screwMesh.position.set(edgePoint.x, edgePoint.y, 0);
+
+    return screwMesh;
   }
 
   // ==========================================

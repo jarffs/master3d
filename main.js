@@ -68,7 +68,7 @@ function getControlBuilderOptions() {
   if (engine?.name === 'thermoform') {
     return {
       collapsible: true,
-      categoryOrder: ['thermoform_mold', 'thermoform_mesh'],
+      categoryOrder: ['thermoform_mold', 'thermoform_mesh', 'thermoform_hanger'],
       plainCategories: []
     };
   }
