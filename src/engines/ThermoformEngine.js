@@ -73,7 +73,7 @@ export class ThermoformEngine extends BaseEngine {
           { value: 'straight', label: 'app.thermoform_shape_straight' },
           { value: 'rounded', label: 'app.thermoform_shape_rounded' }
         ],
-        default: 'straight',
+        default: 'rounded',
         category: 'thermoform_mold'
       },
       // -- Mesh Controls --
@@ -82,10 +82,10 @@ export class ThermoformEngine extends BaseEngine {
         type: 'slider',
         label: 'app.thermoform_mesh_height',
         desc: 'app.thermoform_mesh_height_desc',
-        min: 3,
-        max: 20,
+        min: 2,
+        max: 5,
         step: 1,
-        default: 8,
+        default: 2,
         suffix: 'mm',
         category: 'thermoform_mesh'
       },
@@ -101,7 +101,7 @@ export class ThermoformEngine extends BaseEngine {
           { value: 'square', label: 'app.thermoform_pattern_square' },
           { value: 'star', label: 'app.thermoform_pattern_star' }
         ],
-        default: 'triangular',
+        default: 'honeycomb',
         category: 'thermoform_mesh'
       },
       {
@@ -323,10 +323,14 @@ export class ThermoformEngine extends BaseEngine {
    * Gera a Peça B: Mesh Frame (contorno sólido + padrão vazado no interior).
    */
   _buildMeshFrame(silhouette, bounds, meshHeight, pattern, density, wallThickness, outlineThickness) {
-    let region = silhouette;
+    // The mesh frame outer boundary is expanded by outlineThickness.
+    // The internal area (where the mesh is generated) matches the positive mold perfectly (silhouette).
+    const outer = this._offsetPaths(silhouette, outlineThickness);
+    if (!outer || outer.length === 0) return null;
 
-    // Keep a solid outer wall: holes may only be punched inside the inset region.
-    const inner = this._offsetPaths(silhouette, -outlineThickness);
+    let region = outer;
+    const inner = silhouette;
+
     if (inner.length > 0) {
       const holePolygons = this._buildHolePolygons(pattern, bounds, density, wallThickness);
       if (holePolygons.length > 0) {
@@ -335,7 +339,7 @@ export class ThermoformEngine extends BaseEngine {
         );
         if (clippedHoles.length > 0) {
           region = this._boolean(
-            silhouette, clippedHoles, ClipperLib.ClipType.ctDifference, ClipperLib.PolyFillType.pftNonZero
+            outer, clippedHoles, ClipperLib.ClipType.ctDifference, ClipperLib.PolyFillType.pftNonZero
           );
         }
       }
