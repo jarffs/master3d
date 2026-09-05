@@ -5,6 +5,7 @@ import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { StampEngine } from './src/engines/StampEngine.js';
+import { ThermoformEngine } from './src/engines/ThermoformEngine.js';
 import { FabricEditor } from './src/ui/FabricEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
@@ -61,6 +62,13 @@ function getControlBuilderOptions() {
     return {
       collapsible: true,
       categoryOrder: ['stamp_design', 'stamp_body'],
+      plainCategories: []
+    };
+  }
+  if (engine?.name === 'thermoform') {
+    return {
+      collapsible: true,
+      categoryOrder: ['thermoform_mold', 'thermoform_mesh'],
       plainCategories: []
     };
   }
@@ -366,6 +374,8 @@ function initThree() {
     engine = new BigLettersEngine(scene);
   } else if (tool === 'stamp') {
     engine = new StampEngine(scene);
+  } else if (tool === 'thermoform') {
+    engine = new ThermoformEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -396,6 +406,11 @@ function initThree() {
       image: '/images/tools/stamp-montage.jpg',
       title: t('app.tool_stamp'),
       alt: t('app.tool_stamp_reference')
+    },
+    thermoform: {
+      image: '/images/tools/thermoform.jpg',
+      title: t('app.tool_thermoform'),
+      alt: t('app.tool_thermoform_reference')
     }
   };
   const toolReference = toolReferences[tool];
@@ -406,7 +421,7 @@ function initThree() {
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp') {
+  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform') {
     const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
@@ -422,7 +437,7 @@ function initThree() {
       exportBtnText.textContent = 'Exportar 3MF';
     }
     
-    if (tool === 'coloring') {
+    if (tool === 'coloring' || tool === 'thermoform') {
       const orSeparator = document.querySelector('.or-separator');
       const textCreateBtn = document.getElementById('create-from-text-btn');
       if (orSeparator) orSeparator.style.display = 'none';
@@ -1185,6 +1200,8 @@ downloadBtn.addEventListener('click', async () => {
     await engine.export3MF('masterworld_colorir.3mf');
   } else if (engine.name === 'stamp') {
     await engine.export3MF('masterworld_carimbo.3mf');
+  } else if (engine.name === 'thermoform') {
+    await engine.export3MF('masterworld_thermoform.3mf');
   } else {
     engine.exportSTL();
   }
