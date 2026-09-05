@@ -397,10 +397,14 @@ export class ThermoformEngine extends BaseEngine {
     const moldGeom = this._extrudeMold(shapes, bounds, moldHeight, moldShape, centroid, maxRadius);
     if (!moldGeom) return null;
 
-    const baseRadius = maxRadius + 5;
-    const baseGeom = new THREE.CylinderGeometry(baseRadius, baseRadius, baseThickness, 96);
-    baseGeom.rotateX(Math.PI / 2); // align with Z axis
-    baseGeom.translate(centroid.x, centroid.y, -baseThickness / 2);
+    const basePaths = this._offsetPaths(silhouette, 5); // 5mm de borda extra à volta
+    const baseShapes = this._pathsToShapes(basePaths);
+    const baseGeom = new THREE.ExtrudeGeometry(baseShapes, {
+      depth: baseThickness,
+      bevelEnabled: false,
+      curveSegments: 12
+    });
+    baseGeom.translate(0, 0, -baseThickness);
 
     let geometry = null;
     try {
