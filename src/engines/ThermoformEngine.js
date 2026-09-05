@@ -262,13 +262,25 @@ export class ThermoformEngine extends BaseEngine {
     const shapes = this._pathsToShapes(silhouette);
     if (shapes.length === 0) return null;
 
-    const moldGeom = this._extrudeMold(shapes, bounds, moldHeight, moldShape);
+    const centroid = this._getCentroid(silhouette) || { x: bounds.centerX, y: bounds.centerY };
+    
+    let maxDistSq = 0;
+    silhouette.forEach(path => {
+      path.forEach(p => {
+        const dx = (p.X / CLIPPER_SCALE) - centroid.x;
+        const dy = (p.Y / CLIPPER_SCALE) - centroid.y;
+        maxDistSq = Math.max(maxDistSq, dx*dx + dy*dy);
+      });
+    });
+    const maxRadius = Math.sqrt(maxDistSq);
+
+    const moldGeom = this._extrudeMold(shapes, bounds, moldHeight, moldShape, centroid, maxRadius);
     if (!moldGeom) return null;
 
-    const baseRadius = Math.max(bounds.width, bounds.height) / 2 + 5;
+    const baseRadius = maxRadius + 5;
     const baseGeom = new THREE.CylinderGeometry(baseRadius, baseRadius, baseThickness, 96);
     baseGeom.rotateX(Math.PI / 2); // align with Z axis
-    baseGeom.translate(bounds.centerX, bounds.centerY, -baseThickness / 2);
+    baseGeom.translate(centroid.x, centroid.y, -baseThickness / 2);
 
     let geometry = null;
     try {
@@ -290,7 +302,7 @@ export class ThermoformEngine extends BaseEngine {
     return new THREE.Mesh(geometry, this.partMaterials.mold);
   }
 
-  _extrudeMold(shapes, bounds, moldHeight, moldShape) {
+  _extrudeMold(shapes, bounds, moldHeight, moldShape, centroid, maxRadius) {
     // Overshoot downwards so the union with the base is a real overlap.
     const overlap = 0.4;
     const geom = new THREE.ExtrudeGeometry(shapes, {
@@ -303,10 +315,10 @@ export class ThermoformEngine extends BaseEngine {
     if (moldShape !== 'rounded') return geom;
 
     // Cut the extrusion with a half-ball of the same height: the dome peaks at the
-    // centre and comes all the way down to the base at the sides.
+    // centre and comes all the way down to the exact bounding circle of the shape.
     const domeGeom = new THREE.SphereGeometry(1, 96, 64);
-    domeGeom.scale(bounds.width / 2, bounds.height / 2, moldHeight);
-    domeGeom.translate(bounds.centerX, bounds.centerY, 0);
+    domeGeom.scale(maxRadius, maxRadius, moldHeight);
+    domeGeom.translate(centroid.x, centroid.y, 0);
 
     try {
       const shapeBrush = new Brush(geom, this.partMaterials.mold);
@@ -550,15 +562,16 @@ export class ThermoformEngine extends BaseEngine {
   }
 
   _pathsBounds(paths) {
+    if (!paths || paths.length === 0) return null;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    paths.forEach(path => path.forEach(p => {
-      minX = Math.min(minX, p.X);
-      minY = Math.min(minY, p.Y);
-      maxX = Math.max(maxX, p.X);
-      maxY = Math.max(maxY, p.Y);
-    }));
-    if (!Number.isFinite(minX)) return null;
-
+    paths.forEach(path => {
+      path.forEach(p => {
+        if (p.X < minX) minX = p.X;
+        if (p.Y < minY) minY = p.Y;
+        if (p.X > maxX) maxX = p.X;
+        if (p.Y > maxY) maxY = p.Y;
+      });
+    });
     minX /= CLIPPER_SCALE; minY /= CLIPPER_SCALE;
     maxX /= CLIPPER_SCALE; maxY /= CLIPPER_SCALE;
     return {
@@ -568,6 +581,34 @@ export class ThermoformEngine extends BaseEngine {
       centerX: (minX + maxX) / 2,
       centerY: (minY + maxY) / 2
     };
+  }
+
+  /**
+   * Calcula o centro de massa (centro visual) da silhueta.
+   */
+  _getCentroid(paths) {
+    let cx = 0, cy = 0, totalArea = 0;
+    paths.forEach(path => {
+      let area = 0, pathCx = 0, pathCy = 0;
+      for (let i = 0; i < path.length; i++) {
+        const p1 = path[i];
+        const p2 = path[(i + 1) % path.length];
+        const a = (p1.X * p2.Y - p2.X * p1.Y);
+        area += a;
+        pathCx += (p1.X + p2.X) * a;
+        pathCy += (p1.Y + p2.Y) * a;
+      }
+      area *= 0.5;
+      if (Math.abs(area) > 1e-6) {
+        cx += (pathCx / (6 * area)) * area;
+        cy += (pathCy / (6 * area)) * area;
+        totalArea += area;
+      }
+    });
+    if (Math.abs(totalArea) > 1e-6) {
+      return { x: (cx / totalArea) / CLIPPER_SCALE, y: (cy / totalArea) / CLIPPER_SCALE };
+    }
+    return null;
   }
 
   /**
