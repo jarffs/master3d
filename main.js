@@ -1130,6 +1130,14 @@ uploadInput.addEventListener('change', (e) => {
              }
           });
           
+          // Force viewBox if missing to ensure proper scaling in SVGEditor
+          const svgEl = doc.querySelector('svg');
+          if (svgEl && !svgEl.hasAttribute('viewBox')) {
+            svgEl.setAttribute('viewBox', `0 0 ${targetWidth} ${targetHeight}`);
+            svgEl.setAttribute('width', targetWidth);
+            svgEl.setAttribute('height', targetHeight);
+          }
+
           const initialSvg = new XMLSerializer().serializeToString(doc);
           
           // Open editor for cleanup
