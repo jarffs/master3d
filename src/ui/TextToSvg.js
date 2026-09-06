@@ -2,6 +2,43 @@ import opentype from 'opentype.js';
 import { Dialog } from './Dialog.js';
 import { t } from '../../i18n.js';
 
+// URLs de TTF verificadas (HTTP 200, content-type font/ttf) no espelho público
+// do repositório google/fonts via jsDelivr — mesmo CDN já usado em BigLettersEngine.
+// Evita depender da API paga do Google Fonts (chave/quota/403) só para baixar o
+// binário da fonte selecionada.
+const VERIFIED_FONT_FILES = {
+  'Roboto': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf',
+  'Open Sans': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf',
+  'Lato': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/lato/Lato-Regular.ttf',
+  'Montserrat': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/Montserrat%5Bwght%5D.ttf',
+  'Oswald': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/oswald/Oswald%5Bwght%5D.ttf',
+  'Raleway': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/raleway/Raleway%5Bwght%5D.ttf',
+  'Poppins': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/poppins/Poppins-Regular.ttf',
+  'Nunito': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nunito/Nunito%5Bwght%5D.ttf',
+  'Playfair Display': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf',
+  'Merriweather': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/merriweather/Merriweather%5Bopsz%2Cwdth%2Cwght%5D.ttf',
+  'Ubuntu': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ufl/ubuntu/Ubuntu-Regular.ttf',
+  'Lobster': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/lobster/Lobster-Regular.ttf',
+  'Pacifico': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/pacifico/Pacifico-Regular.ttf',
+  'Bebas Neue': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bebasneue/BebasNeue-Regular.ttf',
+  'Dancing Script': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/dancingscript/DancingScript%5Bwght%5D.ttf',
+  'Permanent Marker': 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/permanentmarker/PermanentMarker-Regular.ttf',
+  'Righteous': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/righteous/Righteous-Regular.ttf',
+  'Alfa Slab One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/alfaslabone/AlfaSlabOne-Regular.ttf',
+  'Bangers': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bangers/Bangers-Regular.ttf',
+  'Bungee': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bungee/Bungee-Regular.ttf',
+  'Fredoka': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/fredoka/Fredoka%5Bwdth%2Cwght%5D.ttf',
+  'Press Start 2P': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/pressstart2p/PressStart2P-Regular.ttf',
+  'Anton': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/anton/Anton-Regular.ttf',
+  'Archivo Black': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/archivoblack/ArchivoBlack-Regular.ttf',
+  'Black Ops One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/blackopsone/BlackOpsOne-Regular.ttf',
+  'Carter One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carterone/CarterOne.ttf',
+  'Chewy': 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/chewy/Chewy-Regular.ttf',
+  'Courgette': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/courgette/Courgette-Regular.ttf',
+  'Creepster': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/creepster/Creepster-Regular.ttf',
+  'Fugaz One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/fugazone/FugazOne-Regular.ttf'
+};
+
 /**
  * TextToSvg — Modular component for generating SVG from text using Google Fonts.
  * 
@@ -97,8 +134,23 @@ export class TextToSvg {
       this.fonts = this.getFallbackFonts();
     }
 
+    this.fonts = this.attachVerifiedFileUrls(this.fonts);
     this.filteredFonts = this.sortByPopularity(this.fonts);
     this.renderFontGrid();
+  }
+
+  /**
+   * Preenche `files.regular` com o catálogo estático verificado sempre que a
+   * fonte não tiver nenhum arquivo baixável (ex: lista de fallback, ou a API do
+   * Google devolveu a fonte sem `files`).
+   */
+  attachVerifiedFileUrls(fonts) {
+    return fonts.map(font => {
+      const hasFile = font.files && Object.keys(font.files).length > 0;
+      const verifiedUrl = VERIFIED_FONT_FILES[font.family];
+      if (hasFile || !verifiedUrl) return font;
+      return { ...font, files: { ...font.files, regular: verifiedUrl } };
+    });
   }
 
   getFallbackFonts() {
@@ -310,16 +362,23 @@ export class TextToSvg {
     if (!text) return null;
 
     const fontSize = 200;
-    const path = this.loadedOpenTypeFont.getPath(text, 0, fontSize, fontSize);
-    const bb = path.getBoundingBox();
+    try {
+      const path = this.loadedOpenTypeFont.getPath(text, 0, fontSize, fontSize);
+      const bb = path.getBoundingBox();
 
-    const padding = 5;
-    const width = bb.x2 - bb.x1 + padding * 2;
-    const height = bb.y2 - bb.y1 + padding * 2;
+      const padding = 5;
+      const width = bb.x2 - bb.x1 + padding * 2;
+      const height = bb.y2 - bb.y1 + padding * 2;
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bb.x1 - padding} ${bb.y1 - padding} ${width} ${height}" width="${width}" height="${height}">
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bb.x1 - padding} ${bb.y1 - padding} ${width} ${height}" width="${width}" height="${height}">
       <path d="${path.toPathData()}" fill="black" stroke="none"/>
     </svg>`;
+    } catch (err) {
+      // Algumas fontes vari\u00e1veis usam recursos GSUB (ligaduras) que o opentype.js
+      // n\u00e3o suporta \u2014 cai para o fallback via canvas em vez de quebrar o bot\u00e3o.
+      console.warn('opentype.js failed to render this text with the selected font, using canvas fallback:', err.message);
+      return null;
+    }
   }
 
   generateSvgFromCanvas() {
