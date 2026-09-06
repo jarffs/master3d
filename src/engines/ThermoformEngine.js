@@ -339,7 +339,7 @@ export class ThermoformEngine extends BaseEngine {
    * (o SVG usa Y para baixo).
    */
   _buildSilhouette(targetWidth, targetDepth) {
-    const extracted = this.currentSvgShapes.map(shape => shape.extractPoints(24));
+    const extracted = this.currentSvgShapes.map(shape => this.extractShapePoints(shape));
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     extracted.forEach(({ shape, holes }) => {
@@ -814,7 +814,7 @@ export class ThermoformEngine extends BaseEngine {
   }
 
   _offsetPaths(paths, distanceMm) {
-    const offset = new ClipperLib.ClipperOffset(2, 0.25 * CLIPPER_SCALE);
+    const offset = new ClipperLib.ClipperOffset(2, 0.01 * CLIPPER_SCALE);
     offset.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
     const result = new ClipperLib.Paths();
     offset.Execute(result, distanceMm * CLIPPER_SCALE);
