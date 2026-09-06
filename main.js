@@ -5,6 +5,7 @@ import { KeychainEngine } from './src/engines/KeychainEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { StampEngine } from './src/engines/StampEngine.js';
+import { ThermoformEngine } from './src/engines/ThermoformEngine.js';
 import { FabricEditor } from './src/ui/FabricEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
@@ -61,6 +62,13 @@ function getControlBuilderOptions() {
     return {
       collapsible: true,
       categoryOrder: ['stamp_design', 'stamp_body'],
+      plainCategories: []
+    };
+  }
+  if (engine?.name === 'thermoform') {
+    return {
+      collapsible: true,
+      categoryOrder: ['thermoform_mold', 'thermoform_mesh', 'thermoform_hanger'],
       plainCategories: []
     };
   }
@@ -366,6 +374,8 @@ function initThree() {
     engine = new BigLettersEngine(scene);
   } else if (tool === 'stamp') {
     engine = new StampEngine(scene);
+  } else if (tool === 'thermoform') {
+    engine = new ThermoformEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -396,6 +406,11 @@ function initThree() {
       image: '/images/tools/stamp-montage.jpg',
       title: t('app.tool_stamp'),
       alt: t('app.tool_stamp_reference')
+    },
+    thermoform: {
+      image: '/images/tools/thermoform.jpg',
+      title: t('app.tool_thermoform'),
+      alt: t('app.tool_thermoform_reference')
     }
   };
   const toolReference = toolReferences[tool];
@@ -406,7 +421,7 @@ function initThree() {
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp') {
+  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform') {
     const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
@@ -422,7 +437,7 @@ function initThree() {
       exportBtnText.textContent = 'Exportar 3MF';
     }
     
-    if (tool === 'coloring') {
+    if (tool === 'coloring' || tool === 'thermoform') {
       const orSeparator = document.querySelector('.or-separator');
       const textCreateBtn = document.getElementById('create-from-text-btn');
       if (orSeparator) orSeparator.style.display = 'none';
@@ -1052,17 +1067,28 @@ uploadInput.addEventListener('change', (e) => {
       
       const img = new Image();
       img.onload = () => {
+        // Reduzir o tamanho da imagem para caber na parte central do editor e processar rápido
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        const MAX_SIZE = 800; // Tamanho máximo razoável
+
+        if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
+          const ratio = Math.min(MAX_SIZE / targetWidth, MAX_SIZE / targetHeight);
+          targetWidth = Math.round(targetWidth * ratio);
+          targetHeight = Math.round(targetHeight * ratio);
+        }
+
         // Create canvas to flatten transparent background to white
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
         
         // Fill white background
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         // Draw image over it
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
         
         // Strict thresholding to guarantee pure black and white
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -1104,6 +1130,14 @@ uploadInput.addEventListener('change', (e) => {
              }
           });
           
+          // Force viewBox if missing to ensure proper scaling in SVGEditor
+          const svgEl = doc.querySelector('svg');
+          if (svgEl && !svgEl.hasAttribute('viewBox')) {
+            svgEl.setAttribute('viewBox', `0 0 ${targetWidth} ${targetHeight}`);
+            svgEl.setAttribute('width', targetWidth);
+            svgEl.setAttribute('height', targetHeight);
+          }
+
           const initialSvg = new XMLSerializer().serializeToString(doc);
           
           // Open editor for cleanup
@@ -1179,14 +1213,21 @@ downloadBtn.addEventListener('click', async () => {
   if(saveDesignBtn) saveDesignBtn.disabled = false;
   downloadBtn.innerHTML = originalText;
   
+  let exported = true;
   if (engine.name === 'keychain') {
-    await engine.export3MF('masterworld_chaveiro.3mf');
+    exported = await engine.export3MF('masterworld_chaveiro.3mf');
   } else if (engine.name === 'coloring') {
-    await engine.export3MF('masterworld_colorir.3mf');
+    exported = await engine.export3MF('masterworld_colorir.3mf');
   } else if (engine.name === 'stamp') {
-    await engine.export3MF('masterworld_carimbo.3mf');
+    exported = await engine.export3MF('masterworld_carimbo.3mf');
+  } else if (engine.name === 'thermoform') {
+    exported = await engine.export3MF('masterworld_thermoform.3mf');
   } else {
     engine.exportSTL();
+  }
+
+  if (!exported) {
+    await Dialog.alert("Não foi possível gerar o ficheiro 3MF. Gere o modelo novamente e tente exportar.");
   }
 });
 

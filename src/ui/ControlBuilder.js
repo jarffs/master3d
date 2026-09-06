@@ -176,6 +176,10 @@ export class ControlBuilder {
 
       setTimeout(() => {
         const select = document.getElementById(`${item.id}-select`);
+        // Selects parsed into a detached wrapper come back with selectedIndex === -1.
+        if (select.selectedIndex < 0) {
+          select.value = item.default ?? (item.options?.[0]?.value ?? '');
+        }
         this.controls[item.id] = { select, type: 'select', dependsOn: item.dependsOn };
         select.addEventListener('change', (e) => {
           if (this.onChangeCallback) this.onChangeCallback(item.id, e.target.value);

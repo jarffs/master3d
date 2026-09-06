@@ -109,12 +109,12 @@ export class SvgEditor {
 
     // Reset transform to calculate natural size
     svgElement.style.transform = '';
-    svgElement.style.transformOrigin = 'center center';
     
     let svgWidth = 300;
     let svgHeight = 300;
     
     // The most robust way to find the actual dimensions of the SVG geometry:
+    let useFallback = false;
     try {
         const bbox = svgElement.getBBox();
         if (bbox.width > 0 && bbox.height > 0) {
@@ -129,9 +129,15 @@ export class SvgEditor {
             svgElement.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`);
             svgWidth = bw;
             svgHeight = bh;
+        } else {
+            useFallback = true;
         }
     } catch (e) {
-        // Fallback if getBBox fails
+        useFallback = true;
+    }
+    
+    if (useFallback) {
+        // Fallback if getBBox fails or returns 0
         if (svgElement.viewBox && svgElement.viewBox.baseVal && svgElement.viewBox.baseVal.width > 0) {
             svgWidth = svgElement.viewBox.baseVal.width;
             svgHeight = svgElement.viewBox.baseVal.height;
@@ -140,6 +146,9 @@ export class SvgEditor {
             const hAttr = svgElement.getAttribute('height');
             if (wAttr && !wAttr.includes('%')) svgWidth = parseFloat(wAttr);
             if (hAttr && !hAttr.includes('%')) svgHeight = parseFloat(hAttr);
+            
+            // Ensure viewBox exists
+            svgElement.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
         }
     }
     
@@ -170,8 +179,9 @@ export class SvgEditor {
     this.scale = Math.min(scaleX, scaleY);
     if (this.scale > 10) this.scale = 10; 
     
-    this.translateX = (containerRect.width - svgWidth) / 2;
-    this.translateY = (containerRect.height - svgHeight) / 2;
+    // O container já centra o SVG por flexbox: o translate serve apenas para o arrasto.
+    this.translateX = 0;
+    this.translateY = 0;
 
     this.applyTransform();
   }
@@ -179,6 +189,10 @@ export class SvgEditor {
   loadSvg(svgString) {
     // Parse the SVG and put it directly in the container
     this.container.innerHTML = svgString;
+
+    this.scale = 1;
+    this.translateX = 0;
+    this.translateY = 0;
     
     // Add selectable class to all geometry elements
     const elements = this.container.querySelectorAll('path, circle, rect, polygon, polyline, ellipse');

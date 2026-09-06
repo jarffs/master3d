@@ -3,6 +3,11 @@ import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { exportTo3MF } from 'three-3mf-exporter';
 
+// Amostragem das curvas SVG: alvo de segmentos por contorno e limites por curva.
+const TARGET_CONTOUR_SEGMENTS = 1200;
+const MIN_CURVE_SEGMENTS = 12;
+const MAX_CURVE_SEGMENTS = 256;
+
 /**
  * Classe base para todos os motores de geração 3D.
  * Define a estrutura comum que cada ferramenta deve implementar.
@@ -84,6 +89,53 @@ export class BaseEngine {
   }
 
   /**
+   * Equivalente a Shape.extractPoints(), mas distribuindo os segmentos pelo
+   * comprimento de cada curva. O extractPoints() usa uma contagem fixa por
+   * curva, o que reduz um círculo (uma única EllipseCurve) a um polígono
+   * com poucos lados, independentemente do tamanho do modelo.
+   */
+  extractShapePoints(shape) {
+    const chordLength = this._chordLength(shape);
+    return {
+      shape: this._curveToPoints(shape, chordLength),
+      holes: (shape.holes || []).map(hole => this._curveToPoints(hole, chordLength))
+    };
+  }
+
+  /**
+   * Converte um contorno (Shape ou Path) numa lista de pontos.
+   */
+  extractContourPoints(curvePath) {
+    return this._curveToPoints(curvePath, this._chordLength(curvePath));
+  }
+
+  _chordLength(curvePath) {
+    const curves = curvePath.curves || [];
+    const perimeter = curves.reduce((total, curve) => total + curve.getLength(), 0);
+    return perimeter > 0 ? perimeter / TARGET_CONTOUR_SEGMENTS : 1;
+  }
+
+  _curveToPoints(curvePath, chordLength) {
+    const curves = curvePath.curves || [];
+    if (curves.length === 0) return curvePath.getPoints(MIN_CURVE_SEGMENTS);
+
+    const points = [];
+    curves.forEach((curve, index) => {
+      const divisions = curve.isLineCurve
+        ? 1
+        : THREE.MathUtils.clamp(
+            Math.ceil(curve.getLength() / chordLength),
+            MIN_CURVE_SEGMENTS,
+            MAX_CURVE_SEGMENTS
+          );
+      const curvePoints = curve.getPoints(divisions);
+      // O primeiro ponto de cada curva repete o último ponto da curva anterior.
+      points.push(...(index === 0 ? curvePoints : curvePoints.slice(1)));
+    });
+    return points;
+  }
+
+  /**
    * Gera o modelo 3D baseado nos parâmetros fornecidos.
    * Deve ser sobrescrito pelas classes filhas.
    */
@@ -111,11 +163,38 @@ export class BaseEngine {
   }
 
   /**
+   * Achata a hierarquia em malhas de topo com as transformações já aplicadas:
+   * o exportador 3MF processa um Mesh sem percorrer os filhos, pelo que peças
+   * anexadas a outras peças (ex: parafusos) seriam descartadas.
+   */
+  _flattenForExport() {
+    const exportGroup = new THREE.Group();
+    this.group.updateMatrixWorld(true);
+
+    this.group.traverse((obj) => {
+      if (!obj.isMesh || !obj.geometry || !obj.geometry.attributes.position) return;
+      const geometry = obj.geometry.clone().applyMatrix4(obj.matrixWorld);
+      const material = Array.isArray(obj.material) ? obj.material[0] : obj.material;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = obj.name || `Part_${exportGroup.children.length + 1}`;
+      exportGroup.add(mesh);
+    });
+
+    return exportGroup;
+  }
+
+  /**
    * Exporta o grupo atual como 3MF preservando cores.
    */
   async export3MF(filename = 'model.3mf') {
+    const exportGroup = this._flattenForExport();
+    if (exportGroup.children.length === 0) {
+      console.error("Erro ao exportar 3MF: não há geometria para exportar.");
+      return false;
+    }
+
     try {
-      const blob = await exportTo3MF(this.group);
+      const blob = await exportTo3MF(exportGroup);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.style.display = 'none';
@@ -129,6 +208,8 @@ export class BaseEngine {
     } catch (e) {
       console.error("Erro ao exportar 3MF:", e);
       return false;
+    } finally {
+      exportGroup.children.forEach(mesh => mesh.geometry.dispose());
     }
   }
 
