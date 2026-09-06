@@ -221,8 +221,17 @@ export class TextToSvg {
     if (this.loadingIndicator) this.loadingIndicator.style.display = 'block';
     this.btnConfirm.disabled = true;
 
+    // Sem URL de ficheiro conhecida (ex: lista de fallback sem chave da API do
+    // Google Fonts) — nem vale tentar baixar o TTF, vamos direto ao canvas.
+    const hasDownloadableFile = font.files && Object.keys(font.files).length > 0;
+
     try {
-      await this.loadOpenTypeFont(font);
+      if (hasDownloadableFile) {
+        await this.loadOpenTypeFont(font);
+      } else {
+        this.loadedOpenTypeFont = null;
+      }
+      await this.ensureFontCssLoaded(font.family);
       this.btnConfirm.disabled = false;
     } catch (err) {
       console.error('Error loading font for SVG conversion:', err);
@@ -231,6 +240,22 @@ export class TextToSvg {
       this.btnConfirm.disabled = false;
     } finally {
       if (this.loadingIndicator) this.loadingIndicator.style.display = 'none';
+    }
+  }
+
+  /**
+   * Espera o @font-face carregado por loadFontCSS() ficar pronto, para que o
+   * fallback via canvas desenhe com a fonte certa em vez da fonte do sistema.
+   */
+  async ensureFontCssLoaded(family) {
+    if (!document.fonts || typeof document.fonts.load !== 'function') return;
+    try {
+      await Promise.race([
+        document.fonts.load(`200px '${family}'`),
+        new Promise(resolve => setTimeout(resolve, 2000))
+      ]);
+    } catch {
+      // Ignora falhas de carregamento da fonte web; o canvas usa a fonte do sistema.
     }
   }
 
