@@ -144,7 +144,7 @@ export class StampEngine extends BaseEngine {
 
     // First find original bounds to calculate mirror and scale
     this.currentSvgShapes.forEach(shape => {
-      const pts = shape.extractPoints(10);
+      const pts = this.extractShapePoints(shape);
       pts.shape.forEach(p => {
         if (p.x < minX) minX = p.x;
         if (p.y < minY) minY = p.y;
@@ -165,7 +165,7 @@ export class StampEngine extends BaseEngine {
     // Calcular o raio máximo a partir do centro para garantir que a base circular cobre tudo
     let maxDistSq = 0;
     this.currentSvgShapes.forEach(shape => {
-      const pts = shape.extractPoints(10);
+      const pts = this.extractShapePoints(shape);
       pts.shape.forEach(p => {
         const dx = p.x - centerX;
         const dy = p.y - centerY;
@@ -179,7 +179,7 @@ export class StampEngine extends BaseEngine {
     const mirroredShapes = [];
     
     this.currentSvgShapes.forEach(shape => {
-      const pts = shape.extractPoints(5);
+      const pts = this.extractShapePoints(shape);
       
       // Mirror X, center, apply targetScale, and invert Y for 3D coordinate system
       const processPoint = (p) => {

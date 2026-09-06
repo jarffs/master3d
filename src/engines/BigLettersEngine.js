@@ -263,7 +263,7 @@ export class BigLettersEngine extends BaseEngine {
           
           if (patternShapes.length > 0) {
             // Create a tile group of the pattern
-            const patternGeom = new THREE.ExtrudeGeometry(patternShapes, { depth: params.thickness + 0.5, bevelEnabled: false, curveSegments: 4 });
+            const patternGeom = new THREE.ExtrudeGeometry(patternShapes, { depth: params.thickness + 0.5, bevelEnabled: false, curveSegments: 12 });
             patternGeom.center();
             patternGeom.clearGroups();
             
@@ -344,8 +344,7 @@ export class BigLettersEngine extends BaseEngine {
 
     for (const p of svgData.paths) {
       for (const subPath of p.subPaths) {
-        // 8 subdivisions for ultra-smooth curves
-        const points = subPath.getPoints(8);
+        const points = this.extractContourPoints(subPath);
         const clipperPath = points.map(pt => ({ X: Math.round(pt.x * scale), Y: Math.round(pt.y * scale) }));
         clipper.AddPath(clipperPath, ClipperLib.PolyType.ptSubject, true);
       }

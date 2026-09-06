@@ -65,7 +65,7 @@ export class ColoringEngine extends BaseEngine {
     if (params.colorBase) this.partMaterials.base.color.set(params.colorBase);
     if (params.colorTop) this.partMaterials.top.color.set(params.colorTop);
 
-    const extractedShapes = this.currentSvgShapes.map(shape => shape.extractPoints(10));
+    const extractedShapes = this.currentSvgShapes.map(shape => this.extractShapePoints(shape));
     const bounds = this.getBounds(extractedShapes);
     if (!bounds) return false;
 
@@ -124,7 +124,7 @@ export class ColoringEngine extends BaseEngine {
   }
 
   offsetPaths(paths, distance, scale) {
-    const offset = new ClipperLib.ClipperOffset(2, 0.25 * scale);
+    const offset = new ClipperLib.ClipperOffset(2, 0.01 * scale);
     offset.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
     const result = new ClipperLib.Paths();
     offset.Execute(result, distance * scale);
