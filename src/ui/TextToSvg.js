@@ -259,7 +259,14 @@ export class TextToSvg {
     // Ensure HTTPS
     ttfUrl = ttfUrl.replace('http://', 'https://');
 
-    const loadedFont = await opentype.load(ttfUrl);
+    // opentype.js 2.0.0 depreciou load()/loadSync() (viraram no-ops que retornam
+    // undefined) — é preciso buscar o binário e usar parse() diretamente.
+    const response = await fetch(ttfUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch font file for ${family}`);
+    }
+    const buffer = await response.arrayBuffer();
+    const loadedFont = opentype.parse(buffer);
     this.fontObjectCache[family] = loadedFont;
     this.loadedOpenTypeFont = loadedFont;
   }
