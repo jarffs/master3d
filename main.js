@@ -1194,16 +1194,21 @@ downloadBtn.addEventListener('click', async () => {
   if(saveDesignBtn) saveDesignBtn.disabled = false;
   downloadBtn.innerHTML = originalText;
   
+  let exported = true;
   if (engine.name === 'keychain') {
-    await engine.export3MF('masterworld_chaveiro.3mf');
+    exported = await engine.export3MF('masterworld_chaveiro.3mf');
   } else if (engine.name === 'coloring') {
-    await engine.export3MF('masterworld_colorir.3mf');
+    exported = await engine.export3MF('masterworld_colorir.3mf');
   } else if (engine.name === 'stamp') {
-    await engine.export3MF('masterworld_carimbo.3mf');
+    exported = await engine.export3MF('masterworld_carimbo.3mf');
   } else if (engine.name === 'thermoform') {
-    await engine.export3MF('masterworld_thermoform.3mf');
+    exported = await engine.export3MF('masterworld_thermoform.3mf');
   } else {
     engine.exportSTL();
+  }
+
+  if (!exported) {
+    await Dialog.alert("Não foi possível gerar o ficheiro 3MF. Gere o modelo novamente e tente exportar.");
   }
 });
 

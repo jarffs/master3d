@@ -111,11 +111,38 @@ export class BaseEngine {
   }
 
   /**
+   * Achata a hierarquia em malhas de topo com as transformações já aplicadas:
+   * o exportador 3MF processa um Mesh sem percorrer os filhos, pelo que peças
+   * anexadas a outras peças (ex: parafusos) seriam descartadas.
+   */
+  _flattenForExport() {
+    const exportGroup = new THREE.Group();
+    this.group.updateMatrixWorld(true);
+
+    this.group.traverse((obj) => {
+      if (!obj.isMesh || !obj.geometry || !obj.geometry.attributes.position) return;
+      const geometry = obj.geometry.clone().applyMatrix4(obj.matrixWorld);
+      const material = Array.isArray(obj.material) ? obj.material[0] : obj.material;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = obj.name || `Part_${exportGroup.children.length + 1}`;
+      exportGroup.add(mesh);
+    });
+
+    return exportGroup;
+  }
+
+  /**
    * Exporta o grupo atual como 3MF preservando cores.
    */
   async export3MF(filename = 'model.3mf') {
+    const exportGroup = this._flattenForExport();
+    if (exportGroup.children.length === 0) {
+      console.error("Erro ao exportar 3MF: não há geometria para exportar.");
+      return false;
+    }
+
     try {
-      const blob = await exportTo3MF(this.group);
+      const blob = await exportTo3MF(exportGroup);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.style.display = 'none';
@@ -129,6 +156,8 @@ export class BaseEngine {
     } catch (e) {
       console.error("Erro ao exportar 3MF:", e);
       return false;
+    } finally {
+      exportGroup.children.forEach(mesh => mesh.geometry.dispose());
     }
   }
 

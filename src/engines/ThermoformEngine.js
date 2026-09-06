@@ -204,7 +204,7 @@ export class ThermoformEngine extends BaseEngine {
     const bounds = this._pathsBounds(silhouette);
     if (!bounds) return false;
 
-    const moldMesh = this._buildMold(silhouette, bounds, moldHeight, moldBaseThickness, moldShape);
+    const moldMesh = this._buildMold(silhouette, bounds, moldHeight, moldBaseThickness, moldShape, meshOutlineThickness);
 
     const pieces = [];
 
@@ -238,16 +238,29 @@ export class ThermoformEngine extends BaseEngine {
       meshFrame2.name = 'Thermoform_MeshFrame_2';
       pieces.push(meshFrame2);
 
-      // --- Peça Fêmea (Tampa) ---
+      // --- Peça Fêmea (Tampa) no Centro ---
       const femaleCap = new THREE.Mesh(capGeom, this.partMaterials.mesh);
       if (hangerScale !== 1.0) {
         femaleCap.geometry.scale(hangerScale, hangerScale, hangerScale);
       }
-      // Ensure cap sits flat on bed
       femaleCap.geometry.computeBoundingBox();
-      femaleCap.geometry.translate(0, 0, -femaleCap.geometry.boundingBox.min.z);
+      // Centrar a tampa na sua própria geometria e encostar ao chão
+      const capBB = femaleCap.geometry.boundingBox;
+      femaleCap.geometry.translate(
+        -(capBB.max.x + capBB.min.x) / 2,
+        -(capBB.max.y + capBB.min.y) / 2,
+        -capBB.min.z
+      );
       femaleCap.name = 'Thermoform_FemaleCap';
-      pieces.push(femaleCap);
+      // Colocar no centro da grelha matemática (que é o 0,0 do grupo)
+      femaleCap.position.set(0, 0, 0);
+      this.group.add(femaleCap);
+
+      // --- Molde Negativo ---
+      const negativeMold = this._buildNegativeMold(silhouette, bounds, moldBaseThickness, meshOutlineThickness);
+      if (negativeMold) {
+        pieces.push(negativeMold);
+      }
     } else {
       // Standard mode: single mesh frame
       const meshFrame = this._buildMeshFrame(
@@ -378,7 +391,7 @@ export class ThermoformEngine extends BaseEngine {
   /**
    * Gera a Peça A: Molde Positivo.
    */
-  _buildMold(silhouette, bounds, moldHeight, baseThickness, moldShape) {
+  _buildMold(silhouette, bounds, moldHeight, baseThickness, moldShape, meshOutlineThickness) {
     const shapes = this._pathsToShapes(silhouette);
     if (shapes.length === 0) return null;
 
@@ -397,7 +410,8 @@ export class ThermoformEngine extends BaseEngine {
     const moldGeom = this._extrudeMold(shapes, bounds, moldHeight, moldShape, centroid, maxRadius);
     if (!moldGeom) return null;
 
-    const basePaths = this._offsetPaths(silhouette, 5); // 5mm de borda extra à volta
+    // A base do molde positivo tem de ser do mesmo tamanho do contorno exterior do mesh
+    const basePaths = this._offsetPaths(silhouette, meshOutlineThickness);
     const baseShapes = this._pathsToShapes(basePaths);
     const baseGeom = new THREE.ExtrudeGeometry(baseShapes, {
       depth: baseThickness,
@@ -424,6 +438,40 @@ export class ThermoformEngine extends BaseEngine {
     geometry.computeBoundingBox();
 
     return new THREE.Mesh(geometry, this.partMaterials.mold);
+  }
+
+  /**
+   * Gera o Molde Negativo (uma moldura vazada à volta do objeto, com o dobro da espessura base).
+   */
+  _buildNegativeMold(silhouette, bounds, baseThickness, meshOutlineThickness) {
+    // A borda do molde negativo tem de ser o tamanho do contorno exterior do mesh - 5mm.
+    // Garantimos que tem no mínimo 1mm de parede em relação ao buraco interno de 0.2mm para não quebrar.
+    const outerOffset = Math.max(0.2 + 1.0, meshOutlineThickness - 5);
+    const outerPaths = this._offsetPaths(silhouette, outerOffset);
+    if (!outerPaths || outerPaths.length === 0) return null;
+
+    // Adicionar 0.2mm de folga (clearance) ao buraco interior para que encaixe suavemente
+    const innerPaths = this._offsetPaths(silhouette, 0.2);
+    if (!innerPaths || innerPaths.length === 0) return null;
+
+    // Subtrair o objeto interior à borda exterior para ficar oco
+    const region = this._boolean(
+      outerPaths, innerPaths, ClipperLib.ClipType.ctDifference, ClipperLib.PolyFillType.pftNonZero
+    );
+
+    const shapes = this._pathsToShapes(region);
+    if (shapes.length === 0) return null;
+
+    const thickness = baseThickness * 2;
+    const geom = new THREE.ExtrudeGeometry(shapes, {
+      depth: thickness,
+      bevelEnabled: false,
+      curveSegments: 12
+    });
+
+    const mesh = new THREE.Mesh(geom, this.partMaterials.mold);
+    mesh.name = 'Thermoform_NegativeMold';
+    return mesh;
   }
 
   _extrudeMold(shapes, bounds, moldHeight, moldShape, centroid, maxRadius) {
