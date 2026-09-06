@@ -1067,17 +1067,28 @@ uploadInput.addEventListener('change', (e) => {
       
       const img = new Image();
       img.onload = () => {
+        // Reduzir o tamanho da imagem para caber na parte central do editor e processar rápido
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        const MAX_SIZE = 800; // Tamanho máximo razoável
+
+        if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
+          const ratio = Math.min(MAX_SIZE / targetWidth, MAX_SIZE / targetHeight);
+          targetWidth = Math.round(targetWidth * ratio);
+          targetHeight = Math.round(targetHeight * ratio);
+        }
+
         // Create canvas to flatten transparent background to white
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
         
         // Fill white background
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         // Draw image over it
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
         
         // Strict thresholding to guarantee pure black and white
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
