@@ -2,45 +2,44 @@ import opentype from 'opentype.js';
 import { Dialog } from './Dialog.js';
 import { t } from '../../i18n.js';
 
-// URLs de TTF verificadas (HTTP 200, content-type font/ttf) no espelho público
-// do repositório google/fonts via jsDelivr — mesmo CDN já usado em BigLettersEngine.
-// Evita depender da API paga do Google Fonts (chave/quota/403) só para baixar o
-// binário da fonte selecionada.
-const VERIFIED_FONT_FILES = {
-  'Roboto': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf',
-  'Open Sans': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf',
-  'Lato': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/lato/Lato-Regular.ttf',
-  'Montserrat': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/Montserrat%5Bwght%5D.ttf',
-  'Oswald': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/oswald/Oswald%5Bwght%5D.ttf',
-  'Raleway': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/raleway/Raleway%5Bwght%5D.ttf',
-  'Poppins': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/poppins/Poppins-Regular.ttf',
-  'Nunito': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nunito/Nunito%5Bwght%5D.ttf',
-  'Playfair Display': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf',
-  'Merriweather': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/merriweather/Merriweather%5Bopsz%2Cwdth%2Cwght%5D.ttf',
-  'Ubuntu': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ufl/ubuntu/Ubuntu-Regular.ttf',
-  'Lobster': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/lobster/Lobster-Regular.ttf',
-  'Pacifico': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/pacifico/Pacifico-Regular.ttf',
-  'Bebas Neue': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bebasneue/BebasNeue-Regular.ttf',
-  'Dancing Script': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/dancingscript/DancingScript%5Bwght%5D.ttf',
-  'Permanent Marker': 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/permanentmarker/PermanentMarker-Regular.ttf',
-  'Righteous': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/righteous/Righteous-Regular.ttf',
-  'Alfa Slab One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/alfaslabone/AlfaSlabOne-Regular.ttf',
-  'Bangers': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bangers/Bangers-Regular.ttf',
-  'Bungee': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bungee/Bungee-Regular.ttf',
-  'Fredoka': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/fredoka/Fredoka%5Bwdth%2Cwght%5D.ttf',
-  'Press Start 2P': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/pressstart2p/PressStart2P-Regular.ttf',
-  'Anton': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/anton/Anton-Regular.ttf',
-  'Archivo Black': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/archivoblack/ArchivoBlack-Regular.ttf',
-  'Black Ops One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/blackopsone/BlackOpsOne-Regular.ttf',
-  'Carter One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carterone/CarterOne.ttf',
-  'Chewy': 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/chewy/Chewy-Regular.ttf',
-  'Courgette': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/courgette/Courgette-Regular.ttf',
-  'Creepster': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/creepster/Creepster-Regular.ttf',
-  'Fugaz One': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/fugazone/FugazOne-Regular.ttf'
-};
+// Catálogo de fontes embutido na aplicação — os .ttf ficam em public/assets/fonts/
+// e são servidos localmente, sem depender da API do Google Fonts (chave/quota/403)
+// nem de um CDN externo em tempo de execução.
+const LOCAL_FONT_CATALOG = [
+  { family: 'Roboto', category: 'sans-serif', file: '/assets/fonts/roboto.ttf' },
+  { family: 'Open Sans', category: 'sans-serif', file: '/assets/fonts/opensans.ttf' },
+  { family: 'Lato', category: 'sans-serif', file: '/assets/fonts/lato.ttf' },
+  { family: 'Montserrat', category: 'sans-serif', file: '/assets/fonts/montserrat.ttf' },
+  { family: 'Oswald', category: 'sans-serif', file: '/assets/fonts/oswald.ttf' },
+  { family: 'Raleway', category: 'sans-serif', file: '/assets/fonts/raleway.ttf' },
+  { family: 'Poppins', category: 'sans-serif', file: '/assets/fonts/poppins.ttf' },
+  { family: 'Nunito', category: 'sans-serif', file: '/assets/fonts/nunito.ttf' },
+  { family: 'Playfair Display', category: 'serif', file: '/assets/fonts/playfairdisplay.ttf' },
+  { family: 'Merriweather', category: 'serif', file: '/assets/fonts/merriweather.ttf' },
+  { family: 'Ubuntu', category: 'sans-serif', file: '/assets/fonts/ubuntu.ttf' },
+  { family: 'Lobster', category: 'display', file: '/assets/fonts/lobster.ttf' },
+  { family: 'Pacifico', category: 'handwriting', file: '/assets/fonts/pacifico.ttf' },
+  { family: 'Bebas Neue', category: 'display', file: '/assets/fonts/bebasneue.ttf' },
+  { family: 'Dancing Script', category: 'handwriting', file: '/assets/fonts/dancingscript.ttf' },
+  { family: 'Permanent Marker', category: 'handwriting', file: '/assets/fonts/permanentmarker.ttf' },
+  { family: 'Righteous', category: 'display', file: '/assets/fonts/righteous.ttf' },
+  { family: 'Alfa Slab One', category: 'display', file: '/assets/fonts/alfaslabone.ttf' },
+  { family: 'Bangers', category: 'display', file: '/assets/fonts/bangers.ttf' },
+  { family: 'Bungee', category: 'display', file: '/assets/fonts/bungee.ttf' },
+  { family: 'Fredoka', category: 'display', file: '/assets/fonts/fredoka.ttf' },
+  { family: 'Press Start 2P', category: 'display', file: '/assets/fonts/pressstart2p.ttf' },
+  { family: 'Anton', category: 'display', file: '/assets/fonts/anton.ttf' },
+  { family: 'Archivo Black', category: 'display', file: '/assets/fonts/archivoblack.ttf' },
+  { family: 'Black Ops One', category: 'display', file: '/assets/fonts/blackopsone.ttf' },
+  { family: 'Carter One', category: 'display', file: '/assets/fonts/carterone.ttf' },
+  { family: 'Chewy', category: 'display', file: '/assets/fonts/chewy.ttf' },
+  { family: 'Courgette', category: 'handwriting', file: '/assets/fonts/courgette.ttf' },
+  { family: 'Creepster', category: 'display', file: '/assets/fonts/creepster.ttf' },
+  { family: 'Fugaz One', category: 'display', file: '/assets/fonts/fugazone.ttf' }
+].map((font, popularityRank) => ({ ...font, popularityRank }));
 
 /**
- * TextToSvg — Modular component for generating SVG from text using Google Fonts.
+ * TextToSvg — Modular component for generating SVG from text using a local font catalog.
  * 
  * Usage:
  *   const textToSvg = new TextToSvg('text-modal');
@@ -54,7 +53,7 @@ export class TextToSvg {
   constructor(modalId) {
     this.modal = document.getElementById(modalId);
     this.onConfirmCallback = null;
-    this.fonts = [];
+    this.fonts = LOCAL_FONT_CATALOG;
     this.filteredFonts = [];
     this.selectedFont = null;
     this.loadedOpenTypeFont = null;
@@ -64,8 +63,9 @@ export class TextToSvg {
     this.mode = 'generate';
     this.fontPickerCallback = null;
 
-    // Cache of loaded opentype.js Font objects
+    // Cache of loaded opentype.js Font objects e de FontFace já registados
     this.fontObjectCache = {};
+    this.fontFaceCache = {};
 
     // Elements
     this.textInput = document.getElementById('text-to-svg-input');
@@ -76,7 +76,8 @@ export class TextToSvg {
     this.loadingIndicator = document.getElementById('text-to-svg-loading');
 
     this.setupListeners();
-    this.fontCatalogPromise = this.fetchGoogleFonts();
+    this.fontCatalogPromise = Promise.resolve();
+    this.filterFonts();
   }
 
   setupListeners() {
@@ -101,86 +102,6 @@ export class TextToSvg {
         this.loadMoreFonts();
       }
     });
-  }
-
-  async fetchGoogleFonts() {
-    try {
-      // Tenta obter a chave do ambiente (se existir)
-      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY_FONT_LIBRARY;
-      
-      if (!apiKey) {
-        throw new Error('Chave da API não encontrada. Usando fallback.');
-      }
-
-      // Fetch popular fonts from Google Fonts API
-      const response = await fetch(
-        `https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key=${apiKey}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        this.fonts = data.items.map((f, popularityRank) => ({
-          family: f.family,
-          category: f.category,
-          variants: f.variants,
-          files: f.files,
-          popularityRank
-        }));
-      } else {
-        this.fonts = this.getFallbackFonts();
-      }
-    } catch (err) {
-      console.warn('Google Fonts API unavailable, using fallback list:', err.message);
-      this.fonts = this.getFallbackFonts();
-    }
-
-    this.fonts = this.attachVerifiedFileUrls(this.fonts);
-    this.filteredFonts = this.sortByPopularity(this.fonts);
-    this.renderFontGrid();
-  }
-
-  /**
-   * Preenche `files.regular` com o catálogo estático verificado sempre que a
-   * fonte não tiver nenhum arquivo baixável (ex: lista de fallback, ou a API do
-   * Google devolveu a fonte sem `files`).
-   */
-  attachVerifiedFileUrls(fonts) {
-    return fonts.map(font => {
-      const hasFile = font.files && Object.keys(font.files).length > 0;
-      const verifiedUrl = VERIFIED_FONT_FILES[font.family];
-      if (hasFile || !verifiedUrl) return font;
-      return { ...font, files: { ...font.files, regular: verifiedUrl } };
-    });
-  }
-
-  getFallbackFonts() {
-    const families = [
-      'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald',
-      'Raleway', 'Poppins', 'Nunito', 'Playfair Display', 'Merriweather',
-      'Ubuntu', 'Lobster', 'Pacifico', 'Bebas Neue', 'Dancing Script',
-      'Permanent Marker', 'Righteous', 'Alfa Slab One', 'Bangers', 'Bungee',
-      'Fredoka', 'Press Start 2P', 'Anton', 'Archivo Black', 'Black Ops One',
-      'Carter One', 'Chewy', 'Courgette', 'Creepster', 'Fugaz One',
-      'Gloria Hallelujah', 'Indie Flower', 'Kablammo', 'Luckiest Guy', 'Monoton',
-      'Orbitron', 'Passion One', 'Patua One', 'Russo One', 'Satisfy',
-      'Shadows Into Light', 'Special Elite', 'Titan One', 'Ultra', 'Zilla Slab',
-      'Abril Fatface', 'Bungee Shade', 'Concert One', 'Frijole', 'Gravitas One',
-      'Inter', 'Josefin Sans', 'Kaushan Script', 'Libre Baskerville', 'Noto Sans',
-      'Outfit', 'PT Sans', 'Quicksand', 'Source Sans 3', 'Work Sans',
-      'Caveat', 'Comfortaa', 'DM Sans', 'Exo 2', 'Fira Sans',
-      'Great Vibes', 'Hind', 'IBM Plex Sans', 'Jost', 'Kanit',
-      'League Spartan', 'Manrope', 'Nunito Sans', 'Overpass', 'Philosopher',
-      'Questrial', 'Rubik', 'Sacramento', 'Teko', 'Urbanist',
-      'Varela Round', 'Yanone Kaffeesatz', 'Zeyada', 'Abel', 'Barlow',
-      'Cinzel', 'Domine', 'EB Garamond', 'Fjalla One', 'Gudea'
-    ];
-    return families.map((f, popularityRank) => ({
-      family: f,
-      category: 'sans-serif',
-      variants: ['regular'],
-      files: {},
-      popularityRank
-    }));
   }
 
   sortByPopularity(fonts) {
@@ -214,8 +135,8 @@ export class TextToSvg {
     card.className = 'text-font-card' + (this.selectedFont?.family === font.family ? ' selected' : '');
     card.dataset.family = font.family;
 
-    // Load font via Google Fonts CSS for visual preview
-    this.loadFontCSS(font.family);
+    // Regista o @font-face local para o preview do cartão (sem rede externa)
+    this.ensureFontFaceLoaded(font);
 
     const text = this.textInput.value || 'Aa';
 
@@ -247,15 +168,27 @@ export class TextToSvg {
     this.isLoadingMore = false;
   }
 
-  loadFontCSS(family) {
-    const id = `gfont-${family.replace(/\s+/g, '-')}`;
-    if (document.getElementById(id)) return;
+  /**
+   * Regista (uma única vez por família) o @font-face local no document.fonts,
+   * usado tanto no preview dos cartões como no fallback via canvas.
+   */
+  async ensureFontFaceLoaded(font) {
+    if (this.fontFaceCache[font.family]) return this.fontFaceCache[font.family];
 
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&display=swap`;
-    document.head.appendChild(link);
+    const promise = (async () => {
+      try {
+        const face = new FontFace(font.family, `url(${font.file})`);
+        const loaded = await face.load();
+        document.fonts.add(loaded);
+        return loaded;
+      } catch (err) {
+        console.warn(`Failed to load local font face for ${font.family}:`, err.message);
+        return null;
+      }
+    })();
+
+    this.fontFaceCache[font.family] = promise;
+    return promise;
   }
 
   async selectFont(font, cardElement) {
@@ -273,17 +206,11 @@ export class TextToSvg {
     if (this.loadingIndicator) this.loadingIndicator.style.display = 'block';
     this.btnConfirm.disabled = true;
 
-    // Sem URL de ficheiro conhecida (ex: lista de fallback sem chave da API do
-    // Google Fonts) — nem vale tentar baixar o TTF, vamos direto ao canvas.
-    const hasDownloadableFile = font.files && Object.keys(font.files).length > 0;
-
     try {
-      if (hasDownloadableFile) {
-        await this.loadOpenTypeFont(font);
-      } else {
-        this.loadedOpenTypeFont = null;
-      }
-      await this.ensureFontCssLoaded(font.family);
+      await Promise.all([
+        this.loadOpenTypeFont(font),
+        this.ensureFontFaceLoaded(font)
+      ]);
       this.btnConfirm.disabled = false;
     } catch (err) {
       console.error('Error loading font for SVG conversion:', err);
@@ -292,22 +219,6 @@ export class TextToSvg {
       this.btnConfirm.disabled = false;
     } finally {
       if (this.loadingIndicator) this.loadingIndicator.style.display = 'none';
-    }
-  }
-
-  /**
-   * Espera o @font-face carregado por loadFontCSS() ficar pronto, para que o
-   * fallback via canvas desenhe com a fonte certa em vez da fonte do sistema.
-   */
-  async ensureFontCssLoaded(family) {
-    if (!document.fonts || typeof document.fonts.load !== 'function') return;
-    try {
-      await Promise.race([
-        document.fonts.load(`200px '${family}'`),
-        new Promise(resolve => setTimeout(resolve, 2000))
-      ]);
-    } catch {
-      // Ignora falhas de carregamento da fonte web; o canvas usa a fonte do sistema.
     }
   }
 
@@ -320,25 +231,9 @@ export class TextToSvg {
       return;
     }
 
-    // Try to get TTF URL from API files
-    let ttfUrl = font.files?.regular || font.files?.['400'] || font.files?.['300'] || font.files?.['700'];
-    
-    // Try any available variant
-    if (!ttfUrl && font.files) {
-      const keys = Object.keys(font.files);
-      if (keys.length > 0) ttfUrl = font.files[keys[0]];
-    }
-
-    if (!ttfUrl) {
-      throw new Error(`No TTF URL available for ${family}`);
-    }
-
-    // Ensure HTTPS
-    ttfUrl = ttfUrl.replace('http://', 'https://');
-
     // opentype.js 2.0.0 depreciou load()/loadSync() (viraram no-ops que retornam
-    // undefined) — é preciso buscar o binário e usar parse() diretamente.
-    const response = await fetch(ttfUrl);
+    // undefined) — é preciso buscar o binário local e usar parse() diretamente.
+    const response = await fetch(font.file);
     if (!response.ok) {
       throw new Error(`Failed to fetch font file for ${family}`);
     }
