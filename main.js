@@ -437,21 +437,10 @@ function initThree() {
       exportBtnText.textContent = 'Exportar 3MF';
     }
     
-    if (tool === 'coloring' || tool === 'thermoform') {
-      const orSeparator = document.querySelector('.or-separator');
-      const textCreateBtn = document.getElementById('create-from-text-btn');
-      if (orSeparator) orSeparator.style.display = 'none';
-      if (textCreateBtn) textCreateBtn.style.display = 'none';
-    } else if (tool === 'big_letters') {
+    if (tool === 'big_letters') {
       // Hide everything related to upload/svg generation
       const uploadGroups = document.querySelectorAll('.upload-group');
       uploadGroups.forEach(el => el.style.display = 'none');
-      
-      const orSeparator = document.querySelector('.or-separator');
-      if (orSeparator) orSeparator.style.display = 'none';
-      
-      const textCreateBtn = document.getElementById('create-from-text-btn');
-      if (textCreateBtn) textCreateBtn.style.display = 'none';
       
       // Hide the old generate button
       const generateBtn = document.getElementById('generate-3d-btn');
@@ -485,84 +474,6 @@ function initThree() {
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
   textToSvg = new TextToSvg('text-to-svg-modal');
 
-  const createFromTextBtn = document.getElementById('create-from-text-btn');
-  if (createFromTextBtn) {
-    createFromTextBtn.addEventListener('click', () => {
-      textToSvg.open((result) => {
-        if (typeof result === 'string') {
-          // Direct SVG from opentype.js — perfect vector
-          currentSvgText = result;
-          if (engine.name === 'keychain') {
-            engine.loadTextSVG(currentSvgText);
-            const oldValues = controlBuilder.getValues();
-            controlBuilder.build(engine.getControlSchema(), t, getControlBuilderOptions());
-            controlBuilder.setValues(oldValues);
-          } else {
-            engine.loadSVG(currentSvgText);
-          }
-          fileNameDisplay.textContent = '✏️ Texto';
-          fileNameDisplay.style.display = 'block';
-          initDimensionsFromSVG();
-          updateModel();
-        } else if (result?.type === 'raster' && result.dataUrl) {
-          // Canvas fallback — need to trace to SVG via ImageTracer
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            
-            // Threshold to pure B&W
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            for (let i = 0; i < data.length; i += 4) {
-              const brightness = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-              const color = brightness > 128 ? 255 : 0;
-              data[i] = color; data[i+1] = color; data[i+2] = color; data[i+3] = 255;
-            }
-            ctx.putImageData(imageData, 0, 0);
-            
-            const flatUrl = canvas.toDataURL('image/png');
-            const options = {
-              ltres: 1, qtres: 1, pathomit: 8,
-              colorsampling: 0, numberofcolors: 2,
-              pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
-            };
-            
-            ImageTracer.imageToSVG(flatUrl, async (svgString) => {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(svgString, "image/svg+xml");
-              doc.querySelectorAll('path').forEach(p => {
-                const fill = p.getAttribute('fill');
-                if (fill && (fill.replace(/\s/g, '') === 'rgb(255,255,255)' || fill === '#ffffff')) {
-                  p.remove();
-                }
-              });
-              currentSvgText = new XMLSerializer().serializeToString(doc);
-              if (engine.name === 'keychain') {
-                engine.loadTextSVG(currentSvgText);
-                const oldValues = controlBuilder.getValues();
-                controlBuilder.build(engine.getControlSchema(), t, getControlBuilderOptions());
-                controlBuilder.setValues(oldValues);
-              } else {
-                engine.loadSVG(currentSvgText);
-              }
-              fileNameDisplay.textContent = '✏️ Texto';
-              fileNameDisplay.style.display = 'block';
-              await initDimensionsFromSVG();
-              await updateModel();
-            }, options);
-          };
-          img.src = result.dataUrl;
-        }
-      });
-    });
-  }
-  
   let initialDesignLoaded = false;
   onAuthChange(async (user, profile) => {
     loadPrinters(); // Recarrega a lista de impressoras com base no auth
