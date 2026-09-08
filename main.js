@@ -912,6 +912,26 @@ function frameCamera() {
   controls.update();
 }
 
+function frameGeneratedModel() {
+  if (!engine?.group || engine.group.children.length === 0 || !camera || !controls) return;
+
+  const bounds = new THREE.Box3().setFromObject(engine.group);
+  if (bounds.isEmpty()) return;
+
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z, 1);
+  const distance = (maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * 1.6);
+  const direction = new THREE.Vector3(0, -0.7, 0.8).normalize();
+
+  controls.target.copy(center);
+  camera.position.copy(center).addScaledVector(direction, distance);
+  camera.near = Math.max(0.1, distance / 100);
+  camera.far = Math.max(1000, distance * 10);
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
 // Os botões seguem clicáveis sem login para que o usuário saiba que precisa de conta
 function refreshExportButtons() {
   downloadBtn.disabled = false;
@@ -953,6 +973,7 @@ async function updateModel() {
     
     refreshExportButtons();
     checkBuildPlateLimits();
+    frameGeneratedModel();
   }
 }
 
