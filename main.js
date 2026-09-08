@@ -488,7 +488,7 @@ function initThree() {
   const createFromTextBtn = document.getElementById('create-from-text-btn');
   if (createFromTextBtn) {
     createFromTextBtn.addEventListener('click', () => {
-      textToSvg.open((result) => {
+      textToSvg.open(async (result) => {
         if (typeof result === 'string') {
           // Direct SVG from opentype.js — perfect vector
           currentSvgText = result;
@@ -502,8 +502,7 @@ function initThree() {
           }
           fileNameDisplay.textContent = '✏️ Texto';
           fileNameDisplay.style.display = 'block';
-          initDimensionsFromSVG();
-          updateModel();
+          await regenerateAfterSvgLoad();
         } else if (result?.type === 'raster' && result.dataUrl) {
           // Canvas fallback — need to trace to SVG via ImageTracer
           const img = new Image();
@@ -553,8 +552,7 @@ function initThree() {
               }
               fileNameDisplay.textContent = '✏️ Texto';
               fileNameDisplay.style.display = 'block';
-              await initDimensionsFromSVG();
-              await updateModel();
+              await regenerateAfterSvgLoad();
             }, options);
           };
           img.src = result.dataUrl;
@@ -982,6 +980,16 @@ async function initDimensionsFromSVG() {
   }
 }
 
+async function regenerateAfterSvgLoad() {
+  if (engine?.name === 'keychain') {
+    await updateModel();
+    return;
+  }
+
+  await initDimensionsFromSVG();
+  await updateModel();
+}
+
 // Event Listeners
 printerProfileSelect.addEventListener('change', (e) => {
   const val = e.target.value;
@@ -1054,8 +1062,7 @@ uploadInput.addEventListener('change', (e) => {
         } else {
           engine.loadSVG(currentSvgText);
         }
-        await initDimensionsFromSVG();
-        await updateModel();
+        await regenerateAfterSvgLoad();
       });
     };
     reader.readAsText(file);
@@ -1148,8 +1155,7 @@ uploadInput.addEventListener('change', (e) => {
             } else {
               engine.loadSVG(currentSvgText);
             }
-            await initDimensionsFromSVG();
-            await updateModel();
+            await regenerateAfterSvgLoad();
           });
         }, options);
       };
