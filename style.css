@@ -1031,33 +1031,6 @@ input[type=range]::-webkit-slider-runnable-track {
   letter-spacing: 1px;
 }
 
-/* Create from Text Button */
-.text-create-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px 16px;
-  background: var(--bg-surface);
-  border: 2px solid var(--accent-color);
-  border-radius: 8px;
-  color: var(--accent-color);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.text-create-btn:hover {
-  background: var(--accent-color);
-  color: white;
-}
-
-.text-create-btn svg {
-  flex-shrink: 0;
-}
-
 /* Font Grid */
 .text-font-grid {
   display: grid;
@@ -1206,34 +1179,6 @@ input[type=range]::-webkit-slider-runnable-track {
   border-radius: 6px;
   cursor: pointer;
   background: none;
-}
-
-.fe-select {
-  padding: 6px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-primary);
-  background: #fff;
-  outline: none;
-}
-
-.fe-action-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-secondary);
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.fe-action-btn:hover {
-  background: #f1f5f9;
-  color: var(--text-primary);
 }
 
 .fe-canvas-wrapper {
