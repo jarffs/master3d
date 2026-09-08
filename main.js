@@ -363,6 +363,8 @@ function initThree() {
   const params = new URLSearchParams(window.location.search);
   const tool = params.get('tool') || 'cookie_cutter';
   const loadDesignId = params.get('load_design');
+  const orSeparator = document.querySelector('.or-separator');
+  if (orSeparator && tool === 'keychain') orSeparator.style.display = 'flex';
 
   if (tool === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
