@@ -489,6 +489,7 @@ function initThree() {
   if (createFromTextBtn) {
     createFromTextBtn.addEventListener('click', () => {
       textToSvg.open(async (result) => {
+        try {
         if (typeof result === 'string') {
           // Direct SVG from opentype.js — perfect vector
           currentSvgText = result;
@@ -533,6 +534,7 @@ function initThree() {
             };
             
             ImageTracer.imageToSVG(flatUrl, async (svgString) => {
+              try {
               const parser = new DOMParser();
               const doc = parser.parseFromString(svgString, "image/svg+xml");
               doc.querySelectorAll('path').forEach(p => {
@@ -553,9 +555,15 @@ function initThree() {
               fileNameDisplay.textContent = '✏️ Texto';
               fileNameDisplay.style.display = 'block';
               await regenerateAfterSvgLoad();
+              } catch (err) {
+                console.error('Failed to generate 3D model from traced text:', err);
+              }
             }, options);
           };
           img.src = result.dataUrl;
+        }
+        } catch (err) {
+          console.error('Failed to generate 3D model from text:', err);
         }
       });
     });
