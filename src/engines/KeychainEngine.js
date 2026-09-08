@@ -219,7 +219,7 @@ export class KeychainEngine extends BaseEngine {
     const extractedShapes = [];
 
     svgShapes.forEach((svgShape) => {
-      const points = this.extractShapePoints(svgShape);
+      const points = svgShape.extractPoints(24);
       extractedShapes.push(points);
       
       points.shape.forEach(p => {
