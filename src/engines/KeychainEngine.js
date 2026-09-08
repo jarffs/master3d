@@ -219,7 +219,11 @@ export class KeychainEngine extends BaseEngine {
     const extractedShapes = [];
 
     svgShapes.forEach((svgShape) => {
-      const points = this.extractShapePoints(svgShape);
+      // Extração de resolução fixa (não a adaptativa por comprimento de arco):
+      // texto tem muitas curvas pequenas por glifo, e a versão adaptativa gera
+      // pontos demais aqui, explodindo o custo dos passes de Clipper/CSG abaixo
+      // (chegou a travar o navegador por >15s para uma palavra de 3 letras).
+      const points = svgShape.extractPoints(10);
       extractedShapes.push(points);
       
       points.shape.forEach(p => {
