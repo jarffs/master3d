@@ -6,6 +6,7 @@ import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { StampEngine } from './src/engines/StampEngine.js';
 import { ThermoformEngine } from './src/engines/ThermoformEngine.js';
+import { BrigadeiroEjectorEngine } from './src/engines/BrigadeiroEjectorEngine.js';
 import { FabricEditor } from './src/ui/FabricEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
@@ -69,6 +70,13 @@ function getControlBuilderOptions() {
     return {
       collapsible: true,
       categoryOrder: ['thermoform_mold', 'thermoform_mesh', 'thermoform_hanger'],
+      plainCategories: []
+    };
+  }
+  if (engine?.name === 'brigadeiro_ejector') {
+    return {
+      collapsible: true,
+      categoryOrder: ['cutter', 'stamp'],
       plainCategories: []
     };
   }
@@ -378,6 +386,8 @@ function initThree() {
     engine = new StampEngine(scene);
   } else if (tool === 'thermoform') {
     engine = new ThermoformEngine(scene);
+  } else if (tool === 'brigadeiro_ejector') {
+    engine = new BrigadeiroEjectorEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -413,6 +423,11 @@ function initThree() {
       image: '/images/tools/thermoform.jpg',
       title: t('app.tool_thermoform'),
       alt: t('app.tool_thermoform_reference')
+    },
+    brigadeiro_ejector: {
+      image: '/images/tools/thermoform.jpg',
+      title: t('app.tool_brigadeiro_ejector'),
+      alt: t('app.tool_brigadeiro_ejector_reference')
     }
   };
   const toolReference = toolReferences[tool];
@@ -422,8 +437,16 @@ function initThree() {
     toolReferenceTitle.textContent = toolReference.title;
   }
   
+  // Configurar o tamanho inicial do ejetor na UI
+  if (tool === 'brigadeiro_ejector') {
+    const wInput = document.getElementById('model-width');
+    const dInput = document.getElementById('model-depth');
+    if(wInput) wInput.value = 20;
+    if(dInput) dInput.value = 20;
+  }
+  
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform') {
+  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform' || tool === 'brigadeiro_ejector') {
     const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
@@ -897,21 +920,25 @@ async function initDimensionsFromSVG() {
   // Run a preliminary generation to get aspect ratio
   if (!engine || !controlBuilder) return;
   const tempParams = controlBuilder.getValues();
-  tempParams.targetWidth = 80;
-  tempParams.targetDepth = 80;
+  
+  // Pega o valor atual que já está na UI (pode ter sido alterado pelo usuário ou pelo script de inicialização)
+  const baseSize = parseFloat(modelWidthInput.value) || 80;
+  
+  tempParams.targetWidth = baseSize;
+  tempParams.targetDepth = baseSize;
   await engine.generate3DModel(tempParams);
   
   if (engine.svgAspectRatio) {
     svgAspectRatio = engine.svgAspectRatio;
-    // Set initial dimensions based on 80mm max and aspect ratio
+    // Set initial dimensions based on baseSize max and aspect ratio
     if (svgAspectRatio >= 1) {
       // Wider than tall
-      modelWidthInput.value = 80;
-      modelDepthInput.value = Math.round(80 / svgAspectRatio);
+      modelWidthInput.value = baseSize;
+      modelDepthInput.value = Math.round(baseSize / svgAspectRatio);
     } else {
       // Taller than wide
-      modelDepthInput.value = 80;
-      modelWidthInput.value = Math.round(80 * svgAspectRatio);
+      modelDepthInput.value = baseSize;
+      modelWidthInput.value = Math.round(baseSize * svgAspectRatio);
     }
   }
 }
@@ -1004,7 +1031,7 @@ uploadInput.addEventListener('change', (e) => {
         // Reduzir o tamanho da imagem para caber na parte central do editor e processar rápido
         let targetWidth = img.width;
         let targetHeight = img.height;
-        const MAX_SIZE = 800; // Tamanho máximo razoável
+        const MAX_SIZE = 1200; // Aumentado para melhor definição (antes 800)
 
         if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
           const ratio = Math.min(MAX_SIZE / targetWidth, MAX_SIZE / targetHeight);
@@ -1043,9 +1070,10 @@ uploadInput.addEventListener('change', (e) => {
         
         // options for exact black and white silhouette tracing
         const options = {
-          ltres: 1,
-          qtres: 1,
-          pathomit: 8,
+          ltres: 0.05, 
+          qtres: 0.05,
+          pathomit: 3,
+          rightangleenhance: true,
           colorsampling: 0, 
           numberofcolors: 2,
           pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
