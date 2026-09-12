@@ -516,7 +516,7 @@ function initThree() {
       if (dynamicControls) dynamicControls.style.display = 'none';
 
     // Hide tool reference block entirely
-    if (tool === 'big_letters' || tool === 'stamp' || tool === 'center_cap') {
+    if (tool === 'big_letters' || tool === 'stamp') {
       const toolRefBlock = document.querySelector('.tool-reference');
       if (toolRefBlock) toolRefBlock.style.display = 'none';
     }
@@ -539,7 +539,6 @@ function initThree() {
   // Center Cap: hide build plate, hide model dimensions, generate initial model
   if (tool === 'center_cap') {
     document.querySelector('.mandatory-badge')?.style.setProperty('display', 'none');
-    document.querySelector('#tool-reference-image')?.style.setProperty('display', 'none');
     const faceLight = new THREE.DirectionalLight(0xffffff, 2);
     faceLight.position.set(30, -40, -60);
     scene.add(faceLight);
