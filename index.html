@@ -5,35 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MasterWorld — Crie Modelos 3D Personalizados em Segundos</title>
   <meta name="description" content="Plataforma de geração de modelos 3D para impressão. Cortadores de biscoito, chaveiros, carimbos e muito mais. Rápido, fácil e direto no navegador.">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg-dark: #0a0a0f;
-      --bg-card: #13131a;
-      --bg-card-hover: #1a1a24;
-      --surface: #1e1e2a;
-      --border: rgba(255,255,255,0.06);
-      --border-hover: rgba(217,119,6,0.4);
-      --text: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent: #d97706;
-      --accent-glow: rgba(217,119,6,0.25);
-      --accent-hover: #f59e0b;
-      --gradient-hero: linear-gradient(135deg, #0f0c29 0%, #1a1040 40%, #24243e 100%);
-      --radius: 16px;
-      --radius-sm: 10px;
-      --bg-surface: var(--bg-card);
-      --bg-color: var(--bg-dark);
-      --bg-main: var(--bg-dark);
-      --border-color: var(--border);
-      --text-primary: var(--text);
-    }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font-ui, sans-serif);
       background: var(--bg-dark);
       color: var(--text);
       overflow-x: hidden;
@@ -186,7 +163,7 @@
       justify-content: center;
       text-align: center;
       padding: 140px 24px 80px;
-      background: var(--gradient-hero);
+      background: var(--color-background);
       overflow: hidden;
     }
 
@@ -577,8 +554,9 @@
       .hero { padding: 120px 16px 60px; }
     }
   </style>
+  <link rel="stylesheet" href="./soft-ui.css">
 </head>
-<body>
+<body class="landing-page">
 
   <!-- NAVBAR -->
   <nav class="navbar">

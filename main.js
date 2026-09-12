@@ -630,6 +630,7 @@ function animate() {
 
 function updateBuildPlate() {
   if (!buildPlateGroup) return;
+  const visualTokens = getComputedStyle(document.documentElement);
   
   while(buildPlateGroup.children.length > 0) {
     const child = buildPlateGroup.children[0];
@@ -708,7 +709,7 @@ function updateBuildPlate() {
   geometry.translate(0, 0, -2);
   
   const material = new THREE.MeshStandardMaterial({
-    color: 0x1f2224,
+    color: visualTokens.getPropertyValue('--color-plate').trim(),
     roughness: 0.9,
     metalness: 0.2
   });
@@ -721,10 +722,10 @@ function updateBuildPlate() {
   const spacing = 10;
   
   const gridMaterial = new THREE.LineBasicMaterial({ 
-    color: 0x666666, transparent: true, opacity: 0.6
+    color: visualTokens.getPropertyValue('--color-plate-grid').trim(), transparent: true, opacity: 0.6
   });
   const majorGridMaterial = new THREE.LineBasicMaterial({ 
-    color: 0x999999, transparent: true, opacity: 0.8
+    color: visualTokens.getPropertyValue('--color-plate-grid-major').trim(), transparent: true, opacity: 0.8
   });
   
   const majorVertices = [];
@@ -796,8 +797,8 @@ function updateBuildPlate() {
   const ctx = textCanvas.getContext('2d');
   ctx.fillStyle = 'rgba(0,0,0,0)';
   ctx.fillRect(0, 0, 256, 64);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 36px Inter, sans-serif';
+  ctx.fillStyle = visualTokens.getPropertyValue('--color-text-muted').trim();
+  ctx.font = `600 36px ${visualTokens.getPropertyValue('--font-ui').trim()}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(`${width} x ${depth}`, 10, 32);
@@ -821,10 +822,11 @@ function updateBuildPlate() {
 }
 
 function checkBuildPlateLimits() {
+  const visualTokens = getComputedStyle(document.documentElement);
   if (!engine || !engine.group || engine.group.children.length === 0) {
     bpWarning.classList.add('hidden');
     if (buildPlateGroup && buildPlateGroup.children[0]) {
-      buildPlateGroup.children[0].material.color.setHex(0x1f2224);
+      buildPlateGroup.children[0].material.color.set(visualTokens.getPropertyValue('--color-plate').trim());
     }
     return;
   }
@@ -839,12 +841,12 @@ function checkBuildPlateLimits() {
   if (size.x > width || size.y > depth) {
     bpWarning.classList.remove('hidden');
     if (buildPlateGroup && buildPlateGroup.children[0]) {
-      buildPlateGroup.children[0].material.color.setHex(0x7f1d1d);
+      buildPlateGroup.children[0].material.color.set(visualTokens.getPropertyValue('--color-plate-error').trim());
     }
   } else {
     bpWarning.classList.add('hidden');
     if (buildPlateGroup && buildPlateGroup.children[0]) {
-      buildPlateGroup.children[0].material.color.setHex(0x1f2224);
+      buildPlateGroup.children[0].material.color.set(visualTokens.getPropertyValue('--color-plate').trim());
     }
   }
 }
