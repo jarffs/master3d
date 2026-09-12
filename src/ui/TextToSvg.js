@@ -329,6 +329,8 @@ export class TextToSvg {
     this.fontPickerCallback = null;
     this.onConfirmCallback = callback;
     this.modal.querySelector('h2').textContent = t('app.text_modal_title');
+    this.modal.querySelector('h2').dataset.i18n = 'app.text_modal_title';
+    this.btnConfirm.dataset.i18n = 'app.generate_3d';
     this.btnConfirm.textContent = t('app.generate_3d');
     this.textInput.value = '';
     this.fontSearch.value = '';
@@ -355,6 +357,8 @@ export class TextToSvg {
     this.currentPage = 0;
     this.btnConfirm.disabled = !this.selectedFont;
     this.modal.querySelector('h2').textContent = t('app.choose_font_title');
+    this.modal.querySelector('h2').dataset.i18n = 'app.choose_font_title';
+    this.btnConfirm.dataset.i18n = 'app.use_font';
     this.btnConfirm.textContent = t('app.use_font');
 
     this.filterFonts();
@@ -368,7 +372,7 @@ export class TextToSvg {
 
   async confirm() {
     if (!this.selectedFont) {
-      await Dialog.alert('Por favor, selecione uma fonte.');
+      await Dialog.alert(t('js.select_font'));
       return;
     }
 
@@ -381,7 +385,7 @@ export class TextToSvg {
 
     const text = this.textInput.value.trim();
     if (!text) {
-      await Dialog.alert('Por favor, digite um texto.');
+      await Dialog.alert(t('js.enter_text'));
       return;
     }
 

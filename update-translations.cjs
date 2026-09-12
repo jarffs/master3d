@@ -46,15 +46,7 @@ const landingPt = {
   plan_pack_f1: '50 Exportações STL',
   plan_pack_f2: 'Créditos não expiram',
   plan_pack_f3: 'Acesso a novas ferramentas',
-  plan_pack_btn: 'Comprar Pacote',
-  plan_pro_badge: 'Acesso Ilimitado',
-  plan_pro_price: '€29',
-  plan_pro_period: '/mês',
-  plan_pro_desc: 'Para negócios e lojas',
-  plan_pro_f1: 'Exportações Ilimitadas',
-  plan_pro_f2: 'Licença comercial',
-  plan_pro_f3: 'Suporte prioritário',
-  plan_pro_btn: 'Assinar Pro'
+  plan_pack_btn: 'Comprar Pacote'
 };
 
 const landingEn = {
@@ -101,15 +93,7 @@ const landingEn = {
   plan_pack_f1: '50 STL Exports',
   plan_pack_f2: 'Credits never expire',
   plan_pack_f3: 'Access to new tools',
-  plan_pack_btn: 'Buy Pack',
-  plan_pro_badge: 'Unlimited Access',
-  plan_pro_price: '€29',
-  plan_pro_period: '/month',
-  plan_pro_desc: 'For businesses and shops',
-  plan_pro_f1: 'Unlimited Exports',
-  plan_pro_f2: 'Commercial license',
-  plan_pro_f3: 'Priority support',
-  plan_pro_btn: 'Subscribe Pro'
+  plan_pack_btn: 'Buy Pack'
 };
 
 pt.landing = landingPt;

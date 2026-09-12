@@ -26,12 +26,25 @@ export function openAuthModal(message) {
 function setLoginMode(loginMode) {
   isLoginMode = loginMode;
   authError.classList.add('hidden');
-  authTitle.textContent = t(isLoginMode ? 'auth.login_title' : 'auth.register_title');
-  if (document.getElementById('auth-subtitle')) document.getElementById('auth-subtitle').textContent = 'Personalize seus modelos 3D';
-  authSubmitBtn.textContent = t(isLoginMode ? 'auth.login_btn' : 'auth.register_btn');
-  authSwitchText.textContent = t(isLoginMode ? 'auth.no_account' : 'auth.has_account');
-  authSwitchAction.textContent = t(isLoginMode ? 'auth.register' : 'auth.login');
+  updateAuthLabels();
 }
+
+function updateAuthLabels() {
+  const labels = [
+    [authTitle, isRecoveryMode ? 'auth.reset_title' : isLoginMode ? 'auth.login_title' : 'auth.register_title'],
+    [authSubmitBtn, isRecoveryMode ? 'auth.reset_btn' : isLoginMode ? 'auth.login_btn' : 'auth.register_btn'],
+    [authSwitchText, isLoginMode ? 'auth.no_account' : 'auth.has_account'],
+    [authSwitchAction, isLoginMode ? 'auth.register' : 'auth.login'],
+    [document.getElementById('auth-subtitle'), 'auth.login_subtitle']
+  ];
+  for (const [element, key] of labels) {
+    if (!element) continue;
+    element.dataset.i18n = key;
+    element.textContent = t(key);
+  }
+}
+
+window.addEventListener('language-changed', updateAuthLabels);
 
 export function openLoginModal(message) {
   setLoginMode(true);
@@ -70,6 +83,7 @@ async function initAuth() {
   supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       isRecoveryMode = true;
+      updateAuthLabels();
       authModal.classList.remove('hidden');
       authTitle.textContent = t('auth.reset_title');
       authSubmitBtn.textContent = t('auth.reset_btn');
@@ -111,7 +125,7 @@ function updateAuthUI() {
 
     authSection.innerHTML = `
       <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-        <div id="topbar-credits" class="topbar-credits" title="${t('profile.credits')}">
+        <div id="topbar-credits" class="topbar-credits" data-i18n-title="profile.credits" title="${t('profile.credits')}">
           <span class="topbar-credits-label">${t('profile.credits')}</span>
           <strong>${userProfile?.credits ?? 0}</strong>
         </div>
@@ -161,7 +175,7 @@ function updateAuthUI() {
       await supabase.auth.signOut();
     });
   } else {
-    authSection.innerHTML = `<button id="login-btn" class="secondary-btn" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">${t('nav.login')}</button>`;
+    authSection.innerHTML = `<button id="login-btn" class="secondary-btn" data-i18n="nav.login" style="padding: 6px 16px; font-size: 13px; border-radius: 20px;">${t('nav.login')}</button>`;
     document.getElementById('login-btn')?.addEventListener('click', () => {
       openLoginModal();
     });
@@ -264,7 +278,7 @@ authForm?.addEventListener('submit', async (e) => {
     }
   } catch (err) {
     if (err.message && err.message.includes("Failed to execute 'fetch'")) {
-      authError.textContent = "Erro de configuração: Verifique as variáveis de ambiente do Supabase no Vercel.";
+      authError.textContent = t('js.auth_configuration_error');
     } else {
       authError.textContent = err.message || t('js.error_login');
     }

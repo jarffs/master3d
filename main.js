@@ -2,15 +2,20 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
+import { KeychainTextEngine } from './src/engines/KeychainTextEngine.js';
+import { KeychainImageEngine } from './src/engines/KeychainImageEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { StampEngine } from './src/engines/StampEngine.js';
 import { ThermoformEngine } from './src/engines/ThermoformEngine.js';
+import { BrigadeiroEjectorEngine } from './src/engines/BrigadeiroEjectorEngine.js';
 import { FabricEditor } from './src/ui/FabricEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
 window.ImageTracer = ImageTracer;
+import { openVectorizationDialog } from './src/ui/VectorizationDialog.js';
+import { VectorizationPipeline } from './src/core/VectorizationPipeline.js';
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange, openAuthModal } from './auth.js';
 import { t } from './i18n.js';
@@ -18,6 +23,8 @@ import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { TextToSvg } from './src/ui/TextToSvg.js';
 import { initStripeCheckout, processStripeCheckout } from './src/ui/stripe.js';
 import { Dialog } from './src/ui/Dialog.js';
+
+const SHOW_VECTORIZATION_DIALOG = false;
 
 let scene, camera, renderer, controls;
 let engine;
@@ -32,7 +39,7 @@ let printersData = [];
 let modelUpdateId = 0;
 
 function getControlBuilderOptions() {
-  if (engine?.name === 'keychain') {
+  if (['keychain', 'keychain_text', 'keychain_image'].includes(engine?.name)) {
     return {
       collapsible: true,
       categoryOrder: ['primary', 'base', 'text', 'keyring'],
@@ -69,6 +76,13 @@ function getControlBuilderOptions() {
     return {
       collapsible: true,
       categoryOrder: ['thermoform_mold', 'thermoform_mesh', 'thermoform_hanger'],
+      plainCategories: []
+    };
+  }
+  if (engine?.name === 'brigadeiro_ejector') {
+    return {
+      collapsible: true,
+      categoryOrder: ['cutter', 'stamp'],
       plainCategories: []
     };
   }
@@ -133,7 +147,8 @@ async function initBigLettersEditor() {
       fontFamily: 'Montserrat', 
       fill: '#e91e7b',
       fontWeight: 'bold',
-      layerName: 'Letra Grande',
+      layerName: t('app.big_letter'),
+      layerTranslationKey: 'app.big_letter',
       id: 'BigLetter'
     });
 
@@ -142,7 +157,8 @@ async function initBigLettersEditor() {
       fontFamily: 'Playfair Display', 
       fill: '#ffffff',
       fontStyle: 'italic',
-      layerName: 'Nome',
+      layerName: t('app.sunken_name'),
+      layerTranslationKey: 'app.sunken_name',
       id: 'NameText'
     });
 
@@ -197,7 +213,7 @@ async function initBigLettersEditor() {
         analyzeResult.style.display = 'block';
         
         if (!nameObj || !bigLetterObj) {
-          analyzeResult.textContent = 'Elementos insuficientes para análise.';
+          analyzeResult.textContent = t('js.analysis_empty');
           analyzeResult.style.backgroundColor = '#f1f5f9';
           analyzeResult.style.borderColor = '#cbd5e1';
           analyzeResult.style.color = '#64748b';
@@ -213,12 +229,12 @@ async function initBigLettersEditor() {
         }
 
         if (effectiveFontSize < minSafeSize) {
-          analyzeResult.innerHTML = `<strong>Aviso!</strong> O texto do nome está demasiado pequeno (Tamanho Efetivo: ${Math.round(effectiveFontSize)}).<br/>Paredes podem ficar inferiores a 1.2mm e quebrar na impressão 3D.<br/><em>Dica: Aumente o nome ou use uma fonte mais robusta.</em>`;
+          analyzeResult.textContent = t('js.analysis_warning', { size: Math.round(effectiveFontSize) });
           analyzeResult.style.backgroundColor = '#fef2f2';
           analyzeResult.style.borderColor = '#fca5a5';
           analyzeResult.style.color = '#b91c1c';
         } else {
-          analyzeResult.innerHTML = `<strong>Tudo OK!</strong> O design parece robusto e seguro para impressão 3D com bicos até 0.6mm.`;
+          analyzeResult.textContent = t('app.analysis_ok');
           analyzeResult.style.backgroundColor = '#f0fdf4';
           analyzeResult.style.borderColor = '#bbf7d0';
           analyzeResult.style.color = '#15803d';
@@ -368,7 +384,12 @@ function initThree() {
 
   if (tool === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
+  } else if (tool === 'keychain_text') {
+    engine = new KeychainTextEngine(scene);
+  } else if (tool === 'keychain_image') {
+    engine = new KeychainImageEngine(scene);
   } else if (tool === 'keychain') {
+    // legacy support
     engine = new KeychainEngine(scene);
   } else if (tool === 'coloring') {
     engine = new ColoringEngine(scene);
@@ -378,6 +399,8 @@ function initThree() {
     engine = new StampEngine(scene);
   } else if (tool === 'thermoform') {
     engine = new ThermoformEngine(scene);
+  } else if (tool === 'brigadeiro_ejector') {
+    engine = new BrigadeiroEjectorEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -399,6 +422,16 @@ function initThree() {
       title: t('app.tool_keychain'),
       alt: t('app.tool_keychain_reference')
     },
+    keychain_text: {
+      image: '/images/tools/keychain-text.jpg',
+      title: t('app.tool_keychain_text'),
+      alt: t('app.tool_keychain_reference')
+    },
+    keychain_image: {
+      image: '/images/tools/keychain-image.jpg',
+      title: t('app.tool_keychain_image'),
+      alt: t('app.tool_keychain_reference')
+    },
     coloring: {
       image: '/images/tools/coloring.jpg',
       title: t('app.tool_coloring'),
@@ -413,6 +446,11 @@ function initThree() {
       image: '/images/tools/thermoform.jpg',
       title: t('app.tool_thermoform'),
       alt: t('app.tool_thermoform_reference')
+    },
+    brigadeiro_ejector: {
+      image: '/images/tools/thermoform.jpg',
+      title: t('app.tool_brigadeiro_ejector'),
+      alt: t('app.tool_brigadeiro_ejector_reference')
     }
   };
   const toolReference = toolReferences[tool];
@@ -420,23 +458,33 @@ function initThree() {
     toolReferenceImage.src = toolReference.image;
     toolReferenceImage.alt = toolReference.alt;
     toolReferenceTitle.textContent = toolReference.title;
+    toolReferenceTitle.dataset.i18n = `app.tool_${tool}`;
+    toolReferenceImage.dataset.i18nAlt = `app.tool_${['keychain_text', 'keychain_image'].includes(tool) ? 'keychain' : tool}_reference`;
+  }
+  
+  // Configurar o tamanho inicial do ejetor na UI
+  if (tool === 'brigadeiro_ejector') {
+    const wInput = document.getElementById('model-width');
+    const dInput = document.getElementById('model-depth');
+    if(wInput) wInput.value = 20;
+    if(dInput) dInput.value = 20;
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform') {
-    const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
-    const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
+  if (tool === 'keychain' || tool === 'keychain_text' || tool === 'keychain_image' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform' || tool === 'brigadeiro_ejector') {
+    const titleEl = document.querySelector('[data-i18n="app.upload_image_title"]');
+    const uploadDescEl = document.querySelector('[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
     
-    if (titleEl && tool !== 'big_letters' && tool !== 'stamp') {
-      titleEl.setAttribute('data-i18n', 'app.upload_image_title_keychain');
+    if (titleEl) {
+      titleEl.setAttribute('data-i18n', tool === 'keychain' ? 'app.upload_image_title_keychain' : 'app.upload_image');
     }
-    if (uploadDescEl && tool !== 'big_letters' && tool !== 'stamp') {
-      uploadDescEl.setAttribute('data-i18n', 'app.upload_desc_keychain');
+    if (uploadDescEl) {
+      uploadDescEl.setAttribute('data-i18n', tool === 'keychain' ? 'app.upload_desc_keychain' : 'app.upload_desc');
     }
     if (exportBtnText) {
       exportBtnText.setAttribute('data-i18n', 'app.export_3mf');
-      exportBtnText.textContent = 'Exportar 3MF';
+      exportBtnText.textContent = t('app.export_3mf');
     }
     
     if (tool === 'big_letters') {
@@ -473,6 +521,10 @@ function initThree() {
     }
   }
   
+  if (tool === 'keychain_text') {
+    document.querySelectorAll('.upload-group').forEach(element => element.style.display = 'none');
+  }
+
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
   textToSvg = new TextToSvg('text-to-svg-modal');
 
@@ -524,7 +576,7 @@ async function loadPrinters() {
     }
     
     if (availableDefaults.length === 0 && customPlates.length === 0) {
-      printersData = [{ id: 'default', name: 'Impressora Padrão', width: 220, depth: 220 }];
+      printersData = [{ id: 'default', name: t('profile.default_printer'), width: 220, depth: 220 }];
     } else {
       printersData = [...availableDefaults, ...customPlates];
     }
@@ -534,6 +586,10 @@ async function loadPrinters() {
       const option = document.createElement('option');
       option.value = printer.id;
       option.textContent = printer.name + ` (${printer.width}x${printer.depth})`;
+      if (printer.id === 'default') {
+        option.dataset.i18n = 'profile.default_printer_dimensions';
+        option.textContent = t('profile.default_printer_dimensions');
+      }
       printerProfileSelect.appendChild(option);
     });
     
@@ -595,6 +651,7 @@ function animate() {
 
 function updateBuildPlate() {
   if (!buildPlateGroup) return;
+  const visualTokens = getComputedStyle(document.documentElement);
   
   while(buildPlateGroup.children.length > 0) {
     const child = buildPlateGroup.children[0];
@@ -673,7 +730,7 @@ function updateBuildPlate() {
   geometry.translate(0, 0, -2);
   
   const material = new THREE.MeshStandardMaterial({
-    color: 0x1f2224,
+    color: visualTokens.getPropertyValue('--color-plate').trim(),
     roughness: 0.9,
     metalness: 0.2
   });
@@ -686,10 +743,10 @@ function updateBuildPlate() {
   const spacing = 10;
   
   const gridMaterial = new THREE.LineBasicMaterial({ 
-    color: 0x666666, transparent: true, opacity: 0.6
+    color: visualTokens.getPropertyValue('--color-plate-grid').trim(), transparent: true, opacity: 0.6
   });
   const majorGridMaterial = new THREE.LineBasicMaterial({ 
-    color: 0x999999, transparent: true, opacity: 0.8
+    color: visualTokens.getPropertyValue('--color-plate-grid-major').trim(), transparent: true, opacity: 0.8
   });
   
   const majorVertices = [];
@@ -761,8 +818,8 @@ function updateBuildPlate() {
   const ctx = textCanvas.getContext('2d');
   ctx.fillStyle = 'rgba(0,0,0,0)';
   ctx.fillRect(0, 0, 256, 64);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 36px Inter, sans-serif';
+  ctx.fillStyle = visualTokens.getPropertyValue('--color-text-muted').trim();
+  ctx.font = `600 36px ${visualTokens.getPropertyValue('--font-ui').trim()}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(`${width} x ${depth}`, 10, 32);
@@ -786,10 +843,11 @@ function updateBuildPlate() {
 }
 
 function checkBuildPlateLimits() {
+  const visualTokens = getComputedStyle(document.documentElement);
   if (!engine || !engine.group || engine.group.children.length === 0) {
     bpWarning.classList.add('hidden');
     if (buildPlateGroup && buildPlateGroup.children[0]) {
-      buildPlateGroup.children[0].material.color.setHex(0x1f2224);
+      buildPlateGroup.children[0].material.color.set(visualTokens.getPropertyValue('--color-plate').trim());
     }
     return;
   }
@@ -804,12 +862,12 @@ function checkBuildPlateLimits() {
   if (size.x > width || size.y > depth) {
     bpWarning.classList.remove('hidden');
     if (buildPlateGroup && buildPlateGroup.children[0]) {
-      buildPlateGroup.children[0].material.color.setHex(0x7f1d1d);
+      buildPlateGroup.children[0].material.color.set(visualTokens.getPropertyValue('--color-plate-error').trim());
     }
   } else {
     bpWarning.classList.add('hidden');
     if (buildPlateGroup && buildPlateGroup.children[0]) {
-      buildPlateGroup.children[0].material.color.setHex(0x1f2224);
+      buildPlateGroup.children[0].material.color.set(visualTokens.getPropertyValue('--color-plate').trim());
     }
   }
 }
@@ -856,7 +914,7 @@ function refreshExportButtons() {
 }
 
 async function updateModel() {
-  if (!currentSvgText && engine?.name !== 'keychain') return;
+  if (!currentSvgText && !['keychain', 'keychain_text'].includes(engine?.name)) return;
   if (!engine || !controlBuilder) return;
 
   const updateId = ++modelUpdateId;
@@ -897,21 +955,25 @@ async function initDimensionsFromSVG() {
   // Run a preliminary generation to get aspect ratio
   if (!engine || !controlBuilder) return;
   const tempParams = controlBuilder.getValues();
-  tempParams.targetWidth = 80;
-  tempParams.targetDepth = 80;
+  
+  // Pega o valor atual que já está na UI (pode ter sido alterado pelo usuário ou pelo script de inicialização)
+  const baseSize = parseFloat(modelWidthInput.value) || 80;
+  
+  tempParams.targetWidth = baseSize;
+  tempParams.targetDepth = baseSize;
   await engine.generate3DModel(tempParams);
   
   if (engine.svgAspectRatio) {
     svgAspectRatio = engine.svgAspectRatio;
-    // Set initial dimensions based on 80mm max and aspect ratio
+    // Set initial dimensions based on baseSize max and aspect ratio
     if (svgAspectRatio >= 1) {
       // Wider than tall
-      modelWidthInput.value = 80;
-      modelDepthInput.value = Math.round(80 / svgAspectRatio);
+      modelWidthInput.value = baseSize;
+      modelDepthInput.value = Math.round(baseSize / svgAspectRatio);
     } else {
       // Taller than wide
-      modelDepthInput.value = 80;
-      modelWidthInput.value = Math.round(80 * svgAspectRatio);
+      modelDepthInput.value = baseSize;
+      modelWidthInput.value = Math.round(baseSize * svgAspectRatio);
     }
   }
 }
@@ -976,6 +1038,7 @@ uploadInput.addEventListener('change', (e) => {
   if (!file) return;
   
   fileNameDisplay.textContent = file.name;
+  fileNameDisplay.removeAttribute('data-i18n');
   
   if (file.name.toLowerCase().endsWith('.svg')) {
     const reader = new FileReader();
@@ -994,101 +1057,42 @@ uploadInput.addEventListener('change', (e) => {
     };
     reader.readAsText(file);
   } else {
-    // Process raster image
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 30 * 1024 * 1024) {
+      Dialog.alert(t('js.image_format_limit'));
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const dataUrl = event.target.result;
-      
-      const img = new Image();
-      img.onload = () => {
-        // Reduzir o tamanho da imagem para caber na parte central do editor e processar rápido
-        let targetWidth = img.width;
-        let targetHeight = img.height;
-        const MAX_SIZE = 800; // Tamanho máximo razoável
-
-        if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
-          const ratio = Math.min(MAX_SIZE / targetWidth, MAX_SIZE / targetHeight);
-          targetWidth = Math.round(targetWidth * ratio);
-          targetHeight = Math.round(targetHeight * ratio);
-        }
-
-        // Create canvas to flatten transparent background to white
-        const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d');
-        
-        // Fill white background
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Draw image over it
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-        
-        // Strict thresholding to guarantee pure black and white
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          // Luminance formula
-          const brightness = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-          // If transparent or bright, make it white. Otherwise make it black.
-          const color = (data[i+3] < 128 || brightness > 128) ? 255 : 0;
-          data[i] = color;
-          data[i+1] = color;
-          data[i+2] = color;
-          data[i+3] = 255; // fully opaque
-        }
-        ctx.putImageData(imageData, 0, 0);
-        
-        const flattenedDataUrl = canvas.toDataURL('image/png');
-        
-        // options for exact black and white silhouette tracing
-        const options = {
-          ltres: 1,
-          qtres: 1,
-          pathomit: 8,
-          colorsampling: 0, 
-          numberofcolors: 2,
-          pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
-        };
-        
-        ImageTracer.imageToSVG(flattenedDataUrl, async (svgString) => {
-          // Parse SVG safely and remove white paths
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(svgString, "image/svg+xml");
-          
-          const paths = doc.querySelectorAll('path');
-          paths.forEach(p => {
-             const fill = p.getAttribute('fill');
-             if (fill && (fill.replace(/\s/g, '') === 'rgb(255,255,255)' || fill === '#ffffff')) {
-                 p.remove();
-             }
-          });
-          
-          // Force viewBox if missing to ensure proper scaling in SVGEditor
-          const svgEl = doc.querySelector('svg');
-          if (svgEl && !svgEl.hasAttribute('viewBox')) {
-            svgEl.setAttribute('viewBox', `0 0 ${targetWidth} ${targetHeight}`);
-            svgEl.setAttribute('width', targetWidth);
-            svgEl.setAttribute('height', targetHeight);
+      try {
+        let vectorizedWidth = parseFloat(modelWidthInput.value) || 80;
+        const svgString = SHOW_VECTORIZATION_DIALOG
+          ? await openVectorizationDialog(dataUrl, {
+            modelWidth: vectorizedWidth,
+            onApply: result => { vectorizedWidth = result.stats.params.modelWidth; },
+          })
+          : await new VectorizationPipeline('high_fidelity', {
+            modelWidth: vectorizedWidth,
+          }).process(dataUrl);
+        if (!svgString) return;
+        svgEditor.open(svgString, async (editedSvg) => {
+          currentSvgText = editedSvg;
+          if (engine.name === 'keychain') {
+            engine.loadImageSVG(currentSvgText);
+          } else {
+            engine.loadSVG(currentSvgText);
           }
-
-          const initialSvg = new XMLSerializer().serializeToString(doc);
-          
-          // Open editor for cleanup
-          svgEditor.open(initialSvg, async (editedSvg) => {
-            currentSvgText = editedSvg;
-            if (engine.name === 'keychain') {
-              engine.loadImageSVG(currentSvgText);
-            } else {
-              engine.loadSVG(currentSvgText);
-            }
-            await initDimensionsFromSVG();
-            await updateModel();
-          });
-        }, options);
-      };
-      img.src = dataUrl;
+          await initDimensionsFromSVG();
+          modelWidthInput.value = vectorizedWidth;
+          modelDepthInput.value = Math.round(vectorizedWidth / (svgAspectRatio || 1));
+          await updateModel();
+        });
+      } catch (err) {
+        console.error('Vectorization failed:', err);
+        Dialog.alert(err.message);
+      }
     };
+    reader.onerror = () => Dialog.alert(t('js.image_read_error'));
     reader.readAsDataURL(file);
   }
 });
@@ -1114,7 +1118,7 @@ downloadBtn.addEventListener('click', async () => {
     if (error) throw error;
     
     if (!success) {
-      await Dialog.alert("Não tem créditos suficientes. Por favor, adquira mais pacotes de STLs.");
+      await Dialog.alert(t('js.insufficient_credits'));
       
       const profileModal = document.getElementById('profile-modal');
       if (profileModal) profileModal.classList.remove('hidden');
@@ -1136,7 +1140,7 @@ downloadBtn.addEventListener('click', async () => {
     
   } catch (err) {
     console.error("Erro ao descontar crédito:", err);
-    await Dialog.alert("Ocorreu um erro ao processar o seu crédito. Tente novamente.");
+    await Dialog.alert(t('js.credit_error'));
     downloadBtn.disabled = false;
     if(saveDesignBtn) saveDesignBtn.disabled = false;
     downloadBtn.innerHTML = originalText;
@@ -1148,7 +1152,7 @@ downloadBtn.addEventListener('click', async () => {
   downloadBtn.innerHTML = originalText;
   
   let exported = true;
-  if (engine.name === 'keychain') {
+  if (['keychain', 'keychain_text', 'keychain_image'].includes(engine.name)) {
     exported = await engine.export3MF('masterworld_chaveiro.3mf');
   } else if (engine.name === 'coloring') {
     exported = await engine.export3MF('masterworld_colorir.3mf');
@@ -1161,7 +1165,7 @@ downloadBtn.addEventListener('click', async () => {
   }
 
   if (!exported) {
-    await Dialog.alert("Não foi possível gerar o ficheiro 3MF. Gere o modelo novamente e tente exportar.");
+    await Dialog.alert(t('js.error_3mf'));
   }
 });
 
@@ -1177,7 +1181,7 @@ if (saveDesignBtn) {
       return;
     }
     
-    if (!currentSvgText) return;
+    if (!currentSvgText && engine?.name !== 'keychain_text') return;
     
     const projectName = await Dialog.prompt(t('app.save_prompt') || 'Name your design:');
     if (!projectName) return; // User cancelled
@@ -1197,7 +1201,7 @@ if (saveDesignBtn) {
         .maybeSingle();
         
       if (existingDesign) {
-        const confirmOverwrite = await Dialog.confirm("Um projeto com este nome já existe. Deseja substituí-lo?");
+        const confirmOverwrite = await Dialog.confirm(t('js.overwrite_design'));
         if (!confirmOverwrite) {
           saveDesignBtn.innerHTML = originalText;
           saveDesignBtn.disabled = false;
@@ -1267,7 +1271,7 @@ if (saveDesignBtn) {
       
     } catch (err) {
       console.error('Error saving design:', err);
-      await Dialog.alert('Error saving design: ' + err.message);
+      await Dialog.alert(t('js.error_save_design') + err.message);
     } finally {
       saveDesignBtn.innerHTML = originalText;
       saveDesignBtn.disabled = false;
@@ -1313,7 +1317,7 @@ async function loadDesigns() {
 
     if (!data || data.length === 0) {
       designsEmpty.style.display = 'block';
-      designsEmpty.textContent = 'Nenhum projeto salvo encontrado.';
+      designsEmpty.textContent = t('app.no_designs');
       return;
     }
 
@@ -1325,7 +1329,7 @@ async function loadDesigns() {
       
       const imgHtml = design.thumbnail_url 
         ? `<img src="${design.thumbnail_url}" style="width: 100%; height: 150px; object-fit: cover; border-bottom: 1px solid var(--border-color); display: block;">`
-        : `<div style="width: 100%; height: 150px; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">Sem Imagem</div>`;
+        : `<div data-i18n="app.no_preview" style="width: 100%; height: 150px; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">${t('app.no_preview')}</div>`;
 
       const date = new Date(design.created_at).toLocaleDateString();
 
@@ -1334,14 +1338,14 @@ async function loadDesigns() {
         <div style="padding: 12px; position: relative;">
           <h4 style="margin: 0 0 4px 0; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 30px;" title="${design.name}">${design.name}</h4>
           <div style="font-size: 12px; color: var(--text-secondary);">${date}</div>
-          <button class="delete-design-btn" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; border-radius: 4px;" title="Excluir" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">
+          <button class="delete-design-btn" data-i18n-title="app.delete_design" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; border-radius: 4px;" title="${t('app.delete_design')}" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
       `;
 
       card.addEventListener('click', async () => {
-        if (!(await Dialog.confirm('Deseja sair do projeto atual? Alterações não salvas serão perdidas.'))) {
+        if (!(await Dialog.confirm(t('js.leave_design')))) {
           return;
         }
         
@@ -1359,7 +1363,7 @@ async function loadDesigns() {
       const delBtn = card.querySelector('.delete-design-btn');
       delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (await Dialog.confirm(`Tem certeza que deseja apagar "${design.name}"?`)) {
+        if (await Dialog.confirm(t('js.delete_design', { name: design.name }))) {
           const oldHtml = delBtn.innerHTML;
           delBtn.innerHTML = '...';
           
@@ -1377,7 +1381,7 @@ async function loadDesigns() {
             }
           } else {
             console.error(error);
-            await Dialog.alert('Erro ao apagar projeto.');
+            await Dialog.alert(t('js.error_delete_design'));
             delBtn.innerHTML = oldHtml;
           }
         }
@@ -1389,7 +1393,8 @@ async function loadDesigns() {
     console.error('Error loading designs:', err);
     designsLoading.style.display = 'none';
     designsEmpty.style.display = 'block';
-    designsEmpty.textContent = 'Erro ao carregar projetos: ' + err.message;
+    designsEmpty.removeAttribute('data-i18n');
+    designsEmpty.textContent = t('js.error_load_designs') + err.message;
   }
 }
 
@@ -1404,6 +1409,10 @@ function loadDesignIntoEngine(design) {
     engine = new CookieCutterEngine(scene);
   } else if (toolType === 'keychain') {
     engine = new KeychainEngine(scene);
+  } else if (toolType === 'keychain_text') {
+    engine = new KeychainTextEngine(scene);
+  } else if (toolType === 'keychain_image') {
+    engine = new KeychainImageEngine(scene);
   } else if (toolType === 'coloring') {
     engine = new ColoringEngine(scene);
   } else if (toolType === 'big_letters') {
@@ -1421,7 +1430,7 @@ function loadDesignIntoEngine(design) {
 
   // Load SVG
   currentSvgText = design.svg_data;
-  if (engine.name !== 'keychain') engine.loadSVG(currentSvgText);
+  if (!['keychain', 'keychain_text'].includes(engine.name)) engine.loadSVG(currentSvgText);
   
   // Update UI Inputs
   if (design.settings) {
@@ -1443,7 +1452,8 @@ function loadDesignIntoEngine(design) {
   
   // Visual Update
   fileNameDisplay.style.display = 'block';
-  fileNameDisplay.textContent = design.name + ' (Carregado)';
+  fileNameDisplay.removeAttribute('data-i18n');
+  fileNameDisplay.textContent = design.name + t('app.loaded_suffix');
   
   updateModel();
 }

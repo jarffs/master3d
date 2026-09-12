@@ -19,7 +19,19 @@ O **CutterMaker3D** é uma aplicação web interativa e paramétrica que permite
 - **Vite:** Ferramenta de build extremamente rápida.
 - **Three.js:** Biblioteca JavaScript 3D para renderização no canvas.
 - **ClipperLib:** Biblioteca de operações com polígonos (booleanas e offsets) para criar as paredes do cortador baseadas nos caminhos do SVG.
-- **Vanilla JS & CSS:** Construído sem frameworks pesados, garantindo alta performance e um design "Glassmorphism" elegante.
+- **Vanilla JS & CSS:** Construído sem frameworks pesados, com identidade visual Soft Creative Tech.
+
+## Sistema visual
+
+Os tokens de cor, tipografia Manrope, espaçamento visual, raios e estados ficam em [soft-ui.css](soft-ui.css), carregado depois dos estilos existentes nas três páginas públicas. As variáveis antigas são aliases desses tokens para preservar componentes e estilos inline.
+
+- Superfícies brancas sobre fundo `#F7F9FC`, texto `#172033`, destaques indigo e detalhes turquesa.
+- Primary `#6366F1`; ações com texto branco pequeno usam `#6063EB` para atingir contraste de pelo menos 4,5:1. Hover `#4F46E5`.
+- A mesa 3D usa tokens próprios, sem alterar materiais dos modelos ou arquivos exportados.
+- O canvas Fabric mantém suas coordenadas de 800 × 800; o CSS ajusta somente sua exibição ao espaço disponível.
+- `npx playwright test tests/visual.spec.js tests/i18n.spec.js` verifica as páginas e sete ferramentas em 1440, 768 e 390 px, traduções, foco, contraste do botão principal, modais, canvas 2D e interação 3D. Capturas ficam em `test-results/`.
+
+Os testes de perfil verificam sua apresentação sem autenticar nem enviar alterações. Pagamentos e serviços externos não fazem parte da validação visual.
 
 ## 📦 Como rodar o projeto localmente
 

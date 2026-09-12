@@ -1,0 +1,47 @@
+{
+  "vtracer": {
+    "metrics": {
+      "foregroundIoU": 0.8769230769230769,
+      "meanAbsoluteError": 0.008725075316584967,
+      "differentPixelRatio": 0.008626302083333334,
+      "width": 384,
+      "height": 384
+    },
+    "points": 257,
+    "paths": 5,
+    "bytes": 3996,
+    "durationMs": 3.0776999999998225,
+    "params": {
+      "colorMode": 1,
+      "hierarchical": 1,
+      "filterSpeckle": 1,
+      "colorPrecision": 6,
+      "layerDifference": 5,
+      "mode": 2,
+      "cornerThreshold": 60,
+      "lengthThreshold": 3.5,
+      "maxIterations": 10,
+      "spliceThreshold": 45,
+      "pathPrecision": 3
+    }
+  },
+  "opencv": {
+    "metrics": {
+      "foregroundIoU": 0.9301756253326238,
+      "meanAbsoluteError": 0.006991916232638889,
+      "differentPixelRatio": 0.004448784722222222,
+      "width": 384,
+      "height": 384
+    },
+    "points": 458,
+    "paths": 5,
+    "bytes": 5488,
+    "durationMs": 7.705899999999929,
+    "params": {
+      "threshold": 128,
+      "retrieval": "RETR_TREE",
+      "epsilon": 0.5,
+      "closed": true
+    }
+  }
+}

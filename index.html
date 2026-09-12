@@ -5,35 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MasterWorld — Crie Modelos 3D Personalizados em Segundos</title>
   <meta name="description" content="Plataforma de geração de modelos 3D para impressão. Cortadores de biscoito, chaveiros, carimbos e muito mais. Rápido, fácil e direto no navegador.">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg-dark: #0a0a0f;
-      --bg-card: #13131a;
-      --bg-card-hover: #1a1a24;
-      --surface: #1e1e2a;
-      --border: rgba(255,255,255,0.06);
-      --border-hover: rgba(217,119,6,0.4);
-      --text: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent: #d97706;
-      --accent-glow: rgba(217,119,6,0.25);
-      --accent-hover: #f59e0b;
-      --gradient-hero: linear-gradient(135deg, #0f0c29 0%, #1a1040 40%, #24243e 100%);
-      --radius: 16px;
-      --radius-sm: 10px;
-      --bg-surface: var(--bg-card);
-      --bg-color: var(--bg-dark);
-      --bg-main: var(--bg-dark);
-      --border-color: var(--border);
-      --text-primary: var(--text);
-    }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font-ui, sans-serif);
       background: var(--bg-dark);
       color: var(--text);
       overflow-x: hidden;
@@ -186,7 +163,7 @@
       justify-content: center;
       text-align: center;
       padding: 140px 24px 80px;
-      background: var(--gradient-hero);
+      background: var(--color-background);
       overflow: hidden;
     }
 
@@ -577,8 +554,9 @@
       .hero { padding: 120px 16px 60px; }
     }
   </style>
+  <link rel="stylesheet" href="./soft-ui.css">
 </head>
-<body>
+<body class="landing-page">
 
   <!-- NAVBAR -->
   <nav class="navbar">
@@ -623,15 +601,27 @@
         </div>
       </a>
 
-      <!-- Chaveiro 3D – AVAILABLE -->
-      <a href="./app.html?tool=keychain" class="tool-card">
+      <!-- Chaveiro Texto – AVAILABLE -->
+      <a href="./app.html?tool=keychain_text" class="tool-card">
         <span class="tool-badge available" data-i18n="landing.tool_available">Disponível</span>
         <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
-          <img src="/images/tools/keychain.jpg" alt="Chaveiro 3D" class="tool-card-img" loading="lazy">
+          <img src="/images/tools/keychain-text.jpg" alt="Chaveiro com Texto" class="tool-card-img" loading="lazy">
         </div>
         <div class="tool-card-body">
-          <h3 data-i18n="landing.tool_keychain_title">🔑 Chaveiro 3D</h3>
-          <p data-i18n="landing.tool_keychain_desc">Crie chaveiros personalizados com nomes, logótipos ou formas únicas.</p>
+          <h3 data-i18n="landing.tool_keychain_text_title">🔑 Chaveiro com Texto</h3>
+          <p data-i18n="landing.tool_keychain_text_desc">Crie chaveiros personalizados com nomes e textos em relevo.</p>
+        </div>
+      </a>
+
+      <!-- Chaveiro Imagem – AVAILABLE -->
+      <a href="./app.html?tool=keychain_image" class="tool-card">
+        <span class="tool-badge available" data-i18n="landing.tool_available">Disponível</span>
+        <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
+          <img src="/images/tools/keychain-image.jpg" alt="Chaveiro com Imagem" class="tool-card-img" loading="lazy">
+        </div>
+        <div class="tool-card-body">
+          <h3 data-i18n="landing.tool_keychain_image_title">🖼️ Chaveiro com Imagem</h3>
+          <p data-i18n="landing.tool_keychain_image_desc">Crie chaveiros personalizados a partir de qualquer imagem ou logótipo.</p>
         </div>
       </a>
 
@@ -671,9 +661,9 @@
         </div>
       </a>
 
-      <!-- Ejetor de Brigadeiro – EM BREVE -->
-      <div class="tool-card disabled">
-        <span class="tool-badge" data-i18n="landing.tool_coming_soon">Em Breve</span>
+      <!-- Ejetor de Brigadeiro – AVAILABLE -->
+      <a href="./app.html?tool=brigadeiro_ejector" class="tool-card">
+        <span class="tool-badge available" data-i18n="landing.tool_available">Disponível</span>
         <div style="overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;">
           <img src="/images/tools/candy-ejector.jpg" alt="Ejetor de Brigadeiro" class="tool-card-img" loading="lazy">
         </div>
@@ -681,7 +671,7 @@
           <h3 data-i18n="landing.tool_ejector_title">🍫 Ejetor de Brigadeiro</h3>
           <p data-i18n="landing.tool_ejector_desc">Moldes com ejetor para brigadeiros e doces. Produza centenas em minutos.</p>
         </div>
-      </div>
+      </a>
 
       <!-- Letras Grandes – EM BREVE -->
       <div class="tool-card disabled">
@@ -753,20 +743,20 @@
 
       <!-- Mini -->
       <div class="pricing-card">
-        <h3>Mini</h3>
-        <div class="pricing-price">€5<span class="period"> /mês</span></div>
+        <h3 data-i18n="pricing.mini_title">Mini</h3>
+        <div class="pricing-price">€5<span class="period" data-i18n="pricing.mini_price_desc"> / 10 STLs</span></div>
         <ul class="pricing-features">
-          <li>10 Créditos (€0.50/STL)</li>
-          <li>Licença Comercial</li>
-          <li>Salvar na Nuvem</li>
+          <li data-i18n="pricing.mini_f1">10 Créditos (€0.50/STL)</li>
+          <li data-i18n="pricing.commercial_license">Licença Comercial</li>
+          <li data-i18n="pricing.adv_f2">Salvar na Nuvem</li>
         </ul>
-        <a href="./app.html?buy=mini" class="pricing-btn">Assinar Mini</a>
+        <a href="./app.html?buy=mini" class="pricing-btn" data-i18n="pricing.mini_btn">Assinar Mini</a>
       </div>
 
       <!-- Popular -->
       <div class="pricing-card featured">
         <h3 data-i18n="landing.plan_pack_badge">Popular</h3>
-        <div class="pricing-price"><span data-i18n="landing.plan_pack_price">€15</span><span class="period"> /mês</span></div>
+        <div class="pricing-price"><span data-i18n="landing.plan_pack_price">€15</span><span class="period" data-i18n="pricing.pack_price_desc"> / 50 STLs</span></div>
         <ul class="pricing-features">
           <li data-i18n="landing.plan_pack_f1">50 Créditos (€0.30/STL)</li>
           <li data-i18n="landing.plan_pack_f2">Licença Comercial</li>
@@ -777,39 +767,28 @@
 
       <!-- Avançado -->
       <div class="pricing-card">
-        <h3>Avançado</h3>
-        <div class="pricing-price">€50<span class="period"> /mês</span></div>
+        <h3 data-i18n="pricing.adv_title">Avançado</h3>
+        <div class="pricing-price">€50<span class="period" data-i18n="pricing.adv_price_desc"> / 200 STLs</span></div>
         <ul class="pricing-features">
-          <li>200 Créditos (€0.25/STL)</li>
-          <li>Licença Comercial</li>
-          <li>Designs na Nuvem</li>
+          <li data-i18n="pricing.adv_f1">200 Créditos (€0.25/STL)</li>
+          <li data-i18n="pricing.commercial_license">Licença Comercial</li>
+          <li data-i18n="pricing.adv_f2">Designs na Nuvem</li>
         </ul>
-        <a href="./app.html?buy=advanced" class="pricing-btn">Assinar Avançado</a>
+        <a href="./app.html?buy=advanced" class="pricing-btn" data-i18n="pricing.adv_btn">Assinar Avançado</a>
       </div>
 
-      <!-- Studio -->
-      <div class="pricing-card">
-        <h3 data-i18n="landing.plan_pro_badge">Studio</h3>
-        <div class="pricing-price"><span data-i18n="landing.plan_pro_price">€99</span><span class="period" data-i18n="landing.plan_pro_period"> /mês</span></div>
-        <ul class="pricing-features">
-          <li data-i18n="landing.plan_pro_f1">500 Créditos (~€0.20/STL)</li>
-          <li data-i18n="landing.plan_pro_f2">Suporte Prioritário</li>
-          <li data-i18n="landing.plan_pro_f3">Licença Comercial</li>
-        </ul>
-        <a href="./app.html?buy=studio" class="pricing-btn" data-i18n="landing.plan_pro_btn">Assinar Studio</a>
-      </div>
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer class="footer">
-    <p>&copy; 2026 MasterWorld. Todos os direitos reservados.</p>
-    <p style="margin-top: 8px; font-size: 14px; color: var(--text-muted);">Contato: <a href="mailto:geral@masterworld.eu" style="color: var(--accent-hover); text-decoration: none;">geral@masterworld.eu</a></p>
+    <p data-i18n="footer.masterworld_rights">&copy; 2026 MasterWorld. Todos os direitos reservados.</p>
+    <p style="margin-top: 8px; font-size: 14px; color: var(--text-muted);"><span data-i18n="nav.contact">Contato</span>: <a href="mailto:geral@masterworld.eu" style="color: var(--accent-hover); text-decoration: none;">geral@masterworld.eu</a></p>
   </footer>
 
   <div id="auth-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="auth-title">
     <div class="modal-content">
-      <button id="close-modal-btn" class="close-btn" type="button" aria-label="Fechar">&times;</button>
+      <button id="close-modal-btn" class="close-btn" type="button" data-i18n-aria-label="common.close" aria-label="Fechar">&times;</button>
       <div style="text-align: center; margin-bottom: 24px;">
         <h2 id="auth-title" data-i18n="auth.login_title" style="margin-bottom: 8px;">Acesse sua conta</h2>
         <p id="auth-subtitle" data-i18n="auth.login_subtitle" style="color: var(--text-secondary);">Personalize seus modelos 3D</p>
@@ -826,7 +805,7 @@
       </button>
       <div style="display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--text-muted); font-size: 13px;">
         <span style="height: 1px; flex: 1; background: var(--border);"></span>
-        <span>ou</span>
+        <span data-i18n="app.or_separator">ou</span>
         <span style="height: 1px; flex: 1; background: var(--border);"></span>
       </div>
       <form id="auth-form" style="display: grid; gap: 16px;">
