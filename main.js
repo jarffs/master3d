@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
+import { KeychainTextEngine } from './src/engines/KeychainTextEngine.js';
+import { KeychainImageEngine } from './src/engines/KeychainImageEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { StampEngine } from './src/engines/StampEngine.js';
@@ -382,7 +384,12 @@ function initThree() {
 
   if (tool === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
+  } else if (tool === 'keychain_text') {
+    engine = new KeychainTextEngine(scene);
+  } else if (tool === 'keychain_image') {
+    engine = new KeychainImageEngine(scene);
   } else if (tool === 'keychain') {
+    // legacy support
     engine = new KeychainEngine(scene);
   } else if (tool === 'coloring') {
     engine = new ColoringEngine(scene);
