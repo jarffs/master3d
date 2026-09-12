@@ -355,7 +355,7 @@ export class StampEngine extends BaseEngine {
     const holeDepth = Math.max(1, baseThick - 1); // leave 1mm solid above hole
     
     // O raio da base é o raio máximo da textura + 1mm de margem (ou seja, diâmetro 2mm maior)
-    const baseR = maxRadiusScaled + wallThickness + 1;
+    const baseR = maxRadiusScaled; // Remove extra exterior wall margin
 
     const baseSolid = own(Manifold.cylinder(baseThick, baseR, baseR, 64));
     const holeSolid = own(Manifold.cylinder(holeDepth, holeRadius, holeRadius, 32));

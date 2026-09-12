@@ -2,6 +2,65 @@ import { test, expect } from '@playwright/test';
 
 const sizes = [{ width: 1440, height: 900 }, { width: 768, height: 1024 }, { width: 390, height: 844 }];
 
+for (const source of ['text', 'svg', 'png']) {
+  test(`split keychain generates from ${source}`, async ({ page }, testInfo) => {
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(`/app.html?tool=keychain_${source === 'text' ? 'text' : 'image'}`);
+    await expect(page.locator('#dynamic-controls')).not.toBeEmpty();
+    await expect.poll(() => page.locator('#tool-reference-image').evaluate(element => element.complete && element.naturalWidth > 0)).toBe(true);
+    if (source === 'text') {
+      await expect(page.locator('.upload-group')).toBeHidden();
+      await page.locator('#textContent-text').fill('Ana, Bia');
+    } else {
+      await expect(page.locator('#textContent-text')).toHaveCount(0);
+      let buffer = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path d="M5 5H35V35H5Z M15 15V25H25V15Z" fill-rule="evenodd"/></svg>');
+      if (source === 'png') {
+        const dataUrl = await page.evaluate(() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = canvas.height = 100;
+          const context = canvas.getContext('2d');
+          context.fillStyle = 'white';
+          context.fillRect(0, 0, 100, 100);
+          context.fillStyle = 'black';
+          context.fillRect(20, 20, 60, 60);
+          return canvas.toDataURL();
+        });
+        buffer = Buffer.from(dataUrl.split(',')[1], 'base64');
+      }
+      await page.locator('#svg-upload').setInputFiles({ name: `keychain.${source}`, mimeType: source === 'svg' ? 'image/svg+xml' : 'image/png', buffer });
+      await expect(page.locator('#svg-editor-modal')).toBeVisible();
+      await page.locator('#svg-editor-confirm').click();
+    }
+    await expect(page.locator('#download-btn')).toBeEnabled();
+    for (const size of [sizes[0], sizes[2]]) {
+      await page.setViewportSize(size);
+      const canvas = page.locator('#canvas-container > canvas').first();
+      await canvas.scrollIntoViewIfNeeded();
+      const visiblePixels = await canvas.evaluate(async element => {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const context = element.getContext('webgl2');
+        const pixels = new Uint8Array(element.width * element.height * 4);
+        context.readPixels(0, 0, element.width, element.height, context.RGBA, context.UNSIGNED_BYTE, pixels);
+        let darkPixels = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 60 && pixels[index + 1] < 60 && pixels[index + 2] < 60 && pixels[index + 3] > 0) darkPixels++;
+        }
+        return darkPixels;
+      });
+      expect(visiblePixels).toBeGreaterThan(100);
+      const before = await canvas.screenshot();
+      await page.locator('#ringAngle-slider').evaluate(element => {
+        element.value = element.value === '90' ? '270' : '90';
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await expect.poll(async () => before.equals(await canvas.screenshot())).toBe(false);
+      await page.screenshot({ path: testInfo.outputPath(`keychain-${source}-${size.width}.png`), fullPage: true });
+    }
+    expect(errors).toEqual([]);
+  });
+}
+
 test('soft visual system is consistent across pages and generator panels', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));

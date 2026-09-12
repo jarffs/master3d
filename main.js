@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CookieCutterEngine } from './src/engines/CookieCutterEngine.js';
 import { KeychainEngine } from './src/engines/KeychainEngine.js';
+import { KeychainTextEngine } from './src/engines/KeychainTextEngine.js';
+import { KeychainImageEngine } from './src/engines/KeychainImageEngine.js';
 import { ColoringEngine } from './src/engines/ColoringEngine.js';
 import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { StampEngine } from './src/engines/StampEngine.js';
@@ -37,7 +39,7 @@ let printersData = [];
 let modelUpdateId = 0;
 
 function getControlBuilderOptions() {
-  if (engine?.name === 'keychain') {
+  if (['keychain', 'keychain_text', 'keychain_image'].includes(engine?.name)) {
     return {
       collapsible: true,
       categoryOrder: ['primary', 'base', 'text', 'keyring'],
@@ -382,7 +384,12 @@ function initThree() {
 
   if (tool === 'cookie_cutter') {
     engine = new CookieCutterEngine(scene);
+  } else if (tool === 'keychain_text') {
+    engine = new KeychainTextEngine(scene);
+  } else if (tool === 'keychain_image') {
+    engine = new KeychainImageEngine(scene);
   } else if (tool === 'keychain') {
+    // legacy support
     engine = new KeychainEngine(scene);
   } else if (tool === 'coloring') {
     engine = new ColoringEngine(scene);
@@ -415,6 +422,16 @@ function initThree() {
       title: t('app.tool_keychain'),
       alt: t('app.tool_keychain_reference')
     },
+    keychain_text: {
+      image: '/images/tools/keychain-text.jpg',
+      title: t('app.tool_keychain_text'),
+      alt: t('app.tool_keychain_reference')
+    },
+    keychain_image: {
+      image: '/images/tools/keychain-image.jpg',
+      title: t('app.tool_keychain_image'),
+      alt: t('app.tool_keychain_reference')
+    },
     coloring: {
       image: '/images/tools/coloring.jpg',
       title: t('app.tool_coloring'),
@@ -442,7 +459,7 @@ function initThree() {
     toolReferenceImage.alt = toolReference.alt;
     toolReferenceTitle.textContent = toolReference.title;
     toolReferenceTitle.dataset.i18n = `app.tool_${tool}`;
-    toolReferenceImage.dataset.i18nAlt = `app.tool_${tool}_reference`;
+    toolReferenceImage.dataset.i18nAlt = `app.tool_${['keychain_text', 'keychain_image'].includes(tool) ? 'keychain' : tool}_reference`;
   }
   
   // Configurar o tamanho inicial do ejetor na UI
@@ -454,7 +471,7 @@ function initThree() {
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform' || tool === 'brigadeiro_ejector') {
+  if (tool === 'keychain' || tool === 'keychain_text' || tool === 'keychain_image' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform' || tool === 'brigadeiro_ejector') {
     const titleEl = document.querySelector('[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
@@ -504,6 +521,10 @@ function initThree() {
     }
   }
   
+  if (tool === 'keychain_text') {
+    document.querySelectorAll('.upload-group').forEach(element => element.style.display = 'none');
+  }
+
   svgEditor = new SvgEditor('svg-editor-container', 'svg-editor-modal');
   textToSvg = new TextToSvg('text-to-svg-modal');
 
@@ -893,7 +914,7 @@ function refreshExportButtons() {
 }
 
 async function updateModel() {
-  if (!currentSvgText && engine?.name !== 'keychain') return;
+  if (!currentSvgText && !['keychain', 'keychain_text'].includes(engine?.name)) return;
   if (!engine || !controlBuilder) return;
 
   const updateId = ++modelUpdateId;
@@ -1131,7 +1152,7 @@ downloadBtn.addEventListener('click', async () => {
   downloadBtn.innerHTML = originalText;
   
   let exported = true;
-  if (engine.name === 'keychain') {
+  if (['keychain', 'keychain_text', 'keychain_image'].includes(engine.name)) {
     exported = await engine.export3MF('masterworld_chaveiro.3mf');
   } else if (engine.name === 'coloring') {
     exported = await engine.export3MF('masterworld_colorir.3mf');
@@ -1160,7 +1181,7 @@ if (saveDesignBtn) {
       return;
     }
     
-    if (!currentSvgText) return;
+    if (!currentSvgText && engine?.name !== 'keychain_text') return;
     
     const projectName = await Dialog.prompt(t('app.save_prompt') || 'Name your design:');
     if (!projectName) return; // User cancelled
@@ -1388,6 +1409,10 @@ function loadDesignIntoEngine(design) {
     engine = new CookieCutterEngine(scene);
   } else if (toolType === 'keychain') {
     engine = new KeychainEngine(scene);
+  } else if (toolType === 'keychain_text') {
+    engine = new KeychainTextEngine(scene);
+  } else if (toolType === 'keychain_image') {
+    engine = new KeychainImageEngine(scene);
   } else if (toolType === 'coloring') {
     engine = new ColoringEngine(scene);
   } else if (toolType === 'big_letters') {
@@ -1405,7 +1430,7 @@ function loadDesignIntoEngine(design) {
 
   // Load SVG
   currentSvgText = design.svg_data;
-  if (engine.name !== 'keychain') engine.loadSVG(currentSvgText);
+  if (!['keychain', 'keychain_text'].includes(engine.name)) engine.loadSVG(currentSvgText);
   
   // Update UI Inputs
   if (design.settings) {
