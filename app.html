@@ -8,6 +8,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
+    <script>
+      window.addEventListener('error', function(e) {
+        var div = document.createElement('div');
+        div.style = 'position:fixed;top:0;left:0;z-index:9999;background:red;color:white;padding:10px;font-family:monospace;white-space:pre-wrap;width:100%';
+        div.innerText = 'ERROR: ' + e.message + '\n' + e.filename + ':' + e.lineno;
+        document.body.appendChild(div);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var div = document.createElement('div');
+        div.style = 'position:fixed;top:50px;left:0;z-index:9999;background:orange;color:white;padding:10px;font-family:monospace;white-space:pre-wrap;width:100%';
+        div.innerText = 'UNHANDLED PROMISE: ' + (e.reason && e.reason.stack ? e.reason.stack : e.reason);
+        document.body.appendChild(div);
+      });
+    </script>
     <link rel="stylesheet" href="./soft-ui.css">
     <script src="./assets/fabric.min.js"></script>
   </head>
