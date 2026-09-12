@@ -1,0 +1,185 @@
+{
+  "standard": {
+    "metrics": {
+      "foregroundIoU": 0.9706435436690347,
+      "meanAbsoluteError": 0.003033247804330093,
+      "differentPixelRatio": 0.0019056532118055555,
+      "width": 384,
+      "height": 384
+    },
+    "stats": {
+      "algorithm": "ImageTracer",
+      "mode": "standard",
+      "width": 384,
+      "height": 384,
+      "threshold": 128,
+      "points": 296,
+      "paths": 5,
+      "samples": 312,
+      "drawingWidth": 322,
+      "bytes": 3162,
+      "durationMs": 37.20000001788139,
+      "warnings": [],
+      "geometryTolerance": 0.15,
+      "params": {
+        "maxSize": 600,
+        "threshold": 128,
+        "contrast": 1,
+        "blur": 0,
+        "noiseRemoval": 0,
+        "turdSize": 4,
+        "alphaMax": 1,
+        "optTolerance": 0.5,
+        "optCurve": true,
+        "turnPolicy": "minority",
+        "blackOnWhite": true,
+        "minPathArea": 2,
+        "maxPoints": 6000,
+        "maxPaths": 300,
+        "curvePrecision": 3,
+        "geometryTolerance": 0.15,
+        "minThickness": 0,
+        "modelWidth": 80,
+        "timeoutMs": 20000
+      }
+    }
+  },
+  "high_fidelity": {
+    "metrics": {
+      "foregroundIoU": 0.9669603524229075,
+      "meanAbsoluteError": 0.002689669075095352,
+      "differentPixelRatio": 0.00213623046875,
+      "width": 384,
+      "height": 384
+    },
+    "stats": {
+      "algorithm": "Potrace",
+      "mode": "high_fidelity",
+      "width": 384,
+      "height": 384,
+      "threshold": 128,
+      "points": 232,
+      "paths": 5,
+      "samples": 371,
+      "drawingWidth": 321.6195,
+      "bytes": 3519,
+      "durationMs": 29.899999976158142,
+      "warnings": [],
+      "geometryTolerance": 0.15,
+      "params": {
+        "maxSize": 1200,
+        "threshold": 128,
+        "contrast": 1,
+        "blur": 0,
+        "noiseRemoval": 0,
+        "turdSize": 1,
+        "alphaMax": 1,
+        "optTolerance": 0.08,
+        "optCurve": true,
+        "turnPolicy": "minority",
+        "blackOnWhite": true,
+        "minPathArea": 1,
+        "maxPoints": 6000,
+        "maxPaths": 300,
+        "curvePrecision": 3,
+        "geometryTolerance": 0.15,
+        "minThickness": 0,
+        "modelWidth": 80,
+        "timeoutMs": 20000
+      }
+    }
+  },
+  "line_art": {
+    "metrics": {
+      "foregroundIoU": 0.9572286661143331,
+      "meanAbsoluteError": 0.0029803240740740988,
+      "differentPixelRatio": 0.002800835503472222,
+      "width": 384,
+      "height": 384
+    },
+    "stats": {
+      "algorithm": "Potrace",
+      "mode": "line_art",
+      "width": 384,
+      "height": 384,
+      "threshold": 140,
+      "points": 220,
+      "paths": 5,
+      "samples": 370,
+      "drawingWidth": 321.6213,
+      "bytes": 3350,
+      "durationMs": 30.400000005960464,
+      "warnings": [],
+      "geometryTolerance": 0.15,
+      "params": {
+        "maxSize": 1200,
+        "threshold": 140,
+        "contrast": 1,
+        "blur": 0,
+        "noiseRemoval": 0,
+        "turdSize": 2,
+        "alphaMax": 1,
+        "optTolerance": 0.1,
+        "optCurve": true,
+        "turnPolicy": "minority",
+        "blackOnWhite": true,
+        "minPathArea": 2,
+        "maxPoints": 6000,
+        "maxPaths": 300,
+        "curvePrecision": 3,
+        "geometryTolerance": 0.15,
+        "minThickness": 0,
+        "modelWidth": 80,
+        "timeoutMs": 20000
+      }
+    }
+  },
+  "3d_print": {
+    "metrics": {
+      "foregroundIoU": 0.9581812493482115,
+      "meanAbsoluteError": 0.0030758527369281353,
+      "differentPixelRatio": 0.002719455295138889,
+      "width": 384,
+      "height": 384
+    },
+    "stats": {
+      "algorithm": "Potrace",
+      "mode": "3d_print",
+      "width": 384,
+      "height": 384,
+      "threshold": 128,
+      "points": 414,
+      "paths": 5,
+      "samples": 414,
+      "drawingWidth": 321.4977,
+      "bytes": 6490,
+      "durationMs": 43.599999994039536,
+      "warnings": [
+        "Minimum thickness filter applied; narrow details may be removed",
+        "Print contours flattened within geometry tolerance"
+      ],
+      "geometryTolerance": 0.15,
+      "params": {
+        "maxSize": 900,
+        "threshold": 128,
+        "contrast": 1,
+        "blur": 0,
+        "noiseRemoval": 0,
+        "turdSize": 2,
+        "alphaMax": 1,
+        "optTolerance": 0.15,
+        "optCurve": true,
+        "turnPolicy": "minority",
+        "blackOnWhite": true,
+        "minPathArea": 4,
+        "maxPoints": 6000,
+        "maxPaths": 300,
+        "curvePrecision": 3,
+        "geometryTolerance": 0.15,
+        "minThickness": 0.2,
+        "modelWidth": 80,
+        "timeoutMs": 20000
+      }
+    }
+  }
+}

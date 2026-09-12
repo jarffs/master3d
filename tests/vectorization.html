@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Vectorization checks</title></head>
+<body><script type="module">
+import { VectorizationPipeline } from '/src/core/VectorizationPipeline.js';
+import { openVectorizationDialog } from '/src/ui/VectorizationDialog.js';
+import * as core from '/src/core/vectorizationCore.js';
+import { BaseEngine } from '/src/engines/BaseEngine.js';
+import * as THREE from 'three';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+
+window.fixture = (kind = 'drawing', size = 384, format = 'image/png') => {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext('2d');
+  context.scale(size / 384, size / 384);
+  if (kind !== 'transparent') {
+    context.fillStyle = kind === 'inverted' ? 'black' : 'white';
+    context.fillRect(0, 0, 384, 384);
+  }
+  context.fillStyle = context.strokeStyle = kind === 'inverted' ? 'white' : 'black';
+  if (kind === 'blank') return canvas.toDataURL(format);
+  if (kind === 'ring') {
+    context.beginPath(); context.arc(192, 192, 130, 0, Math.PI * 2); context.arc(192, 192, 75, 0, Math.PI * 2, true); context.fill('evenodd');
+  } else if (kind === 'nested') {
+    context.fillRect(30, 30, 324, 324); context.fillStyle = 'white'; context.fillRect(70, 70, 244, 244);
+    context.fillStyle = 'black'; context.fillRect(120, 120, 144, 144);
+  } else {
+    context.lineWidth = 8;
+    context.lineCap = context.lineJoin = 'round';
+    context.beginPath(); context.moveTo(40, 170); context.bezierCurveTo(60, 10, 160, 320, 210, 120); context.bezierCurveTo(260, 10, 290, 270, 350, 50); context.stroke();
+    context.beginPath(); context.ellipse(185, 285, 130, 44, -0.16, 0, Math.PI * 2); context.stroke();
+    context.fillRect(32, 35, 25, 25);
+    context.beginPath(); context.arc(330, 325, 4, 0, Math.PI * 2); context.fill();
+    if (kind === 'noise') for (let index = 0; index < 80; index++) context.fillRect((index * 47) % 384, (index * 71) % 384, 1, 1);
+  }
+  return canvas.toDataURL(format, 0.92);
+};
+window.testAPI = { VectorizationPipeline, openVectorizationDialog, core, BaseEngine, THREE, STLExporter, SVGLoader };
+</script></body></html>
