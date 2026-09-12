@@ -47,6 +47,7 @@ export class ControlBuilder {
         title.style.textTransform = 'uppercase';
         title.style.letterSpacing = '0.5px';
         title.textContent = t ? t(`app.category_${cat}`) : cat.toUpperCase();
+        if (t) title.dataset.i18n = `app.category_${cat}`;
 
         header.appendChild(title);
         if (isCollapsible) {
@@ -132,7 +133,7 @@ export class ControlBuilder {
         input.addEventListener('change', (e) => updateValue(e.target.value));
       }, 0);
 
-    } else if (item.type === 'toggle') {
+    } else if (item.type === 'toggle' || item.type === 'checkbox') {
       wrapper.className = 'control-group toggle-group';
       wrapper.style.marginBottom = '20px';
       wrapper.innerHTML = `
@@ -238,6 +239,19 @@ export class ControlBuilder {
       }, 0);
     }
 
+    if (t) {
+      const label = wrapper.querySelector('label');
+      const description = wrapper.querySelector('.label-desc');
+      if (label && item.label) label.dataset.i18n = item.label;
+      if (description && item.desc) description.dataset.i18n = item.desc;
+      const input = wrapper.querySelector('[placeholder]');
+      if (input && item.placeholder) input.dataset.i18nPlaceholder = item.placeholder;
+      const fontAction = wrapper.querySelector('.font-picker-action');
+      if (fontAction) fontAction.dataset.i18n = 'app.choose_font';
+      wrapper.querySelectorAll('option').forEach((option, index) => {
+        option.dataset.i18n = item.options[index].label;
+      });
+    }
     return wrapper;
   }
 

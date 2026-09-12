@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:vectorization": "playwright test"
+    "test:vectorization": "playwright test",
+    "test:i18n": "playwright test tests/i18n.spec.js"
   },
   "devDependencies": {
     "@neplex/vectorizer": "^0.1.0",

@@ -1,3 +1,5 @@
+import { t } from '../../i18n.js';
+
 const fabric = window.fabric;
 
 export class FabricEditor {
@@ -32,15 +34,15 @@ export class FabricEditor {
         <aside class="fe-left-toolbar">
           <button class="fe-tool-btn" data-tool="text">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-            <span>Texto</span>
+            <span data-i18n="app.category_text">${t('app.category_text')}</span>
           </button>
           <button class="fe-tool-btn" data-tool="image">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span>Imagem</span>
+            <span data-i18n="app.editor_image">${t('app.editor_image')}</span>
           </button>
           <button class="fe-tool-btn" data-tool="shapes">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="12 2 2 22 22 22"/></svg>
-            <span>Formas</span>
+            <span data-i18n="app.editor_shapes">${t('app.editor_shapes')}</span>
           </button>
         </aside>
         
@@ -69,7 +71,7 @@ export class FabricEditor {
         
         <aside class="fe-right-panel">
           <div class="fe-panel-section">
-            <h3 class="fe-panel-title">CAMADAS</h3>
+            <h3 class="fe-panel-title" data-i18n="app.editor_layers">${t('app.editor_layers')}</h3>
             <ul id="fe-layers-list" class="fe-layers-list">
               <!-- Layers injected dynamically -->
             </ul>
@@ -191,7 +193,7 @@ export class FabricEditor {
       originX: 'center',
       originY: 'center',
       id: `text_${Date.now()}`,
-      layerName: 'Texto'
+      layerName: t('app.category_text')
     };
     const merged = { ...defaultOptions, ...options };
     
@@ -200,6 +202,7 @@ export class FabricEditor {
       const iText = new fabric.IText(text, merged);
       iText.id = merged.id;
       iText.layerName = merged.layerName;
+      iText.layerTranslationKey = options.layerTranslationKey || (options.layerName ? null : 'app.category_text');
       this.canvas.add(iText);
       this._addLayer(iText);
       console.log(`Added text: ${text}, Canvas objects: ${this.canvas.getObjects().length}, left: ${iText.left}, top: ${iText.top}`);
@@ -218,12 +221,13 @@ export class FabricEditor {
       originX: 'center',
       originY: 'center',
       id: `rect_${Date.now()}`,
-      layerName: 'Forma'
+      layerName: t('app.editor_shape')
     };
     const merged = { ...defaultOptions, ...options };
     const rect = new fabric.Rect(merged);
     rect.id = merged.id;
     rect.layerName = merged.layerName;
+    rect.layerTranslationKey = options.layerTranslationKey || (options.layerName ? null : 'app.editor_shape');
     this.canvas.add(rect);
     this._addLayer(rect);
     this.canvas.renderAll();
@@ -289,8 +293,11 @@ export class FabricEditor {
       
       li.innerHTML = `
         <div class="fe-layer-thumb" style="background-color: ${obj.fill}"></div>
-        <span class="fe-layer-name">${obj.layerName || obj.id}</span>
+        <span class="fe-layer-name"></span>
       `;
+      const name = li.querySelector('.fe-layer-name');
+      if (obj.layerTranslationKey) name.dataset.i18n = obj.layerTranslationKey;
+      name.textContent = obj.layerTranslationKey ? t(obj.layerTranslationKey) : obj.layerName || obj.id;
       
       li.addEventListener('click', () => {
         this.canvas.setActiveObject(obj);

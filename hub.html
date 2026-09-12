@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MasterWorld - Hub de Ferramentas</title>
+  <title data-i18n="hub.page_title">MasterWorld - Hub de Ferramentas</title>
   <link rel="stylesheet" href="./style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -21,6 +21,8 @@
     header {
       display: flex;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
       align-items: center;
       padding: 20px 40px;
       background: var(--panel-bg);
@@ -133,20 +135,21 @@
   <header>
     <a href="./index.html" class="logo">CutterMaker3D</a>
     <div style="display: flex; gap: 16px; align-items: center;">
-      <a href="./index.html" style="color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500;">Voltar ao Início</a>
+      <select class="language-selector" data-i18n-aria-label="common.language"><option value="en">EN</option><option value="pt">PT</option></select>
+      <a href="./index.html" data-i18n="hub.back_home" style="color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500;">Voltar ao Início</a>
     </div>
   </header>
 
   <main class="hub-container">
     <div class="hub-content">
-      <h1>Bem-vindo ao Hub de Ferramentas</h1>
-      <p>O que você gostaria de criar hoje? Selecione uma ferramenta para começar.</p>
+      <h1 data-i18n="hub.title">Bem-vindo ao Hub de Ferramentas</h1>
+      <p data-i18n="hub.subtitle">O que você gostaria de criar hoje? Selecione uma ferramenta para começar.</p>
       
       <div class="tools-grid">
         <a href="./app.html?tool=cookie_cutter" class="tool-card">
           <svg class="tool-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <div class="tool-title">Cortador de Biscoito</div>
-          <div class="tool-desc">Gerador parametrizado para cortadores e carimbos</div>
+          <div class="tool-title" data-i18n="app.tool_cookie_cutter">Cortador de Biscoito</div>
+          <div class="tool-desc" data-i18n="landing.tool_cookie_desc">Gerador parametrizado para cortadores e carimbos</div>
         </a>
 
         <a href="./app.html?tool=coloring" class="tool-card">
@@ -154,14 +157,14 @@
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
-          <div class="tool-title">Colorir com Bordas</div>
-          <div class="tool-desc">Páginas para colorir com bordas em relevo para impressão 3D</div>
+          <div class="tool-title" data-i18n="app.tool_coloring">Colorir com Bordas</div>
+          <div class="tool-desc" data-i18n="landing.tool_coloring_desc">Páginas para colorir com bordas em relevo para impressão 3D</div>
         </a>
         
         <a href="./app.html?tool=keychain" class="tool-card">
           <svg class="tool-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-          <div class="tool-title">Chaveiro 3D</div>
-          <div class="tool-desc">Crie chaveiros personalizados a partir de texto ou imagens</div>
+          <div class="tool-title" data-i18n="app.tool_keychain">Chaveiro 3D</div>
+          <div class="tool-desc" data-i18n="landing.tool_keychain_desc">Crie chaveiros personalizados a partir de texto ou imagens</div>
         </a>
 
         <a href="./app.html?tool=thermoform" class="tool-card">
@@ -170,8 +173,8 @@
             <path d="M2 17l10 5 10-5"/>
             <path d="M2 12l10 5 10-5"/>
           </svg>
-          <div class="tool-title">Thermoforming</div>
-          <div class="tool-desc">Crie moldes para thermoforming a partir de imagens</div>
+          <div class="tool-title" data-i18n="app.tool_thermoform">Termoformagem</div>
+          <div class="tool-desc" data-i18n="landing.tool_thermoform_desc">Crie moldes para termoformagem a partir de imagens</div>
         </a>
 
         <a href="./app.html?tool=brigadeiro_ejector" class="tool-card">
@@ -180,11 +183,12 @@
             <line x1="12" y1="2" x2="12" y2="22"/>
             <path d="M5 10h14"/>
           </svg>
-          <div class="tool-title">Ejetor de Brigadeiro</div>
-          <div class="tool-desc">Gerador de cortadores e carimbos para doces</div>
+          <div class="tool-title" data-i18n="app.tool_brigadeiro_ejector">Ejetor de Brigadeiro</div>
+          <div class="tool-desc" data-i18n="landing.tool_brigadeiro_ejector_desc">Gerador de cortadores e carimbos para doces</div>
         </a>
       </div>
     </div>
   </main>
+  <script type="module" src="./i18n.js"></script>
 </body>
 </html>
