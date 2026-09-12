@@ -301,19 +301,29 @@ export class BrigadeiroEjectorEngine extends BaseEngine {
       }
     }
 
-    // Posicionamento Lado a Lado
-    const gap = 15;
-    
-    const cutterBox = new THREE.Box3().setFromObject(cutterGroup);
-    const stampBox = new THREE.Box3().setFromObject(stampGroup);
-    
-    const cutterW = cutterBox.max.x - cutterBox.min.x;
-    
-    // Cutter fica na origem (esquerda)
-    cutterGroup.position.x = 0;
-    
-    // Stamp fica do lado direito
-    stampGroup.position.x = (cutterW / 2) + gap + ((stampBox.max.x - stampBox.min.x) / 2);
+        // Posicionamento Lado a Lado com ajuste de largura do carimbo
+        const gap = 15;
+
+        const cutterBox = new THREE.Box3().setFromObject(cutterGroup);
+        const stampBox = new THREE.Box3().setFromObject(stampGroup);
+
+        const cutterW = cutterBox.max.x - cutterBox.min.x;
+        const stampW = stampBox.max.x - stampBox.min.x;
+
+        // Se o carimbo for mais largo que o corpo, escala proporcionalmente
+        if (stampW > cutterW) {
+          const scaleFactor = cutterW / stampW;
+          stampGroup.scale.multiplyScalar(scaleFactor);
+          // Recalcula a caixa após escalonamento
+          const newStampBox = new THREE.Box3().setFromObject(stampGroup);
+          stampBox.copy(newStampBox);
+        }
+
+        // Cutter fica na origem (esquerda)
+        cutterGroup.position.x = 0;
+
+        // Stamp fica do lado direito, alinhado ao centro do cutter
+        stampGroup.position.x = (cutterW / 2) + gap + ((stampBox.max.x - stampBox.min.x) / 2);
     
     this.group.add(cutterGroup);
     this.group.add(stampGroup);
