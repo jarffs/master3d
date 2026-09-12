@@ -1,0 +1,56 @@
+.vectorization-dialog {
+  width: min(1160px, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--border-color, #c8cdd1);
+  border-radius: 8px;
+  color: var(--text-primary, #24282c);
+  background: var(--bg-main, #f6f7f8);
+  font-family: inherit;
+  letter-spacing: 0;
+}
+.vectorization-dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.vectorization-dialog header, .vectorization-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.vectorization-dialog h2 { font-size: 20px; margin: 0; }
+.vectorization-dialog button, .vectorization-dialog input, .vectorization-dialog select, .vectorization-dialog a {
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--border-color, #bcc3c9);
+  background: var(--bg-input, #fff);
+  border-radius: 4px;
+  padding: 8px;
+  min-width: 0;
+}
+.vectorization-dialog button, .vectorization-dialog a { cursor: pointer; }
+.vectorization-dialog button:disabled { opacity: 0.45; cursor: default; }
+.vectorization-dialog [hidden] { display: none; }
+.vectorization-dialog header button { width: 36px; height: 36px; padding: 0; font-size: 24px; }
+.vectorization-settings { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.vectorization-settings label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; min-width: 0; }
+.vectorization-settings .vectorization-check { flex-direction: row; align-items: center; }
+.vectorization-comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.vectorization-comparison figure { margin: 0; min-width: 0; }
+.vectorization-comparison figcaption { font-size: 13px; margin-bottom: 8px; }
+.vectorization-comparison figure > div { aspect-ratio: 1; background: white; border: 1px solid #c8cdd1; }
+.vectorization-comparison img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.vectorization-comparison img:not([src]) { visibility: hidden; }
+.vectorization-status { min-height: 20px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.vectorization-warnings { font-size: 12px; color: var(--text-secondary, #626b70); overflow-wrap: anywhere; }
+.vectorization-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.vectorization-dialog footer { justify-content: flex-end; flex-wrap: wrap; }
+.vectorization-dialog [data-action="apply"] { background: #217466; color: white; border-color: #217466; }
+@media (max-width: 700px) {
+  .vectorization-dialog { padding: 12px; }
+  .vectorization-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vectorization-comparison { grid-template-columns: 1fr; }
+  .vectorization-comparison figure > div { aspect-ratio: 4 / 3; }
+}

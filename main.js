@@ -12,6 +12,8 @@ import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
 import ImageTracer from 'imagetracerjs';
 window.ImageTracer = ImageTracer;
+import { openVectorizationDialog } from './src/ui/VectorizationDialog.js';
+import { VectorizationPipeline } from './src/core/VectorizationPipeline.js';
 import { supabase } from './supabaseClient.js';
 import { currentUser, userProfile, onAuthChange, openAuthModal } from './auth.js';
 import { t } from './i18n.js';
@@ -19,6 +21,8 @@ import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { TextToSvg } from './src/ui/TextToSvg.js';
 import { initStripeCheckout, processStripeCheckout } from './src/ui/stripe.js';
 import { Dialog } from './src/ui/Dialog.js';
+
+const SHOW_VECTORIZATION_DIALOG = false;
 
 let scene, camera, renderer, controls;
 let engine;
@@ -1021,102 +1025,42 @@ uploadInput.addEventListener('change', (e) => {
     };
     reader.readAsText(file);
   } else {
-    // Process raster image
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 30 * 1024 * 1024) {
+      Dialog.alert('Use PNG, JPG ou WebP com ate 30 MB.');
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const dataUrl = event.target.result;
-      
-      const img = new Image();
-      img.onload = () => {
-        // Reduzir o tamanho da imagem para caber na parte central do editor e processar rápido
-        let targetWidth = img.width;
-        let targetHeight = img.height;
-        const MAX_SIZE = 1200; // Aumentado para melhor definição (antes 800)
-
-        if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
-          const ratio = Math.min(MAX_SIZE / targetWidth, MAX_SIZE / targetHeight);
-          targetWidth = Math.round(targetWidth * ratio);
-          targetHeight = Math.round(targetHeight * ratio);
-        }
-
-        // Create canvas to flatten transparent background to white
-        const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d');
-        
-        // Fill white background
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Draw image over it
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-        
-        // Strict thresholding to guarantee pure black and white
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          // Luminance formula
-          const brightness = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-          // If transparent or bright, make it white. Otherwise make it black.
-          const color = (data[i+3] < 128 || brightness > 128) ? 255 : 0;
-          data[i] = color;
-          data[i+1] = color;
-          data[i+2] = color;
-          data[i+3] = 255; // fully opaque
-        }
-        ctx.putImageData(imageData, 0, 0);
-        
-        const flattenedDataUrl = canvas.toDataURL('image/png');
-        
-        // options for exact black and white silhouette tracing
-        const options = {
-          ltres: 0.05, 
-          qtres: 0.05,
-          pathomit: 3,
-          rightangleenhance: true,
-          colorsampling: 0, 
-          numberofcolors: 2,
-          pal: [{r:0,g:0,b:0,a:255}, {r:255,g:255,b:255,a:255}]
-        };
-        
-        ImageTracer.imageToSVG(flattenedDataUrl, async (svgString) => {
-          // Parse SVG safely and remove white paths
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(svgString, "image/svg+xml");
-          
-          const paths = doc.querySelectorAll('path');
-          paths.forEach(p => {
-             const fill = p.getAttribute('fill');
-             if (fill && (fill.replace(/\s/g, '') === 'rgb(255,255,255)' || fill === '#ffffff')) {
-                 p.remove();
-             }
-          });
-          
-          // Force viewBox if missing to ensure proper scaling in SVGEditor
-          const svgEl = doc.querySelector('svg');
-          if (svgEl && !svgEl.hasAttribute('viewBox')) {
-            svgEl.setAttribute('viewBox', `0 0 ${targetWidth} ${targetHeight}`);
-            svgEl.setAttribute('width', targetWidth);
-            svgEl.setAttribute('height', targetHeight);
+      try {
+        let vectorizedWidth = parseFloat(modelWidthInput.value) || 80;
+        const svgString = SHOW_VECTORIZATION_DIALOG
+          ? await openVectorizationDialog(dataUrl, {
+            modelWidth: vectorizedWidth,
+            onApply: result => { vectorizedWidth = result.stats.params.modelWidth; },
+          })
+          : await new VectorizationPipeline('high_fidelity', {
+            modelWidth: vectorizedWidth,
+          }).process(dataUrl);
+        if (!svgString) return;
+        svgEditor.open(svgString, async (editedSvg) => {
+          currentSvgText = editedSvg;
+          if (engine.name === 'keychain') {
+            engine.loadImageSVG(currentSvgText);
+          } else {
+            engine.loadSVG(currentSvgText);
           }
-
-          const initialSvg = new XMLSerializer().serializeToString(doc);
-          
-          // Open editor for cleanup
-          svgEditor.open(initialSvg, async (editedSvg) => {
-            currentSvgText = editedSvg;
-            if (engine.name === 'keychain') {
-              engine.loadImageSVG(currentSvgText);
-            } else {
-              engine.loadSVG(currentSvgText);
-            }
-            await initDimensionsFromSVG();
-            await updateModel();
-          });
-        }, options);
-      };
-      img.src = dataUrl;
+          await initDimensionsFromSVG();
+          modelWidthInput.value = vectorizedWidth;
+          modelDepthInput.value = Math.round(vectorizedWidth / (svgAspectRatio || 1));
+          await updateModel();
+        });
+      } catch (err) {
+        console.error('Vectorization failed:', err);
+        Dialog.alert(err.message);
+      }
     };
+    reader.onerror = () => Dialog.alert('Nao foi possivel ler a imagem.');
     reader.readAsDataURL(file);
   }
 });
