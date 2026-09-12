@@ -224,6 +224,8 @@
     "stamp_size_desc": "Largura máxima do carimbo final",
     "stamp_extrusion": "Profundidade do Carimbo",
     "stamp_extrusion_desc": "Profundidade do design no topo do carimbo (mm)",
+    "stamp_wall_thickness": "Reforço dos Traços",
+    "stamp_wall_thickness_desc": "Espessura adicional total, distribuída pelos dois lados dos traços (mm)",
     "stamp_base_thickness": "Espessura da Placa",
     "stamp_base_thickness_desc": "Espessura da base onde o desenho assenta",
     "stamp_mirror": "Espelhar",

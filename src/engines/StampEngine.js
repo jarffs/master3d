@@ -1,14 +1,30 @@
 import * as THREE from 'three';
 import ClipperLib from 'clipper-lib';
 import { BaseEngine } from './BaseEngine.js';
-import { Brush, Evaluator, SUBTRACTION, ADDITION } from 'three-bvh-csg';
+import manifoldWasmUrl from 'manifold-3d/manifold.wasm?url';
+
+let manifoldModule;
+
+function loadManifold() {
+  if (!manifoldModule) {
+    manifoldModule = import('manifold-3d').then(({ default: initialize }) =>
+      initialize({ locateFile: () => manifoldWasmUrl })
+    ).then(module => {
+      module.setup();
+      return module;
+    }).catch(error => {
+      manifoldModule = null;
+      throw error;
+    });
+  }
+  return manifoldModule;
+}
 
 export class StampEngine extends BaseEngine {
   constructor(scene) {
     super(scene);
     this.name = 'stamp';
-    this.evaluator = new Evaluator();
-    this.evaluator.useGroups = false;
+    this._generation = 0;
     
     this.plaColors = [
       { value: '#ffffff', label: 'app.color_white' },
@@ -49,6 +65,18 @@ export class StampEngine extends BaseEngine {
         max: 10,
         step: 0.1,
         default: 2,
+        category: 'stamp_design'
+      },
+      {
+        id: 'wallThickness',
+        type: 'slider',
+        label: 'app.stamp_wall_thickness',
+        desc: 'app.stamp_wall_thickness_desc',
+        min: 0.2,
+        max: 1.2,
+        step: 0.1,
+        default: 0.4,
+        suffix: 'mm',
         category: 'stamp_design'
       },
       {
@@ -128,23 +156,134 @@ export class StampEngine extends BaseEngine {
     ];
   }
 
-  generate3DModel(params) {
+  clear() {
+    this._generation++;
+    const geometries = new Set();
+    this.group.traverse(object => {
+      if (object.geometry) geometries.add(object.geometry);
+      for (const part of object.userData.exportParts || []) geometries.add(part.geometry);
+    });
+    geometries.forEach(geometry => geometry.dispose());
+    this.group.clear();
+    this.group.position.set(0, 0, 0);
+  }
+
+  _buildWallShapes(contours, thickness) {
+    const scale = 1000;
+    const wallPaths = [];
+    const toVectors = path => path.map(point => new THREE.Vector2(point.X / scale, point.Y / scale));
+    for (const points of contours) {
+      const paths = [];
+      for (const [index, contour] of [points.shape, ...points.holes].entries()) {
+        const path = ClipperLib.Clipper.CleanPolygon(contour.map(point => ({
+          X: Math.round(point.x * scale), Y: Math.round(point.y * scale)
+        })), 5);
+        if (path.length < 3) continue;
+        if (ClipperLib.Clipper.Orientation(path) !== (index === 0)) path.reverse();
+        paths.push(path);
+      }
+      const offsetter = new ClipperLib.ClipperOffset(2, 10);
+      offsetter.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+      const expanded = new ClipperLib.Paths();
+      offsetter.Execute(expanded, thickness * scale / 2);
+      wallPaths.push(...expanded);
+    }
+    const union = new ClipperLib.Clipper();
+    union.StrictlySimple = true;
+    union.AddPaths(wallPaths, ClipperLib.PolyType.ptSubject, true);
+    const tree = new ClipperLib.PolyTree();
+    union.Execute(ClipperLib.ClipType.ctUnion, tree,
+      ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+    const shapes = [];
+    const visit = node => {
+      if (!node.IsHole() && node.Contour().length >= 3) {
+        const shape = new THREE.Shape(toVectors(node.Contour()));
+        node.Childs().filter(child => child.IsHole()).forEach(child => {
+          shape.holes.push(new THREE.Path(toVectors(child.Contour())));
+        });
+        shapes.push(shape);
+      }
+      node.Childs().forEach(visit);
+    };
+    tree.Childs().forEach(visit);
+    return shapes;
+  }
+
+  async _extrudeWalls(shapes, depth) {
+    const { CrossSection } = await loadManifold();
+    const contours = shapes.flatMap(shape => [shape, ...shape.holes].map(path =>
+      path.getPoints(1).map(point => [point.x, point.y])
+    ));
+    const section = new CrossSection(contours, 'EvenOdd');
+    let solid;
+    try {
+      solid = section.extrude(depth);
+      return this._solidGeometry(solid);
+    } finally {
+      solid?.delete();
+      section.delete();
+    }
+  }
+
+  _solidGeometry(solid, baseHeight = Infinity) {
+    if (solid.status() !== 'NoError') throw new Error(`Invalid stamp solid: ${solid.status()}`);
+    const mesh = solid.getMesh();
+    const positions = new Float32Array(mesh.triVerts.length * 3);
+    for (let index = 0; index < mesh.triVerts.length; index++) {
+      const offset = mesh.triVerts[index] * mesh.numProp;
+      positions.set(mesh.vertProperties.subarray(offset, offset + 3), index * 3);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.computeVertexNormals();
+    let groupStart = 0;
+    let materialIndex = -1;
+    for (let index = 0; index < positions.length; index += 9) {
+      const heights = [positions[index + 2], positions[index + 5], positions[index + 8]];
+      const nextMaterial = Math.min(...heights) >= baseHeight - 0.00001 && Math.max(...heights) > baseHeight + 0.00001 ? 1 : 0;
+      if (nextMaterial !== materialIndex) {
+        if (materialIndex !== -1) geometry.addGroup(groupStart, index / 3 - groupStart, materialIndex);
+        groupStart = index / 3;
+        materialIndex = nextMaterial;
+      }
+    }
+    if (materialIndex !== -1) geometry.addGroup(groupStart, positions.length / 3 - groupStart, materialIndex);
+    return geometry;
+  }
+
+  _flattenForExport() {
+    const exportGroup = new THREE.Group();
+    this.group.updateMatrixWorld(true);
+    this.group.traverse(object => {
+      if (!object.isMesh) return;
+      const parts = object.userData.exportParts || [{ geometry: object.geometry, material: object.material, name: object.name }];
+      for (const part of parts) {
+        const mesh = new THREE.Mesh(part.geometry.clone().applyMatrix4(object.matrixWorld), part.material);
+        mesh.name = part.name;
+        exportGroup.add(mesh);
+      }
+    });
+    return exportGroup;
+  }
+
+  async generate3DModel(params) {
     if (!this.currentSvgShapes || this.currentSvgShapes.length === 0) return false;
+    const generation = ++this._generation;
+    const { Manifold, CrossSection } = await loadManifold();
+    if (generation !== this._generation) return false;
     
     if (params.colorBase) this.partMaterials.base.color.set(params.colorBase);
     if (params.colorTop) this.partMaterials.top.color.set(params.colorTop);
     
-    const scale = 1000;
-    const clipper = new ClipperLib.Clipper();
-    clipper.StrictlySimple = true;
+    const extractedShapes = this.currentSvgShapes.map(shape => this.extractShapePoints(shape));
+    const wallThickness = THREE.MathUtils.clamp(Number(params.wallThickness) || 0.4, 0.2, 1.2);
 
     // 1. Process shapes and mirror X for stamping
     let minX = Infinity, minY = Infinity;
     let maxX = -Infinity, maxY = -Infinity;
 
     // First find original bounds to calculate mirror and scale
-    this.currentSvgShapes.forEach(shape => {
-      const pts = this.extractShapePoints(shape);
+    extractedShapes.forEach(pts => {
       pts.shape.forEach(p => {
         if (p.x < minX) minX = p.x;
         if (p.y < minY) minY = p.y;
@@ -156,6 +295,7 @@ export class StampEngine extends BaseEngine {
     const origWidth = maxX - minX;
     const origHeight = maxY - minY;
     const maxDim = Math.max(origWidth, origHeight);
+    if (!Number.isFinite(maxDim) || maxDim <= 0) return false;
     
     // Calculate uniform scale to reach target stampSize (in mm)
     const targetScale = params.stampSize / maxDim;
@@ -164,8 +304,7 @@ export class StampEngine extends BaseEngine {
     
     // Calcular o raio máximo a partir do centro para garantir que a base circular cobre tudo
     let maxDistSq = 0;
-    this.currentSvgShapes.forEach(shape => {
-      const pts = this.extractShapePoints(shape);
+    extractedShapes.forEach(pts => {
       pts.shape.forEach(p => {
         const dx = p.x - centerX;
         const dy = p.y - centerY;
@@ -178,8 +317,7 @@ export class StampEngine extends BaseEngine {
 
     const mirroredShapes = [];
     
-    this.currentSvgShapes.forEach(shape => {
-      const pts = this.extractShapePoints(shape);
+    extractedShapes.forEach(pts => {
       
       // Mirror X, center, apply targetScale, and invert Y for 3D coordinate system
       const processPoint = (p) => {
@@ -196,18 +334,19 @@ export class StampEngine extends BaseEngine {
         return new THREE.Vector2(cx, cy);
       };
 
-      const mirroredShape = new THREE.Shape(pts.shape.map(processPoint));
-      if (pts.holes) {
-        pts.holes.forEach(hole => {
-          mirroredShape.holes.push(new THREE.Path(hole.map(processPoint)));
-        });
-      }
-      mirroredShapes.push(mirroredShape);
+      mirroredShapes.push({
+        shape: pts.shape.map(processPoint),
+        holes: (pts.holes || []).map(hole => hole.map(processPoint))
+      });
     });
 
     // A base agora é sempre circular, combinando com o design do sinete.
     // O texto já está centralizado em (0,0).
-    this.group.clear();
+    const wallShapes = this._buildWallShapes(mirroredShapes, wallThickness);
+    this.clear();
+    const resources = [];
+    const own = resource => { resources.push(resource); return resource; };
+    try {
 
     // -- STAMP MESH --
     const baseThick = params.baseThickness;
@@ -216,51 +355,33 @@ export class StampEngine extends BaseEngine {
     const holeDepth = Math.max(1, baseThick - 1); // leave 1mm solid above hole
     
     // O raio da base é o raio máximo da textura + 1mm de margem (ou seja, diâmetro 2mm maior)
-    const baseR = maxRadiusScaled + 1;
+    const baseR = maxRadiusScaled + wallThickness + 1;
 
-    // Create Base geometry (Cylinder)
-    const baseGeom = new THREE.CylinderGeometry(baseR, baseR, baseThick, 64);
-    baseGeom.rotateX(Math.PI / 2); // aligns with Z
-    baseGeom.translate(0, 0, baseThick / 2); // ExtrudeGeometry was 0 to baseThick
-    baseGeom.clearGroups();
-    
-    let baseBrush = new Brush(baseGeom, this.partMaterials.base);
-    baseBrush.updateMatrixWorld();
-
-    // Create the Female Hole (Subtracted from the BOTTOM of the base)
-    const holeGeom = new THREE.CylinderGeometry(holeRadius, holeRadius, holeDepth, 32);
-    holeGeom.rotateX(Math.PI / 2); // align with Z axis
-    holeGeom.translate(0, 0, holeDepth / 2); // move up so it cuts from bottom
-    holeGeom.clearGroups();
-    const holeBrush = new Brush(holeGeom, this.partMaterials.base);
-    holeBrush.updateMatrixWorld();
-
-    baseBrush = this.evaluator.evaluate(baseBrush, holeBrush, SUBTRACTION);
-
-    // Create the Extruded Text (Stamp details)
-    let textBrush = null;
-    mirroredShapes.forEach(shape => {
-      const geom = new THREE.ExtrudeGeometry(shape, {
-        depth: extThick,
-        bevelEnabled: false,
-        curveSegments: 1
-      });
-      geom.clearGroups();
-      geom.translate(0, 0, baseThick); // Sit on top of the base
-      const brush = new Brush(geom, this.partMaterials.top);
-      brush.updateMatrixWorld();
-      if (!textBrush) textBrush = brush;
-      else textBrush = this.evaluator.evaluate(textBrush, brush, ADDITION);
-    });
-
-    const stampGroup = new THREE.Group();
-    const baseMesh = new THREE.Mesh(baseBrush.geometry, this.partMaterials.base);
-    stampGroup.add(baseMesh);
-    
-    if (textBrush) {
-      const textMesh = new THREE.Mesh(textBrush.geometry, this.partMaterials.top);
-      stampGroup.add(textMesh);
+    const baseSolid = own(Manifold.cylinder(baseThick, baseR, baseR, 64));
+    const holeSolid = own(Manifold.cylinder(holeDepth, holeRadius, holeRadius, 32));
+    let stampSolid = own(baseSolid.subtract(holeSolid));
+    const stampBase = stampSolid;
+    let stampRelief;
+    if (wallShapes.length) {
+      const contours = wallShapes.flatMap(shape => [shape, ...shape.holes].map(path =>
+        path.getPoints(1).map(point => [point.x, point.y])
+      ));
+      const section = own(new CrossSection(contours, 'EvenOdd'));
+      const raised = own(section.extrude(extThick));
+      const positioned = own(raised.translate([0, 0, baseThick]));
+      stampRelief = positioned;
+      stampSolid = own(stampSolid.add(positioned));
     }
+    const stampGroup = new THREE.Group();
+    const baseMesh = new THREE.Mesh(this._solidGeometry(stampSolid, baseThick), [this.partMaterials.base, this.partMaterials.top]);
+    baseMesh.name = 'Stamp';
+    baseMesh.userData.exportParts = [{
+      geometry: this._solidGeometry(stampBase), material: this.partMaterials.base, name: 'Stamp Base'
+    }];
+    if (stampRelief) baseMesh.userData.exportParts.push({
+      geometry: this._solidGeometry(stampRelief), material: this.partMaterials.top, name: 'Stamp Relief'
+    });
+    stampGroup.add(baseMesh);
     
     // -- HANDLE MESH (Design Ergonómico de Sinete Clássico) --
     const handleHeight = params.handleHeight !== undefined ? params.handleHeight : 60;
@@ -312,27 +433,20 @@ export class StampEngine extends BaseEngine {
       smoothPoints.push(new THREE.Vector2(0, handleHeight));
     }
 
-    const handleGeom = new THREE.LatheGeometry(smoothPoints, 48);
-    handleGeom.rotateX(Math.PI / 2); // Alinha com o eixo Z (Fica de pé)
-    handleGeom.clearGroups();
-    
-    const handleBaseBrush = new Brush(handleGeom, this.partMaterials.base);
-    handleBaseBrush.updateMatrixWorld();
-    
-    // Subtrair o mesmo furo na base do suporte
-    const finalHandleBrush = this.evaluator.evaluate(handleBaseBrush, holeBrush, SUBTRACTION);
-    const handleMesh = new THREE.Mesh(finalHandleBrush.geometry, this.partMaterials.base);
+    const handleSection = own(new CrossSection([smoothPoints.map(point => [point.x, point.y])], 'EvenOdd'));
+    const handleSolid = own(handleSection.revolve(48));
+    const boredHandle = own(handleSolid.subtract(holeSolid));
+    const handleMesh = new THREE.Mesh(this._solidGeometry(boredHandle), this.partMaterials.base);
+    handleMesh.name = 'Handle';
 
     // -- PIN MESH (Pino separado de encaixe duplo) --
     const tolerance = 0.3;
     const pinRadius = holeRadius - tolerance;
     const pinDepth = (holeDepth * 2) - tolerance; // Altura para entrar nos dois lados
 
-    const pinGeom = new THREE.CylinderGeometry(pinRadius, pinRadius, pinDepth, 32);
-    pinGeom.rotateX(Math.PI / 2);
-    pinGeom.translate(0, 0, pinDepth / 2);
-    pinGeom.clearGroups();
-    const pinMesh = new THREE.Mesh(pinGeom, this.partMaterials.base);
+    const pinSolid = own(Manifold.cylinder(pinDepth, pinRadius, pinRadius, 32));
+    const pinMesh = new THREE.Mesh(this._solidGeometry(pinSolid), this.partMaterials.base);
+    pinMesh.name = 'Pin';
 
     // -- POSITIONING --
     baseMesh.geometry.computeBoundingBox();
@@ -359,5 +473,8 @@ export class StampEngine extends BaseEngine {
     this.group.position.x = -center.x;
     this.group.position.y = -center.y;
     return true;
+    } finally {
+      resources.reverse().forEach(resource => resource.delete());
+    }
   }
 }

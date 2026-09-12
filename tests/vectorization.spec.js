@@ -6,6 +6,249 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => window.testAPI);
 });
 
+test('stamp walls avoid per-contour 3D booleans and release previous geometry', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const { StampEngine } = await import('/src/engines/StampEngine.js');
+    const { THREE } = window.testAPI;
+    const engine = new StampEngine(new THREE.Scene());
+    const params = Object.fromEntries(engine.getControlSchema().map(control => [control.id, control.default]));
+    engine.currentSvgShapes = Array.from({ length: 12 }, (_, index) => {
+      const shape = new THREE.Shape();
+      const centerX = (index % 4) * 10;
+      const centerY = Math.floor(index / 4) * 10;
+      shape.absarc(centerX, centerY, 3, 0, Math.PI * 2, false);
+      const hole = new THREE.Path();
+      hole.absarc(centerX, centerY, 1, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+      return shape;
+    });
+    const started = performance.now();
+    await engine.generate3DModel(params);
+    const durationMs = performance.now() - started;
+    const oldGeometries = new Set();
+    engine.group.traverse(object => {
+      if (object.geometry) oldGeometries.add(object.geometry);
+      for (const part of object.userData.exportParts || []) oldGeometries.add(part.geometry);
+    });
+    let disposed = 0;
+    oldGeometries.forEach(geometry => geometry.addEventListener('dispose', () => disposed++));
+    const top = engine.group.children[0].children[0];
+    const finite = Array.from(top.geometry.attributes.position.array).every(Number.isFinite);
+    const updateStarted = performance.now();
+    await engine.generate3DModel({ ...params, wallThickness: 1.2 });
+    const updateDurationMs = performance.now() - updateStarted;
+    engine.clear();
+    return { legacyCSG: Boolean(engine.evaluator), durationMs, updateDurationMs, finite, disposed, previousCount: oldGeometries.size };
+  });
+  console.log('STAMP', result);
+  expect(result.legacyCSG).toBe(false);
+  expect(result.durationMs).toBeLessThan(2000);
+  expect(result.updateDurationMs).toBeLessThan(2000);
+  expect(result.finite).toBe(true);
+  expect(result.disposed).toBe(result.previousCount);
+});
+
+test('stamp walls preserve thickness and holes and union overlapping contours before extrusion', async ({ page }) => {
+  const output = await page.evaluate(async () => {
+    const { StampEngine } = await import('/src/engines/StampEngine.js');
+    const { THREE, VectorizationPipeline, STLExporter } = window.testAPI;
+    const engine = new StampEngine(new THREE.Scene());
+    const rectangle = (left, bottom, right, top) => [
+      new THREE.Vector2(left, bottom), new THREE.Vector2(right, bottom),
+      new THREE.Vector2(right, top), new THREE.Vector2(left, top)
+    ];
+    const manifold = geometry => {
+      const values = geometry.attributes.position.array;
+      const edges = new Map();
+      for (let offset = 0; offset < values.length; offset += 9) {
+        const vertices = [0, 3, 6].map(delta => Array.from(values.slice(offset + delta, offset + delta + 3)).map(value => Number(value.toFixed(4))).join(','));
+        for (let edge = 0; edge < 3; edge++) {
+          const key = [vertices[edge], vertices[(edge + 1) % 3]].sort().join('|');
+          edges.set(key, (edges.get(key) || 0) + 1);
+        }
+      }
+      const invalid = [...edges.entries()].filter(([, count]) => count !== 2);
+      if (invalid.length) console.log('STAMP INVALID EDGES', invalid.slice(0, 6));
+      return invalid.length === 0;
+    };
+    const widths = [];
+    for (const thickness of [0.2, 0.4, 1.2]) {
+      const walls = engine._buildWallShapes([{ shape: rectangle(-10, -10, 10, 10), holes: [rectangle(-4, -4, 4, 4)] }], thickness);
+      const outer = walls.reduce((selected, shape) => Math.abs(THREE.ShapeUtils.area(shape.getPoints())) > Math.abs(THREE.ShapeUtils.area(selected.getPoints())) ? shape : selected);
+      const outerBox = new THREE.Box2().setFromPoints(outer.getPoints());
+      const holeBox = new THREE.Box2().setFromPoints(outer.holes[0].getPoints());
+      const geometry = await engine._extrudeWalls(walls, 2);
+      geometry.computeBoundingBox();
+      widths.push({ thickness: outerBox.max.x - holeBox.max.x - 6, holes: walls.reduce((count, shape) => count + shape.holes.length, 0),
+        manifold: manifold(geometry), depth: geometry.boundingBox.max.z - geometry.boundingBox.min.z });
+      geometry.dispose();
+    }
+    const solid = engine._buildWallShapes([{ shape: rectangle(-10, -10, 10, 10), holes: [] }], 0.4);
+    const solidArea = solid.reduce((area, shape) => area + Math.abs(THREE.ShapeUtils.area(shape.getPoints())), 0);
+    const overlapping = engine._buildWallShapes([
+      { shape: rectangle(0, 0, 10, 10), holes: [] }, { shape: rectangle(10.2, 0, 20.2, 10), holes: [] }
+    ], 0.4);
+    const overlapGeometry = await engine._extrudeWalls(overlapping, 2);
+    const overlapManifold = manifold(overlapGeometry);
+    overlapGeometry.dispose();
+    const svg = await new VectorizationPipeline('high_fidelity').process(window.fixture());
+    engine.loadSVG(svg);
+    const params = Object.fromEntries(engine.getControlSchema().map(control => [control.id, control.default]));
+    const started = performance.now();
+    await engine.generate3DModel(params);
+    const generatedMs = performance.now() - started;
+    const top = engine.group.children[0].children[0];
+    const rasterManifold = manifold(top.geometry);
+    const stl = new STLExporter().parse(engine.group);
+    engine.clear();
+    return { widths, solidArea, solidCount: solid.length, solidHoles: solid.reduce((count, shape) => count + shape.holes.length, 0),
+      overlapCount: overlapping.length, overlapManifold, rasterManifold, generatedMs, stlValid: stl.startsWith('solid') && !/NaN|Infinity/.test(stl) };
+  });
+  console.log('STAMP GEOMETRY', output);
+  for (const [index, result] of output.widths.entries()) {
+    expect(result.thickness).toBeCloseTo([0.2, 0.4, 1.2][index], 3);
+    expect(result.holes).toBe(1);
+    expect(result.manifold).toBe(true);
+    expect(result.depth).toBe(2);
+  }
+  expect(output.solidCount).toBe(1);
+  expect(output.solidHoles).toBe(0);
+  expect(output.solidArea).toBeGreaterThanOrEqual(400);
+  expect(output.overlapCount).toBe(1);
+  expect(output.overlapManifold).toBe(true);
+  expect(output.rasterManifold).toBe(true);
+  expect(output.stlValid).toBe(true);
+  expect(output.generatedMs).toBeLessThan(2000);
+});
+
+test('stamp exported STL has closed consistently oriented non-degenerate parts', async ({ page }, testInfo) => {
+  const results = await page.evaluate(async () => {
+    const { StampEngine } = await import('/src/engines/StampEngine.js');
+    const { STLLoader } = await import('/node_modules/three/examples/jsm/loaders/STLLoader.js');
+    const { THREE, STLExporter, VectorizationPipeline } = window.testAPI;
+    const engine = new StampEngine(new THREE.Scene());
+    const reference = '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0H20V20H0Z M5 5V15H15V5Z" fill-rule="evenodd"/></svg>';
+    const params = Object.fromEntries(engine.getControlSchema().map(control => [control.id, control.default]));
+    const report = [];
+    let lastSTL;
+    const inspect = (object, label, binary = true) => {
+      const serialized = new STLExporter().parse(object, { binary });
+      if (binary) lastSTL = Array.from(new Uint8Array(serialized.buffer));
+      const geometry = new STLLoader().parse(binary ? serialized.buffer : serialized);
+      const positions = geometry.attributes.position;
+      const edges = new Map();
+      const faces = new Set();
+      let degenerate = 0;
+      let duplicateFaces = 0;
+      let volume = 0;
+      for (let index = 0; index < positions.count; index += 3) {
+        const vertices = [0, 1, 2].map(offset => new THREE.Vector3().fromBufferAttribute(positions, index + offset));
+        const keys = vertices.map(vertex => vertex.toArray().map(value => Math.round(value * 100000)).join(','));
+        if (new Set(keys).size !== 3 || new THREE.Vector3().subVectors(vertices[1], vertices[0]).cross(new THREE.Vector3().subVectors(vertices[2], vertices[0])).lengthSq() < 1e-16) degenerate++;
+        const face = [...keys].sort().join('|');
+        if (faces.has(face)) duplicateFaces++;
+        faces.add(face);
+        volume += vertices[0].dot(new THREE.Vector3().crossVectors(vertices[1], vertices[2])) / 6;
+        for (let edge = 0; edge < 3; edge++) {
+          const start = keys[edge];
+          const end = keys[(edge + 1) % 3];
+          const key = [start, end].sort().join('|');
+          const record = edges.get(key) || { count: 0, orientation: 0 };
+          record.count++;
+          record.orientation += start < end ? 1 : -1;
+          edges.set(key, record);
+        }
+      }
+      report.push({ part: label, badEdges: [...edges.values()].filter(edge => edge.count !== 2 || edge.orientation !== 0).length, degenerate, duplicateFaces, volume });
+      geometry.dispose();
+    };
+    const raster = await new VectorizationPipeline('high_fidelity').process(window.fixture());
+    for (const [name, source] of [['ring', reference], ['raster', raster]]) {
+      engine.loadSVG(source);
+      for (const thickness of [0.2, 0.4, 1.2]) {
+        await engine.generate3DModel({ ...params, wallThickness: thickness, baseThickness: thickness === 0.2 ? 2 : 4 });
+        engine.group.updateMatrixWorld(true);
+        engine.group.traverse(object => {
+          if (object.isMesh) inspect(object, `${name}/${thickness}/${object.name}`);
+        });
+        inspect(engine.group, `${name}/${thickness}/full`);
+        inspect(engine.group, `${name}/${thickness}/ascii`, false);
+        const colored = engine._flattenForExport();
+        if (colored.children.length !== 4) throw new Error('Missing colored export part');
+        if (colored.children[1].material.color.getHexString() !== params.colorTop) {
+          if (`#${colored.children[1].material.color.getHexString()}` !== params.colorTop) throw new Error('Export relief color was lost');
+        }
+        for (const part of colored.children) {
+          inspect(part, `${name}/${thickness}/colored/${part.name}`);
+          part.geometry.dispose();
+        }
+        inspect(engine.group, `${name}/${thickness}/reference`);
+      }
+    }
+    engine.clear();
+    return { report, lastSTL };
+  });
+  await writeFile(testInfo.outputPath('stamp-manifold.stl'), Buffer.from(results.lastSTL));
+  console.log('STAMP STL', results.report);
+  for (const result of results.report) {
+    expect(result.badEdges, `part ${result.part}`).toBe(0);
+    expect(result.degenerate, `part ${result.part}`).toBe(0);
+    expect(result.duplicateFaces, `part ${result.part}`).toBe(0);
+    expect(result.volume, `part ${result.part}`).toBeGreaterThan(0);
+  }
+});
+
+test('stamp preview renders the united solid and rejects stale generation', async ({ page }, testInfo) => {
+  await page.evaluate(async () => {
+    const { StampEngine } = await import('/src/engines/StampEngine.js');
+    const { THREE } = window.testAPI;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#eceff1');
+    const engine = new StampEngine(scene);
+    engine.loadSVG('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0H20V20H0Z M5 5V15H15V5Z" fill-rule="evenodd"/></svg>');
+    const params = Object.fromEntries(engine.getControlSchema().map(control => [control.id, control.default]));
+    const first = engine.generate3DModel(params);
+    const second = engine.generate3DModel({ ...params, wallThickness: 0.2 });
+    if (await first) throw new Error('Stale generation was applied');
+    if (!await second) throw new Error('Latest generation failed');
+    const mesh = engine.group.children[0].children[0];
+    if (!mesh.geometry.groups.some(group => group.materialIndex === 1)) throw new Error('Relief material was lost');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    document.body.style.margin = '0';
+    document.body.appendChild(renderer.domElement);
+    const light = new THREE.DirectionalLight(0xffffff, 3);
+    light.position.set(-40, -60, 150);
+    scene.add(light, new THREE.HemisphereLight(0xffffff, 0x666666, 2));
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
+    const bounds = new THREE.Box3().setFromObject(engine.group);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    window.renderStamp = () => {
+      renderer.setSize(innerWidth, innerHeight);
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      const distance = Math.max(size.x / camera.aspect, size.y, size.z) * 2.4;
+      camera.position.copy(center).add(new THREE.Vector3(0, -0.7, 1).normalize().multiplyScalar(distance));
+      camera.up.set(0, 0, 1);
+      camera.lookAt(center);
+      renderer.render(scene, camera);
+      const pixels = new Uint8Array(innerWidth * innerHeight * 4);
+      const context = renderer.getContext();
+      context.readPixels(0, 0, innerWidth, innerHeight, context.RGBA, context.UNSIGNED_BYTE, pixels);
+      let changed = 0;
+      for (let index = 4; index < pixels.length; index += 4) {
+        if (pixels[index] !== pixels[0] || pixels[index + 1] !== pixels[1] || pixels[index + 2] !== pixels[2]) changed++;
+      }
+      return changed / (innerWidth * innerHeight);
+    };
+  });
+  for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    expect(await page.evaluate(() => window.renderStamp())).toBeGreaterThan(0.005);
+    await page.screenshot({ path: testInfo.outputPath(`stamp-${viewport.width}.png`) });
+  }
+});
+
 test('Potrace fidelity, complexity and exported examples versus ImageTracer', async ({ page }) => {
   const results = await page.evaluate(async () => {
     const source = window.fixture();
