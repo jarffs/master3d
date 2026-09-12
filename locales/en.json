@@ -225,6 +225,8 @@
     "stamp_size_desc": "Maximum width of the final stamp",
     "stamp_extrusion": "Stamp Depth",
     "stamp_extrusion_desc": "Depth of the design on top of the stamp (mm)",
+    "stamp_wall_thickness": "Stroke Reinforcement",
+    "stamp_wall_thickness_desc": "Total added thickness, distributed on both sides of the strokes (mm)",
     "stamp_base_thickness": "Plate Thickness",
     "stamp_base_thickness_desc": "Thickness of the base where the design sits",
     "stamp_mirror": "Mirror",

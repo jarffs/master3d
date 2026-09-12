@@ -24,6 +24,7 @@
     "image-vectorizer": "^3.0.3",
     "imagetracerjs": "^1.2.6",
     "jszip": "^3.10.1",
+    "manifold-3d": "^3.5.3",
     "opentype.js": "^2.0.0",
     "three": "^0.185.1",
     "three-3mf-exporter": "^45.2.0",
