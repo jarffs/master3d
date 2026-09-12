@@ -458,12 +458,12 @@ function initThree() {
       alt: t('app.tool_thermoform_reference')
     },
     brigadeiro_ejector: {
-      image: '/images/tools/thermoform.jpg',
+      image: '/images/tools/candy-ejector.jpg',
       title: t('app.tool_brigadeiro_ejector'),
       alt: t('app.tool_brigadeiro_ejector_reference')
     },
     center_cap: {
-      image: '/images/tools/thermoform.jpg',
+      image: '/images/tools/center-cap.jpg',
       title: t('app.tool_center_cap'),
       alt: t('app.tool_center_cap_reference')
     }
