@@ -258,30 +258,54 @@ export class BrigadeiroEjectorEngine extends BaseEngine {
       });
     }
 
-    // Desenho (Extrusão) no carimbo
+    // Desenho (Extrusão) no carimbo - Interseção com a base para não sair das bordas
+    const subjectPaths = new ClipperLib.Paths();
     extractedShapes.forEach(points => {
       const processPoint = (p) => {
         let x = (p.x - centerX) * scaleX;
         let y = -(p.y - centerY) * scaleY;
         if (mirror) x = -x;
-        return new THREE.Vector2(x, y);
+        return { X: Math.round(x * scale), Y: Math.round(y * scale) };
       };
 
-      const extrudeShape = new THREE.Shape(points.shape.map(processPoint));
-      if (points.holes) {
-        points.holes.forEach(hole => {
-          extrudeShape.holes.push(new THREE.Path(hole.map(processPoint)));
-        });
+      for (const [index, contour] of [points.shape, ...(points.holes || [])].entries()) {
+        const path = ClipperLib.Clipper.CleanPolygon(contour.map(processPoint), 5);
+        if (path.length < 3) continue;
+        if (ClipperLib.Clipper.Orientation(path) !== (index === 0)) path.reverse();
+        subjectPaths.push(path);
       }
-      
-      const extrudeGeom = new THREE.ExtrudeGeometry(extrudeShape, {
+    });
+
+    const clipper = new ClipperLib.Clipper();
+    clipper.StrictlySimple = true;
+    clipper.AddPaths(subjectPaths, ClipperLib.PolyType.ptSubject, true);
+    clipper.AddPaths(stampBasePaths, ClipperLib.PolyType.ptClip, true);
+    
+    const tree = new ClipperLib.PolyTree();
+    clipper.Execute(ClipperLib.ClipType.ctIntersection, tree, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+    
+    const extrudeShapes = [];
+    const visit = node => {
+      if (!node.IsHole() && node.Contour().length >= 3) {
+        const toVec = pts => pts.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
+        const shape = new THREE.Shape(toVec(node.Contour()));
+        node.Childs().filter(child => child.IsHole()).forEach(child => {
+          shape.holes.push(new THREE.Path(toVec(child.Contour())));
+        });
+        extrudeShapes.push(shape);
+      }
+      node.Childs().forEach(visit);
+    };
+    tree.Childs().forEach(visit);
+
+    extrudeShapes.forEach(shape => {
+      const extrudeGeom = new THREE.ExtrudeGeometry(shape, {
         depth: extrusion,
         bevelEnabled: false,
         curveSegments: 12
       });
       // Move o desenho para a face superior da base
       extrudeGeom.translate(0, 0, stampBaseHeight);
-      
       stampGeometries.push(extrudeGeom);
     });
 
