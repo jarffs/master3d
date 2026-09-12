@@ -145,7 +145,8 @@ async function initBigLettersEditor() {
       fontFamily: 'Montserrat', 
       fill: '#e91e7b',
       fontWeight: 'bold',
-      layerName: 'Letra Grande',
+      layerName: t('app.big_letter'),
+      layerTranslationKey: 'app.big_letter',
       id: 'BigLetter'
     });
 
@@ -154,7 +155,8 @@ async function initBigLettersEditor() {
       fontFamily: 'Playfair Display', 
       fill: '#ffffff',
       fontStyle: 'italic',
-      layerName: 'Nome',
+      layerName: t('app.sunken_name'),
+      layerTranslationKey: 'app.sunken_name',
       id: 'NameText'
     });
 
@@ -209,7 +211,7 @@ async function initBigLettersEditor() {
         analyzeResult.style.display = 'block';
         
         if (!nameObj || !bigLetterObj) {
-          analyzeResult.textContent = 'Elementos insuficientes para análise.';
+          analyzeResult.textContent = t('js.analysis_empty');
           analyzeResult.style.backgroundColor = '#f1f5f9';
           analyzeResult.style.borderColor = '#cbd5e1';
           analyzeResult.style.color = '#64748b';
@@ -225,12 +227,12 @@ async function initBigLettersEditor() {
         }
 
         if (effectiveFontSize < minSafeSize) {
-          analyzeResult.innerHTML = `<strong>Aviso!</strong> O texto do nome está demasiado pequeno (Tamanho Efetivo: ${Math.round(effectiveFontSize)}).<br/>Paredes podem ficar inferiores a 1.2mm e quebrar na impressão 3D.<br/><em>Dica: Aumente o nome ou use uma fonte mais robusta.</em>`;
+          analyzeResult.textContent = t('js.analysis_warning', { size: Math.round(effectiveFontSize) });
           analyzeResult.style.backgroundColor = '#fef2f2';
           analyzeResult.style.borderColor = '#fca5a5';
           analyzeResult.style.color = '#b91c1c';
         } else {
-          analyzeResult.innerHTML = `<strong>Tudo OK!</strong> O design parece robusto e seguro para impressão 3D com bicos até 0.6mm.`;
+          analyzeResult.textContent = t('app.analysis_ok');
           analyzeResult.style.backgroundColor = '#f0fdf4';
           analyzeResult.style.borderColor = '#bbf7d0';
           analyzeResult.style.color = '#15803d';
@@ -439,6 +441,8 @@ function initThree() {
     toolReferenceImage.src = toolReference.image;
     toolReferenceImage.alt = toolReference.alt;
     toolReferenceTitle.textContent = toolReference.title;
+    toolReferenceTitle.dataset.i18n = `app.tool_${tool}`;
+    toolReferenceImage.dataset.i18nAlt = `app.tool_${tool}_reference`;
   }
   
   // Configurar o tamanho inicial do ejetor na UI
@@ -451,19 +455,19 @@ function initThree() {
   
   // Dynamic UI texts based on tool
   if (tool === 'keychain' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform' || tool === 'brigadeiro_ejector') {
-    const titleEl = document.querySelector('h3[data-i18n="app.upload_image_title"]');
-    const uploadDescEl = document.querySelector('p[data-i18n="app.upload_desc"]');
+    const titleEl = document.querySelector('[data-i18n="app.upload_image_title"]');
+    const uploadDescEl = document.querySelector('[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
     
-    if (titleEl && tool !== 'big_letters' && tool !== 'stamp') {
-      titleEl.setAttribute('data-i18n', 'app.upload_image_title_keychain');
+    if (titleEl) {
+      titleEl.setAttribute('data-i18n', tool === 'keychain' ? 'app.upload_image_title_keychain' : 'app.upload_image');
     }
-    if (uploadDescEl && tool !== 'big_letters' && tool !== 'stamp') {
-      uploadDescEl.setAttribute('data-i18n', 'app.upload_desc_keychain');
+    if (uploadDescEl) {
+      uploadDescEl.setAttribute('data-i18n', tool === 'keychain' ? 'app.upload_desc_keychain' : 'app.upload_desc');
     }
     if (exportBtnText) {
       exportBtnText.setAttribute('data-i18n', 'app.export_3mf');
-      exportBtnText.textContent = 'Exportar 3MF';
+      exportBtnText.textContent = t('app.export_3mf');
     }
     
     if (tool === 'big_letters') {
@@ -551,7 +555,7 @@ async function loadPrinters() {
     }
     
     if (availableDefaults.length === 0 && customPlates.length === 0) {
-      printersData = [{ id: 'default', name: 'Impressora Padrão', width: 220, depth: 220 }];
+      printersData = [{ id: 'default', name: t('profile.default_printer'), width: 220, depth: 220 }];
     } else {
       printersData = [...availableDefaults, ...customPlates];
     }
@@ -561,6 +565,10 @@ async function loadPrinters() {
       const option = document.createElement('option');
       option.value = printer.id;
       option.textContent = printer.name + ` (${printer.width}x${printer.depth})`;
+      if (printer.id === 'default') {
+        option.dataset.i18n = 'profile.default_printer_dimensions';
+        option.textContent = t('profile.default_printer_dimensions');
+      }
       printerProfileSelect.appendChild(option);
     });
     
@@ -1007,6 +1015,7 @@ uploadInput.addEventListener('change', (e) => {
   if (!file) return;
   
   fileNameDisplay.textContent = file.name;
+  fileNameDisplay.removeAttribute('data-i18n');
   
   if (file.name.toLowerCase().endsWith('.svg')) {
     const reader = new FileReader();
@@ -1026,7 +1035,7 @@ uploadInput.addEventListener('change', (e) => {
     reader.readAsText(file);
   } else {
     if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 30 * 1024 * 1024) {
-      Dialog.alert('Use PNG, JPG ou WebP com ate 30 MB.');
+      Dialog.alert(t('js.image_format_limit'));
       return;
     }
     const reader = new FileReader();
@@ -1060,7 +1069,7 @@ uploadInput.addEventListener('change', (e) => {
         Dialog.alert(err.message);
       }
     };
-    reader.onerror = () => Dialog.alert('Nao foi possivel ler a imagem.');
+    reader.onerror = () => Dialog.alert(t('js.image_read_error'));
     reader.readAsDataURL(file);
   }
 });
@@ -1086,7 +1095,7 @@ downloadBtn.addEventListener('click', async () => {
     if (error) throw error;
     
     if (!success) {
-      await Dialog.alert("Não tem créditos suficientes. Por favor, adquira mais pacotes de STLs.");
+      await Dialog.alert(t('js.insufficient_credits'));
       
       const profileModal = document.getElementById('profile-modal');
       if (profileModal) profileModal.classList.remove('hidden');
@@ -1108,7 +1117,7 @@ downloadBtn.addEventListener('click', async () => {
     
   } catch (err) {
     console.error("Erro ao descontar crédito:", err);
-    await Dialog.alert("Ocorreu um erro ao processar o seu crédito. Tente novamente.");
+    await Dialog.alert(t('js.credit_error'));
     downloadBtn.disabled = false;
     if(saveDesignBtn) saveDesignBtn.disabled = false;
     downloadBtn.innerHTML = originalText;
@@ -1133,7 +1142,7 @@ downloadBtn.addEventListener('click', async () => {
   }
 
   if (!exported) {
-    await Dialog.alert("Não foi possível gerar o ficheiro 3MF. Gere o modelo novamente e tente exportar.");
+    await Dialog.alert(t('js.error_3mf'));
   }
 });
 
@@ -1169,7 +1178,7 @@ if (saveDesignBtn) {
         .maybeSingle();
         
       if (existingDesign) {
-        const confirmOverwrite = await Dialog.confirm("Um projeto com este nome já existe. Deseja substituí-lo?");
+        const confirmOverwrite = await Dialog.confirm(t('js.overwrite_design'));
         if (!confirmOverwrite) {
           saveDesignBtn.innerHTML = originalText;
           saveDesignBtn.disabled = false;
@@ -1239,7 +1248,7 @@ if (saveDesignBtn) {
       
     } catch (err) {
       console.error('Error saving design:', err);
-      await Dialog.alert('Error saving design: ' + err.message);
+      await Dialog.alert(t('js.error_save_design') + err.message);
     } finally {
       saveDesignBtn.innerHTML = originalText;
       saveDesignBtn.disabled = false;
@@ -1285,7 +1294,7 @@ async function loadDesigns() {
 
     if (!data || data.length === 0) {
       designsEmpty.style.display = 'block';
-      designsEmpty.textContent = 'Nenhum projeto salvo encontrado.';
+      designsEmpty.textContent = t('app.no_designs');
       return;
     }
 
@@ -1297,7 +1306,7 @@ async function loadDesigns() {
       
       const imgHtml = design.thumbnail_url 
         ? `<img src="${design.thumbnail_url}" style="width: 100%; height: 150px; object-fit: cover; border-bottom: 1px solid var(--border-color); display: block;">`
-        : `<div style="width: 100%; height: 150px; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">Sem Imagem</div>`;
+        : `<div data-i18n="app.no_preview" style="width: 100%; height: 150px; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">${t('app.no_preview')}</div>`;
 
       const date = new Date(design.created_at).toLocaleDateString();
 
@@ -1306,14 +1315,14 @@ async function loadDesigns() {
         <div style="padding: 12px; position: relative;">
           <h4 style="margin: 0 0 4px 0; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 30px;" title="${design.name}">${design.name}</h4>
           <div style="font-size: 12px; color: var(--text-secondary);">${date}</div>
-          <button class="delete-design-btn" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; border-radius: 4px;" title="Excluir" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">
+          <button class="delete-design-btn" data-i18n-title="app.delete_design" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; border-radius: 4px;" title="${t('app.delete_design')}" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
       `;
 
       card.addEventListener('click', async () => {
-        if (!(await Dialog.confirm('Deseja sair do projeto atual? Alterações não salvas serão perdidas.'))) {
+        if (!(await Dialog.confirm(t('js.leave_design')))) {
           return;
         }
         
@@ -1331,7 +1340,7 @@ async function loadDesigns() {
       const delBtn = card.querySelector('.delete-design-btn');
       delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (await Dialog.confirm(`Tem certeza que deseja apagar "${design.name}"?`)) {
+        if (await Dialog.confirm(t('js.delete_design', { name: design.name }))) {
           const oldHtml = delBtn.innerHTML;
           delBtn.innerHTML = '...';
           
@@ -1349,7 +1358,7 @@ async function loadDesigns() {
             }
           } else {
             console.error(error);
-            await Dialog.alert('Erro ao apagar projeto.');
+            await Dialog.alert(t('js.error_delete_design'));
             delBtn.innerHTML = oldHtml;
           }
         }
@@ -1361,7 +1370,8 @@ async function loadDesigns() {
     console.error('Error loading designs:', err);
     designsLoading.style.display = 'none';
     designsEmpty.style.display = 'block';
-    designsEmpty.textContent = 'Erro ao carregar projetos: ' + err.message;
+    designsEmpty.removeAttribute('data-i18n');
+    designsEmpty.textContent = t('js.error_load_designs') + err.message;
   }
 }
 
@@ -1415,7 +1425,8 @@ function loadDesignIntoEngine(design) {
   
   // Visual Update
   fileNameDisplay.style.display = 'block';
-  fileNameDisplay.textContent = design.name + ' (Carregado)';
+  fileNameDisplay.removeAttribute('data-i18n');
+  fileNameDisplay.textContent = design.name + t('app.loaded_suffix');
   
   updateModel();
 }

@@ -8,7 +8,7 @@ const translations = {
 
 // 1. Get user preference or default to English
 let currentLang = localStorage.getItem('language');
-if (!currentLang) {
+if (!Object.hasOwn(translations, currentLang)) {
   // Check browser language
   const browserLang = navigator.language.slice(0, 2);
   currentLang = (browserLang === 'pt') ? 'pt' : 'en';
@@ -19,21 +19,17 @@ if (!currentLang) {
  * Get a translation string by key (e.g., 'hero.title')
  */
 export function t(key, params = {}) {
+  if (typeof key !== 'string') return '';
   const keys = key.split('.');
-  let value = translations[currentLang];
-  
-  for (const k of keys) {
-    if (value && value[k]) {
-      value = value[k];
-    } else {
-      return key; // return key if not found
-    }
-  }
+  const resolve = language => keys.reduce((value, part) =>
+    value && Object.hasOwn(value, part) ? value[part] : undefined, translations[language]);
+  let value = resolve(currentLang) ?? resolve('en');
+  if (typeof value !== 'string') return key;
   
   // Replace parameters like {name}
   if (typeof value === 'string') {
     for (const [pKey, pVal] of Object.entries(params)) {
-      value = value.replace(new RegExp(`{${pKey}}`, 'g'), pVal);
+      value = value.replaceAll(`{${pKey}}`, () => String(pVal));
     }
   }
   
@@ -44,6 +40,12 @@ export function t(key, params = {}) {
  * Translates all DOM elements with data-i18n attribute
  */
 export function translateDOM() {
+  document.documentElement.lang = currentLang;
+  for (const attribute of ['placeholder', 'title', 'aria-label', 'alt']) {
+    document.querySelectorAll(`[data-i18n-${attribute}]`).forEach(element => {
+      element.setAttribute(attribute, t(element.getAttribute(`data-i18n-${attribute}`)));
+    });
+  }
   const elements = document.querySelectorAll('[data-i18n]');
   elements.forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -66,7 +68,7 @@ export function translateDOM() {
  * Changes language and re-translates DOM
  */
 export function setLanguage(lang) {
-  if (translations[lang]) {
+  if (Object.hasOwn(translations, lang)) {
     currentLang = lang;
     localStorage.setItem('language', lang);
     translateDOM();
@@ -82,8 +84,14 @@ export function setLanguage(lang) {
 function updateSelectors() {
   const selectors = document.querySelectorAll('.language-selector');
   selectors.forEach(select => {
+    if (!isLanguageSelector(select)) return;
     select.value = currentLang;
   });
+}
+
+function isLanguageSelector(select) {
+  return [...select.options].some(option => option.value === 'en') &&
+    [...select.options].some(option => option.value === 'pt');
 }
 
 // Initialization
@@ -93,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Bind all language selectors
   const selectors = document.querySelectorAll('.language-selector');
   selectors.forEach(select => {
+    if (!isLanguageSelector(select)) return;
     select.value = currentLang;
     select.addEventListener('change', (e) => {
       setLanguage(e.target.value);

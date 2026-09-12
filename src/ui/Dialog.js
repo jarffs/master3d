@@ -1,3 +1,5 @@
+import { t } from '../../i18n.js';
+
 export class Dialog {
   static init() {
     if (document.getElementById('custom-dialog-overlay')) return;
@@ -28,7 +30,7 @@ export class Dialog {
       const btnCancel = document.getElementById('custom-dialog-cancel');
       const btnConfirm = document.getElementById('custom-dialog-confirm');
 
-      title.textContent = options.title || 'Aviso';
+      title.textContent = options.title || t('common.notice');
       msg.textContent = options.message || '';
       
       if (options.type === 'prompt') {
@@ -40,7 +42,7 @@ export class Dialog {
 
       if (options.type === 'confirm' || options.type === 'prompt') {
         btnCancel.style.display = 'block';
-        btnCancel.textContent = options.cancelText || 'Cancelar';
+        btnCancel.textContent = options.cancelText || t('cropper.cancel');
       } else {
         btnCancel.style.display = 'none';
       }
@@ -93,15 +95,15 @@ export class Dialog {
     });
   }
 
-  static alert(message, title = 'Aviso') {
+  static alert(message, title = t('common.notice')) {
     return this._show({ type: 'alert', message, title });
   }
 
-  static confirm(message, title = 'Confirmação') {
+  static confirm(message, title = t('common.confirm')) {
     return this._show({ type: 'confirm', message, title });
   }
 
-  static prompt(message, defaultValue = '', title = 'Entrada necessária') {
+  static prompt(message, defaultValue = '', title = t('common.input_required')) {
     return this._show({ type: 'prompt', message, defaultValue, title });
   }
 }
