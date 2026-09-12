@@ -9,6 +9,7 @@ import { BigLettersEngine } from './src/engines/BigLettersEngine.js';
 import { StampEngine } from './src/engines/StampEngine.js';
 import { ThermoformEngine } from './src/engines/ThermoformEngine.js';
 import { BrigadeiroEjectorEngine } from './src/engines/BrigadeiroEjectorEngine.js';
+import { CenterCapEngine } from './src/engines/CenterCapEngine.js';
 import { FabricEditor } from './src/ui/FabricEditor.js';
 import { ControlBuilder } from './src/ui/ControlBuilder.js';
 import { SvgEditor } from './src/ui/SvgEditor.js';
@@ -83,6 +84,13 @@ function getControlBuilderOptions() {
     return {
       collapsible: true,
       categoryOrder: ['cutter', 'stamp'],
+      plainCategories: []
+    };
+  }
+  if (engine?.name === 'center_cap') {
+    return {
+      collapsible: true,
+      categoryOrder: ['center_cap_dimensions', 'center_cap_design'],
       plainCategories: []
     };
   }
@@ -401,6 +409,8 @@ function initThree() {
     engine = new ThermoformEngine(scene);
   } else if (tool === 'brigadeiro_ejector') {
     engine = new BrigadeiroEjectorEngine(scene);
+  } else if (tool === 'center_cap') {
+    engine = new CenterCapEngine(scene);
   } else {
     // Fallback
     engine = new CookieCutterEngine(scene);
@@ -451,6 +461,11 @@ function initThree() {
       image: '/images/tools/thermoform.jpg',
       title: t('app.tool_brigadeiro_ejector'),
       alt: t('app.tool_brigadeiro_ejector_reference')
+    },
+    center_cap: {
+      image: '/images/tools/thermoform.jpg',
+      title: t('app.tool_center_cap'),
+      alt: t('app.tool_center_cap_reference')
     }
   };
   const toolReference = toolReferences[tool];
@@ -471,7 +486,7 @@ function initThree() {
   }
   
   // Dynamic UI texts based on tool
-  if (tool === 'keychain' || tool === 'keychain_text' || tool === 'keychain_image' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform' || tool === 'brigadeiro_ejector') {
+  if (tool === 'keychain' || tool === 'keychain_text' || tool === 'keychain_image' || tool === 'coloring' || tool === 'big_letters' || tool === 'stamp' || tool === 'thermoform' || tool === 'brigadeiro_ejector' || tool === 'center_cap') {
     const titleEl = document.querySelector('[data-i18n="app.upload_image_title"]');
     const uploadDescEl = document.querySelector('[data-i18n="app.upload_desc"]');
     const exportBtnText = document.querySelector('#download-btn span');
@@ -501,7 +516,7 @@ function initThree() {
       if (dynamicControls) dynamicControls.style.display = 'none';
 
     // Hide tool reference block entirely
-    if (tool === 'big_letters' || tool === 'stamp') {
+    if (tool === 'big_letters' || tool === 'stamp' || tool === 'center_cap') {
       const toolRefBlock = document.querySelector('.tool-reference');
       if (toolRefBlock) toolRefBlock.style.display = 'none';
     }
@@ -521,6 +536,33 @@ function initThree() {
     }
   }
   
+  // Center Cap: hide build plate, hide model dimensions, generate initial model
+  if (tool === 'center_cap') {
+    document.querySelector('.mandatory-badge')?.style.setProperty('display', 'none');
+    document.querySelector('#tool-reference-image')?.style.setProperty('display', 'none');
+    const faceLight = new THREE.DirectionalLight(0xffffff, 2);
+    faceLight.position.set(30, -40, -60);
+    scene.add(faceLight);
+    // Hide build plate 3D visualization
+    if (buildPlateGroup) buildPlateGroup.visible = false;
+    
+    // Hide the build plate settings section in sidebar
+    const buildPlateSettingsHeader = document.querySelector('[data-i18n="app.build_plate"]');
+    if (buildPlateSettingsHeader) {
+      const buildPlateSection = buildPlateSettingsHeader.closest('.settings');
+      if (buildPlateSection) buildPlateSection.style.display = 'none';
+    }
+    
+    // Hide model dimensions section (center cap uses capDiameter instead)
+    const dimSection = document.getElementById('model-dimensions-section');
+    if (dimSection) {
+      dimSection.style.display = 'none';
+    }
+    
+    // Generate the initial model (plain cap, no SVG required)
+    setTimeout(() => updateModel(), 100);
+  }
+
   if (tool === 'keychain_text') {
     document.querySelectorAll('.upload-group').forEach(element => element.style.display = 'none');
   }
@@ -843,6 +885,10 @@ function updateBuildPlate() {
 }
 
 function checkBuildPlateLimits() {
+  if (engine?.name === 'center_cap') {
+    bpWarning.classList.add('hidden');
+    return;
+  }
   const visualTokens = getComputedStyle(document.documentElement);
   if (!engine || !engine.group || engine.group.children.length === 0) {
     bpWarning.classList.add('hidden');
@@ -873,6 +919,10 @@ function checkBuildPlateLimits() {
 }
 
 function frameCamera() {
+  if (engine?.name === 'center_cap') {
+    frameGeneratedModel();
+    return;
+  }
   const width = parseFloat(bpWidthInput.value) || 220;
   const depth = parseFloat(bpDepthInput.value) || 220;
   const maxDim = Math.max(width, depth);
@@ -893,9 +943,12 @@ function frameGeneratedModel() {
   const size = bounds.getSize(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z, 1);
   const distance = (maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * 1.6);
-  const direction = new THREE.Vector3(0, -0.7, 0.8).normalize();
+  const direction = engine.name === 'center_cap'
+    ? new THREE.Vector3(0, 0.35, -1).normalize()
+    : new THREE.Vector3(0, -0.7, 0.8).normalize();
 
   controls.target.copy(center);
+  camera.up.set(0, engine.name === 'center_cap' ? -1 : 0, engine.name === 'center_cap' ? 0 : 1);
   camera.position.copy(center).addScaledVector(direction, distance);
   camera.near = Math.max(0.1, distance / 100);
   camera.far = Math.max(1000, distance * 10);
@@ -914,7 +967,7 @@ function refreshExportButtons() {
 }
 
 async function updateModel() {
-  if (!currentSvgText && !['keychain', 'keychain_text'].includes(engine?.name)) return;
+  if (!currentSvgText && !['keychain', 'keychain_text', 'center_cap'].includes(engine?.name)) return;
   if (!engine || !controlBuilder) return;
 
   const updateId = ++modelUpdateId;
@@ -949,6 +1002,10 @@ async function updateModel() {
 }
 
 async function initDimensionsFromSVG() {
+  if (engine?.name === 'center_cap') {
+    dimensionsSection.style.display = 'none';
+    return;
+  }
   // Show the dimensions section
   dimensionsSection.style.display = '';
   
@@ -1160,6 +1217,8 @@ downloadBtn.addEventListener('click', async () => {
     exported = await engine.export3MF('masterworld_carimbo.3mf');
   } else if (engine.name === 'thermoform') {
     exported = await engine.export3MF('masterworld_thermoform.3mf');
+  } else if (engine.name === 'center_cap') {
+    exported = await engine.export3MF('masterworld_center_cap.3mf');
   } else {
     engine.exportSTL();
   }
@@ -1419,6 +1478,8 @@ function loadDesignIntoEngine(design) {
     engine = new BigLettersEngine(scene);
   } else if (toolType === 'stamp') {
     engine = new StampEngine(scene);
+  } else if (toolType === 'center_cap') {
+    engine = new CenterCapEngine(scene);
   } else {
     // Fallback for future engines
     engine = new CookieCutterEngine(scene);
@@ -1448,7 +1509,7 @@ function loadDesignIntoEngine(design) {
     }
   }
   
-  dimensionsSection.style.display = '';
+  dimensionsSection.style.display = engine.name === 'center_cap' ? 'none' : '';
   
   // Visual Update
   fileNameDisplay.style.display = 'block';
