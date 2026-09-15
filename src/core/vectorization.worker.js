@@ -1,3 +1,4 @@
+import './workerPolyfill.js';
 import { vectorize } from './vectorizationCore.js';
 
 self.onmessage = ({ data }) => {
