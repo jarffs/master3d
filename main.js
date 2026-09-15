@@ -1120,6 +1120,9 @@ uploadInput.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const dataUrl = event.target.result;
+      modelLoading?.classList.remove('hidden');
+      await new Promise(resolve => { requestAnimationFrame(resolve); setTimeout(resolve, 50); });
+      
       try {
         let vectorizedWidth = parseFloat(modelWidthInput.value) || 80;
         const svgString = SHOW_VECTORIZATION_DIALOG
@@ -1131,7 +1134,10 @@ uploadInput.addEventListener('change', (e) => {
             modelWidth: vectorizedWidth,
             ...(engine.name === 'coloring' ? { maxPoints: 30000, maxPaths: 1500 } : {})
           }).process(dataUrl);
-        if (!svgString) return;
+        if (!svgString) {
+          modelLoading?.classList.add('hidden');
+          return;
+        }
         svgEditor.open(svgString, async (editedSvg) => {
           currentSvgText = editedSvg;
           if (engine.name === 'keychain') {
@@ -1142,9 +1148,10 @@ uploadInput.addEventListener('change', (e) => {
           await initDimensionsFromSVG();
           modelWidthInput.value = vectorizedWidth;
           modelDepthInput.value = Math.round(vectorizedWidth / (svgAspectRatio || 1));
-          await updateModel();
+          await updateModel(); // updateModel handles hiding the loader when finished
         });
       } catch (err) {
+        modelLoading?.classList.add('hidden');
         console.error('Vectorization failed:', err);
         Dialog.alert(err.message);
       }
