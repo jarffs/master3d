@@ -23,8 +23,8 @@ export function resolveParams(mode, overrides = {}) {
   const ranges = {
     maxSize: [64, 2048], threshold: [-1, 255], contrast: [0.1, 3], blur: [0, 3],
     noiseRemoval: [0, 1], turdSize: [0, 1000], alphaMax: [0, 1.33],
-    optTolerance: [0.01, 2], minPathArea: [0, 10000], maxPoints: [100, 12000],
-    maxPaths: [1, 500], curvePrecision: [3, 5], geometryTolerance: [0.05, 0.5],
+    optTolerance: [0.01, 2], minPathArea: [0, 10000], maxPoints: [100, 35000],
+    maxPaths: [1, 2000], curvePrecision: [3, 5], geometryTolerance: [0.05, 0.5],
     minThickness: [0, 5], modelWidth: [1, 2000], timeoutMs: [100, 60000],
   };
   for (const [key, [minimum, maximum]] of Object.entries(ranges)) {
@@ -197,7 +197,7 @@ export function cleanGeometry(input, params, width) {
     return command.type === 'CURVE' && (command.x1 !== command.x || command.y1 !== command.y || command.x2 !== command.x || command.y2 !== command.y);
   }));
   let polygons = rounded.map(commands => flattenContour(commands, params.geometryTolerance));
-  if (polygons.reduce((sum, polygon) => sum + polygon.length, 0) > 30000) throw new Error('Too many geometry samples');
+  if (polygons.reduce((sum, polygon) => sum + polygon.length, 0) > 60000) throw new Error('Too many geometry samples');
   const seen = new Set();
   const keep = polygons.map(polygon => {
     if (polygon.length < 3) return false;
@@ -298,7 +298,7 @@ export function vectorize(image, mode, overrides = {}) {
     turnpolicy: params.turnPolicy, turdsize: params.turdSize, alphamax: params.alphaMax,
     optcurve: params.optCurve, opttolerance: params.optTolerance,
   }));
-  if (countPoints(contours) > 50000 || contours.length > 2000) throw new Error('Trace too complex. Reduce resolution or remove noise.');
+  if (countPoints(contours) > 80000 || contours.length > 3000) throw new Error('Trace too complex. Reduce resolution or remove noise.');
   const geometry = cleanGeometry(contours, params, image.width);
   const svg = serializeSVG(geometry.contours, image.width, image.height, params.curvePrecision);
   if (svg.length > 500000) throw new Error('SVG exceeds 500 KB limit');
