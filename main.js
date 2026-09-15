@@ -1101,6 +1101,9 @@ uploadInput.addEventListener('change', (e) => {
     reader.onload = (event) => {
       const svgText = event.target.result;
       svgEditor.open(svgText, async (editedSvg) => {
+        modelLoading?.classList.remove('hidden');
+        await new Promise(resolve => { requestAnimationFrame(resolve); setTimeout(resolve, 50); });
+        
         currentSvgText = editedSvg;
         if (engine.name === 'keychain') {
           engine.loadImageSVG(currentSvgText);
@@ -1142,6 +1145,9 @@ uploadInput.addEventListener('change', (e) => {
           return;
         }
         svgEditor.open(svgString, async (editedSvg) => {
+          modelLoading?.classList.remove('hidden');
+          await new Promise(resolve => { requestAnimationFrame(resolve); setTimeout(resolve, 50); });
+          
           currentSvgText = editedSvg;
           if (engine.name === 'keychain') {
             engine.loadImageSVG(currentSvgText);
