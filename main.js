@@ -1120,6 +1120,9 @@ uploadInput.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const dataUrl = event.target.result;
+      if (svgEditor && typeof svgEditor.close === 'function') {
+        svgEditor.close();
+      }
       modelLoading?.classList.remove('hidden');
       await new Promise(resolve => { requestAnimationFrame(resolve); setTimeout(resolve, 50); });
       
