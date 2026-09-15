@@ -1129,6 +1129,7 @@ uploadInput.addEventListener('change', (e) => {
           })
           : await new VectorizationPipeline('high_fidelity', {
             modelWidth: vectorizedWidth,
+            ...(engine.name === 'coloring' ? { maxPoints: 30000, maxPaths: 1500 } : {})
           }).process(dataUrl);
         if (!svgString) return;
         svgEditor.open(svgString, async (editedSvg) => {
